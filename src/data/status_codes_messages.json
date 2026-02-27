@@ -1,0 +1,231 @@
+{
+  "message_types": {
+    "EVENT": {
+      "symbol": "!",
+      "severity": "warning",
+      "color": "yellow",
+      "blink_duration_seconds": 30,
+      "requires_confirmation": true
+    },
+    "FAULT": {
+      "symbol": "x",
+      "severity": "error",
+      "color": "red",
+      "blink_duration_seconds": 30,
+      "requires_confirmation": true
+    },
+    "DRIVING_TIME_WARNING": {
+      "symbol": "",
+      "severity": "warning",
+      "color": "yellow",
+      "blink_duration_seconds": 0,
+      "requires_confirmation": false
+    },
+    "NOTIFICATION": {
+      "symbol": "",
+      "severity": "info",
+      "color": "blue",
+      "blink_duration_seconds": 0,
+      "requires_confirmation": false
+    }
+  },
+  "events": [
+    {
+      "code": "E001",
+      "message": "! porušená bezpečnost xx",
+      "type": "EVENT",
+      "icon": "!",
+      "description": "Chyba v datové paměti, bezpečnost dat již není zaručena",
+      "action": "Potvrďte hlášení"
+    },
+    {
+      "code": "E002",
+      "message": "!1 porušená bezpečnost xx",
+      "type": "EVENT",
+      "icon": "!1",
+      "description": "Zámek karty má poruchu nebo je vadný",
+      "action": "Potvrďte hlášení. Karta se může automaticky vysunout."
+    },
+    {
+      "code": "E003",
+      "message": "! přerušené napájení xx",
+      "type": "EVENT",
+      "icon": "!",
+      "description": "Napětí bylo odpojeno nebo napájecí napětí bylo příliš nízké/vysoké",
+      "action": "Potvrďte hlášení"
+    },
+    {
+      "code": "E004",
+      "message": "! konflikt pohybu xx",
+      "type": "EVENT",
+      "icon": "!",
+      "description": "Rozpor při vyhodnocení pohybu vozidla mezi snímačem a nezávislým zdrojem",
+      "action": "Potvrďte hlášení. Vyhledejte autorizovaný servis."
+    },
+    {
+      "code": "E005",
+      "message": "! GNSS chybí xx",
+      "type": "EVENT",
+      "icon": "!",
+      "description": "Bez údajů o poloze více než tři hodiny kumulované doby řízení",
+      "action": "Potvrďte hlášení"
+    },
+    {
+      "code": "E006",
+      "message": "! Čas. konflikt xx",
+      "type": "EVENT",
+      "icon": "!",
+      "description": "Mezi časem interních hodin a časovými informacemi GNSS je rozdíl větší než jedna minuta",
+      "action": "Potvrďte hlášení"
+    },
+    {
+      "code": "E007",
+      "message": "! Porucha DSRC komunikace xx",
+      "type": "EVENT",
+      "icon": "!",
+      "description": "Chyba komunikace mezi tachografem a externím modulem DSRC-CAN",
+      "action": "Potvrďte hlášení. Pokud se opakuje, vyhledejte servis."
+    },
+    {
+      "code": "E008",
+      "message": "! jízda bez vložené karty xx",
+      "type": "EVENT",
+      "icon": "!",
+      "description": "Jízda byla započata bez karty nebo bez platné karty řidiče",
+      "action": "Potvrďte hlášení. Zastavte vozidlo a vložte platnou kartu."
+    },
+    {
+      "code": "E009",
+      "message": "!1 vložena při jízdě xx",
+      "type": "EVENT",
+      "icon": "!1",
+      "description": "Karta řidiče byla vložena po započetí jízdy",
+      "action": "Potvrďte hlášení"
+    },
+    {
+      "code": "E010",
+      "message": "!1 překrytí času xx",
+      "type": "EVENT",
+      "icon": "!1",
+      "description": "Nastavený čas UTC tohoto tachografu se oproti času předchozího tachografu zpožďuje",
+      "action": "Potvrďte hlášení"
+    }
+  ],
+  "faults": [
+    {
+      "code": "F001",
+      "message": "x závada přístroje",
+      "type": "FAULT",
+      "icon": "x",
+      "description": "Porucha komunikace se snímačem",
+      "action": "Potvrďte hlášení. Kontaktujte autorizovaný servis."
+    },
+    {
+      "code": "F002",
+      "message": "x1 závada karty",
+      "type": "FAULT",
+      "icon": "x1",
+      "description": "Chybná funkce karty",
+      "action": "Potvrďte hlášení. Vyměňte kartu."
+    }
+  ],
+  "warnings": [
+    {
+      "code": "W001",
+      "message": "Doba řízení končí",
+      "type": "DRIVING_TIME_WARNING",
+      "icon": "",
+      "description": "Zbývající doba řízení je menší než 15 minut",
+      "action": "Připravte se na přestávku"
+    },
+    {
+      "code": "W002",
+      "message": "Přestávka nutná",
+      "type": "DRIVING_TIME_WARNING",
+      "icon": "",
+      "description": "Maximální doba řízení byla dosažena",
+      "action": "Zastavte a vyberte aktivitu odpočinek"
+    }
+  ],
+  "notifications": [
+    {
+      "code": "N001",
+      "message": " karta!",
+      "type": "NOTIFICATION",
+      "icon": "",
+      "description": "Výzva k vložení karty",
+      "action": "Vložte kartu řidiče"
+    },
+    {
+      "code": "N002",
+      "message": "prosím čekejte!",
+      "type": "NOTIFICATION",
+      "icon": "",
+      "description": "Systém zpracovává data",
+      "action": "Čekejte na dokončení"
+    },
+    {
+      "code": "N003",
+      "message": "1 výhoz není možný xx",
+      "type": "NOTIFICATION",
+      "icon": "",
+      "description": "Karta se právě zpracovává",
+      "action": "Počkejte na dokončení zpracování"
+    },
+    {
+      "code": "N004",
+      "message": "Přístup do nabídky není možný",
+      "type": "NOTIFICATION",
+      "icon": "",
+      "description": "Nabídka je zablokována",
+      "action": "Splňte požadované podmínky (vozidlo stojí, správná karta)"
+    },
+    {
+      "code": "N005",
+      "message": "zadání uloženo",
+      "type": "NOTIFICATION",
+      "icon": "",
+      "description": "Zadání bylo úspěšně uloženo",
+      "action": "Pokračujte v práci"
+    },
+    {
+      "code": "N006",
+      "message": " Chybné zadání",
+      "type": "NOTIFICATION",
+      "icon": "",
+      "description": "Zadaná hodnota je neplatná",
+      "action": "Opravte zadání"
+    }
+  ],
+  "special_messages": [
+    {
+      "code": "S001",
+      "message": "Stav výroby",
+      "type": "NOTIFICATION",
+      "icon": "",
+      "description": "Tachograf je v režimu výroby - není kalibován",
+      "action": "Kontaktujte autorizovaný servis pro kalibraci"
+    },
+    {
+      "code": "S002",
+      "message": "OUT",
+      "type": "NOTIFICATION",
+      "icon": "OUT",
+      "description": "Režim Out of Scope - mimo oblast platnosti",
+      "action": "Režim je aktivní, tachograf nezaznamenává"
+    },
+    {
+      "code": "S003",
+      "message": " Trajekt/vlak",
+      "type": "NOTIFICATION",
+      "icon": "",
+      "description": "Vozidlo je na trajektu nebo ve vlaku",
+      "action": "Režim je aktivní"
+    }
+  ],
+  "display_codes": {
+    "xx": "Zástupný znak pro kód paměti (00-99)",
+    "1": "Šachta pro kartu 1 (řidič 1)",
+    "2": "Šachta pro kartu 2 (řidič 2)"
+  }
+}

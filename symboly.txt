@@ -1,0 +1,89 @@
+symboly:
+
+1  U+0052 bluetooth
+2  U+0053 driving, øízení, jízda
+3  U+0054 firma
+4  U+0055 kontrolor
+5  U+0056 servis
+6  U+0057 výrobce
+7  U+0058 pohotovost
+8  U+0059 odpoèinek, rest 
+9  U+005a jiná práce, work
+10 U+005b platné pøerušení 
+11 U+005c neznámá èinnost
+12 U+005d 1
+13 U+005e 2
+14 U+005f karta øidièe naètena
+15 U+0060 karta øidièe vložena proces 1
+16 U+0061 karta øidièe vložena proces 2
+17 U+0062 hodiny
+18 U+0063 výtisk
+19 U+0064 záznam uživatele
+20 U+0065 zobrazení
+21 U+0066 licenèní kód
+22 U+0067 stahování dat
+23 U+0068 snímaè
+24 U+0069 vozidlo
+25 U+006a velikost pneumatik
+26 U+006b podpìtí
+27 U+006c událost !
+28 U+006d dálkové ovládání
+29 U+006e GNSS
+30 U+006f DSRC
+31 U+0070 ITS
+32 U+0071 mýtné
+33 U+0072 hmotnost jízdní soupravy
+34 U+0073 porucha
+35 U+0074 varování
+36 U+0075 zaèátek smìny
+37 U+0076 místo 
+38 U+0077 zabezpeèení
+39 U+0078 rychlost
+40 U+0079 souhrn
+41 U+007a konec smìny
+42 U+007b zadání 
+43 U+007c pøekroèení hranic
+44 U+007d graf
+45 U+007e rozdíl
+46 U+007f vyèkejte
+47 U+0080 informace
+48 U+0081 U
+49 U+0082 trajekt
+50 U+0083 náklad cestující
+51 U+0084 náklad zboží
+52 U+0085 nakládka
+53 U+0086 vykládka
+54 U+0087 nakládka a vykládka
+55 U+0088 4 
+56 U+0089 h
+57 U+008a týdnì
+58 U+008b dva týdny
+59 U+008c od do
+60 U+0051 O
+61 U+004f T
+
+???????????
+?????? ?????
+
+???. ??????
+????? ??????
+???????. ???????
+
+??????????
+???????
+
+??????????
+
+Když napíšeš napø. „pøidej výtisk linku ---(2)---“, bude se podle pravidla a této funkce implementovat linka na šíøku výtisku se symbolem (2) uprostøed.
+„vlož utc èas“ = vlož stejný øádek jako první øádek na v-diagramu.
+„Další øádek vlož typ karty“ = na další øádek doprostøed umístit text „GEN2 V2“ (typ karty/tachografu).
+vlož údaje o øidièi
+
+
+&mtFykSZP38eR3i supabase heslo
+
+UPDATE public.profiles
+SET role = 'admin'
+WHERE id = 'c6fa51bc-5c7c-4665-bcf6-e3fd82aaad9f';
+
+SELECT id, email, role FROM public.profiles WHERE id = 'c6fa51bc-5c7c-4665-bcf6-e3fd82aaad9f';

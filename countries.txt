@@ -1,0 +1,79 @@
+countries:
+A Rakousko
+AL Albánie
+AND Andorra
+ARM Arménie
+AZ Ázerbájdžán
+B Belgie
+BG Bulharsko
+BIH Bosna a Hercegovina
+BY Bìlorusko
+CH Švýcarsko
+CY Kypr
+CZ Èeská republika
+D Nìmecko
+DK Dánsko
+E Španìlsko  *
+EC Evropské spoleèenství
+EST Estonsko
+EUR Zbytek Evropy
+F Francie
+FIN Finsko
+FL Lichtenštejnsko
+FR/FO Faerské ostrovy
+GE Gruzie
+GR Øecko
+H Maïarsko
+HR Chorvatsko
+I Itálie
+IRL Irsko
+IS Island
+KZ Kazachstán
+L Lucembursko
+LT Litva
+LV Lotyšsko
+M Malta
+MC Monako
+MD Moldavská republika
+MK Makedonie
+MNE Èerná Hora
+N Norsko
+NL Nizozemí
+P Portugalsko
+PL Polsko
+RO Rumunsko
+RSM San Marino
+RUS Ruská federace
+S Švédsko
+SK Slovensko
+SLO Slovinsko
+SRB Srbsko
+TJ Tádžikistán
+TM Turkmenistán
+TR Turecko
+UA Ukrajina
+UK Spojené království, Alderney,
+Guernsey, Jersey, Ostrov Man,
+Gibraltar
+UZ Uzbekistán
+V Vatikán
+WLD Zbytek svìta
+
+regions:
+AN Andalusie
+AR Aragonie
+AST Asturie
+C Kantábrie
+CAT Katalánsko
+CL Kastilie-León
+CM Kastilie – La Mancha
+CV Valencie
+EXT Extremadura
+G Galicie
+IB Baleárské ostrovy
+IC Kanárské ostrovy
+LR La Rioja
+M Madrid
+MU Murcia
+NA Navarra
+PV Baskicko

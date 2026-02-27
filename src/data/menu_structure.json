@@ -1,0 +1,146 @@
+{
+  "conditions_legend": {
+    "1": "optional_feature_enabled",
+    "2": "company_card_inserted",
+    "3": "company_card_required_for_settings",
+    "4": "card_driver_1_inserted",
+    "5": "card_driver_2_inserted",
+    "6": "control_card_inserted",
+    "7": "vdo_link_connected"
+  },
+  "menu_hierarchy": {
+    "MAIN_LEVEL": {
+      "items": [
+        {"id": "M_PRINT_D1", "line1": "výtisk", "line2": "(14)(18) řidič 1", "condition": 4, "sub_menu": "SUB_PRINT_D1"},
+        {"id": "M_PRINT_D2", "line1": "výtisk", "line2": "(14)(18) řidič 2", "condition": 5, "sub_menu": "SUB_PRINT_D2"},
+        {"id": "M_PRINT_VEHICLE", "line1": "výtisk", "line2": "(24)(18) vozidlo", "condition": null, "sub_menu": "SUB_PRINT_VEHICLE"},
+        {"id": "M_INPUT_D1", "line1": "zadání", "line2": "(19) řidič 1", "condition": 4, "sub_menu": "SUB_INPUT_D1"},
+        {"id": "M_INPUT_D2", "line1": "zadání", "line2": "(19) řidič 2", "condition": 5, "sub_menu": "SUB_INPUT_D2"},
+        {"id": "M_INPUT_VEHICLE", "line1": "zadání", "line2": "(24)(19) vozidlo", "condition": null, "sub_menu": "SUB_INPUT_VEHICLE"},
+        {"id": "M_DISPLAY_D1", "line1": "displej", "line2": "(14)(20) řidič 1", "condition": 4, "sub_menu": "SUB_DISPLAY_D1"},
+        {"id": "M_DISPLAY_D2", "line1": "displej", "line2": "(14)(20) řidič 2", "condition": 5, "sub_menu": "SUB_DISPLAY_D2"},
+        {"id": "M_DISPLAY_VEHICLE", "line1": "displej", "line2": "(24)(20) vozidlo", "condition": null, "sub_menu": "SUB_DISPLAY_VEHICLE"},
+        {"id": "M_DISPLAY_CONTROL", "line1": "displej", "line2": "Kontrola", "condition": 6, "sub_menu": "SUB_DISPLAY_CONTROL"},
+        {"id": "M_TOLL", "line1": "menu", "line2": "(32) Mýtné", "condition": 7, "action": "ENTER_TOLL_MENU"}
+      ]
+    },
+    "SUB_PRINT_D1": {
+      "header_line1": "(14)(18) řidič 1",
+      "items": [
+        {"id": "PD1_24H", "line2": "24h(14)(18) den-tisk", "action": "PRINT_24H_D1", "requiresDate": true, "requiresUtcConfirm": true},
+        {"id": "PD1_EVENT", "line2": "(27)(34)(14)(18) událost", "action": "PRINT_EVENT_D1"},
+        {"id": "PD1_ACT", "line2": "(44)(14)(18) aktivity", "action": "PRINT_ACT_D1"}
+      ]
+    },
+    "SUB_PRINT_D2": {
+      "header_line1": "(14)(18) řidič 2",
+      "items": [
+        {"id": "PD2_24H", "line2": "24h(14)(18) den-tisk", "action": "PRINT_24H_D2"},
+        {"id": "PD2_EVENT", "line2": "(27)(34)(14)(18) událost", "action": "PRINT_EVENT_D2"},
+        {"id": "PD2_ACT", "line2": "(44)(14)(18) aktivity", "action": "PRINT_ACT_D2"}
+      ]
+    },
+    "SUB_PRINT_VEHICLE": {
+      "header_line1": "(24)(18) vozidlo",
+      "items": [
+        {"id": "PV_24H", "line2": "24h(24)(18) den-tisk", "action": "PRINT_24H_V", "requiresDate": true, "requiresUtcConfirm": true},
+        {"id": "PV_EVENT", "line2": "(27)(34)(24)(18) událost", "action": "PRINT_EVENT_V"},
+        {"id": "PV_SPEED", "line2": "(39)(39)(18) vys.rychlost", "action": "PRINT_SPEED_V"},
+        {"id": "PV_TECH", "line2": "(5)(17)(18) tech. data", "action": "PRINT_TECH_V"},
+        {"id": "PV_CARDS", "line2": "(6)(14)(17)(18) Karty", "action": "PRINT_CARDS_V"},
+        {"id": "PV_V_DIAGRAM", "line2": "(44)v(18) v-diagram", "action": "PRINT_V_DIAGRAM", "requiresDate": true},
+        {"id": "PV_STATUS", "line2": "(44)D(18) status D1/D2", "condition": 1, "action": "PRINT_STATUS"},
+        {"id": "PV_V_PROF", "line2": "%v(18) v-profil", "condition": 1, "action": "PRINT_V_PROFILE"},
+        {"id": "PV_N_PROF", "line2": "%n(18) n-profil", "condition": 1, "action": "PRINT_N_PROFILE"}
+      ]
+    },
+    "SUB_INPUT_D1": {
+      "header_line1": "(19) řidič 1",
+      "items": [
+        {"id": "ID1_START", "line2": "(37)(36) výchozí země", "action": "INPUT_START_COUNTRY"},
+        {"id": "ID1_END", "line2": "(41)(37) cílová země", "action": "INPUT_END_COUNTRY"},
+        {"id": "ID1_SETTINGS", "line2": "?(19) Nastavení", "sub_menu": "SUB_INPUT_D1_SETTINGS"}
+      ]
+    },
+    "SUB_INPUT_D1_SETTINGS": {
+      "header_line1": "?(19) Nastavení",
+      "items": [
+        {"id": "ID1_BT", "line2": "(1) Bluetooth", "action": "SET_BT_D1"},
+        {"id": "ID1_MISC", "line2": "Různé", "action": "SET_MISC_D1"}
+      ]
+    },
+    "SUB_INPUT_D2": {
+      "header_line1": "(19) řidič 2",
+      "items": [
+        {"id": "ID2_START", "line2": "(37)(36) výchozí země", "action": "INPUT_START_COUNTRY"},
+        {"id": "ID2_END", "line2": "(41)(37) cílová země", "action": "INPUT_END_COUNTRY"},
+        {"id": "ID2_SETTINGS", "line2": "?(19) Nastavení", "sub_menu": "SUB_INPUT_D2_SETTINGS"}
+      ]
+    },
+    "SUB_INPUT_D2_SETTINGS": {
+      "header_line1": "?(19) Nastavení",
+      "items": [
+        {"id": "ID2_BT", "line2": "(1) Bluetooth", "action": "SET_BT_D2"},
+        {"id": "ID2_MISC", "line2": "Různé", "action": "SET_MISC_D2"}
+      ]
+    },
+    "SUB_INPUT_VEHICLE": {
+      "header_line1": "(24)(19) vozidlo",
+      "items": [
+        {"id": "IV_OUT_S", "line2": "OUT(59) začátek", "action": "MODE_OUT_START"},
+        {"id": "IV_OUT_E", "line2": "(59)OUT konec", "action": "MODE_OUT_END"},
+        {"id": "IV_FERRY_S", "line2": "(49)(59) začátek", "action": "MODE_FERRY_START"},
+        {"id": "IV_FERRY_E", "line2": "(59)(49) konec", "action": "MODE_FERRY_END"},
+        {"id": "IV_LOAD_UNLOAD_ROOT", "line2": "(54) nalož./vylož.", "sub_menu": "SUB_LOAD_UNLOAD"},
+        {"id": "IV_LOCAL", "line2": "(37)(17) místní čas", "action": "SET_LOCAL_TIME"},
+        {"id": "IV_OWNER", "line2": "(3)(17) čas majitel", "action": "SET_OWNER_TIME"},
+        {"id": "IV_LIC", "line2": "(21) Licenční kód", "action": "INPUT_LICENSE"},
+        {"id": "IV_LANG", "line2": "centr. jazyk", "condition": 1, "action": "SET_CENTRAL_LANG"},
+        {"id": "IV_CONN", "line2": "(1)(24) In-Vehicle Připojení", "condition": 2, "action": "SET_CONN"},
+        {"id": "IV_BT_MGMT", "line2": "(1) Bluetooth Správa zařízení", "condition": 3, "action": "BT_MGMT"},
+        {"id": "IV_BT_CONF", "line2": "(1) Bluetooth Konfigurace", "condition": 3, "action": "BT_CONF"}
+      ]
+    },
+    "SUB_LOAD_UNLOAD": {
+      "header_line1": "(54) nalož./vylož.",
+      "items": [
+        {"id": "LU_BOTH", "line2": "(54) nalož./vylož.", "action": "ACTION_LOAD_UNLOAD_BOTH"},
+        {"id": "LU_LOAD", "line2": "(52) nalož", "action": "ACTION_LOAD"},
+        {"id": "LU_UNLOAD", "line2": "(53) vylož", "action": "ACTION_UNLOAD"}
+      ]
+    },
+    "SUB_DISPLAY_D1": {
+      "header_line1": "(14)(20) řidič 1",
+      "items": [
+        {"id": "DD1_24H", "line2": "24h(14)(20) den", "action": "DISP_24H_D1"},
+        {"id": "DD1_EVENT", "line2": "(27)(34)(14)(20) událost", "action": "DISP_EVENT_D1"}
+      ]
+    },
+    "SUB_DISPLAY_D2": {
+      "header_line1": "(14)(20) řidič 2",
+      "items": [
+        {"id": "DD2_24H", "line2": "24h(14)(20) den", "action": "DISP_24H_D2"},
+        {"id": "DD2_EVENT", "line2": "(27)(34)(14)(20) událost", "action": "DISP_EVENT_D2"}
+      ]
+    },
+    "SUB_DISPLAY_VEHICLE": {
+      "header_line1": "vozidlo",
+      "items": [
+        {"id": "DV_24H", "line2": "24h(24)(20) den", "action": "DISP_24H_V"},
+        {"id": "DV_EVENT", "line2": "(27)(34)(24)(20) událost", "action": "DISP_EVENT_V"},
+        {"id": "DV_SPEED", "line2": "(39)(39)(20) vys.rychlost", "action": "DISP_SPEED_V"},
+        {"id": "DV_TECH", "line2": "(5)(17)(20) tech. data", "action": "DISP_TECH_V"},
+        {"id": "DV_CARDS", "line2": "(6)(14)(17)(20) Karty", "action": "DISP_CARDS_V"},
+        {"id": "DV_OWNER", "line2": "(3)(14) majitel", "action": "DISP_OWNER"},
+        {"id": "DV_WEIGHT", "line2": "(24)(33) hmotnost", "action": "DISP_WEIGHT"},
+        {"id": "DV_VER", "line2": "(47)(6) verze DTCO", "action": "DISP_VER"}
+      ]
+    },
+    "SUB_DISPLAY_CONTROL": {
+      "header_line1": "Kontrola",
+      "items": [
+        {"id": "DC_SENSOR", "line2": "(23) Sériové číslo snímače", "action": "DISP_SENSOR_SERIAL"}
+      ]
+    }
+  }
+}

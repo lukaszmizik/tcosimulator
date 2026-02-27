@@ -1,0 +1,547 @@
+{
+  "menu_hierarchy": {
+    "level_1": {
+      "id": "L1_STANDARD_DISPLAY",
+      "text": "Standardní zobrazení",
+      "items": [
+        {
+          "id": "L1_DRIVER1_TIMES",
+          "text": "Doby řidiče 1",
+          "display_icon": "1",
+          "action_type": "DISPLAY_INFO",
+          "sub_menu_id": null
+        },
+        {
+          "id": "L1_DRIVER2_TIMES",
+          "text": "Doby řidiče 2",
+          "display_icon": "2",
+          "action_type": "DISPLAY_INFO",
+          "sub_menu_id": null
+        },
+        {
+          "id": "L1_VDO_COUNTER",
+          "text": "VDO Counter",
+          "display_icon": "VDO",
+          "action_type": "DISPLAY_INFO",
+          "sub_menu_id": null,
+          "optional": true
+        },
+        {
+          "id": "L1_UTC_TIME",
+          "text": "Čas UTC",
+          "display_icon": "UTC",
+          "action_type": "DISPLAY_INFO",
+          "sub_menu_id": null
+        },
+        {
+          "id": "L1_LANGUAGE_SELECT",
+          "text": "výběr jazyka?",
+          "display_icon": null,
+          "action_type": "ENTER_SETTINGS",
+          "sub_menu_id": "LANGUAGE_MENU"
+        },
+        {
+          "id": "L1_MAIN_MENU",
+          "text": "vyvolat hlavní menu?",
+          "display_icon": null,
+          "action_type": "ENTER_SETTINGS",
+          "sub_menu_id": "MAIN_MENU"
+        }
+      ]
+    },
+    "level_2": {
+      "id": "MAIN_MENU",
+      "text": "Hlavní menu",
+      "items": [
+        {
+          "id": "M_PRINT_DRIVER1",
+          "text": "výtisk řidič 1",
+          "display_icon": "1",
+          "action_type": "ENTER_SETTINGS",
+          "sub_menu_id": "PRINT_DRIVER1_MENU",
+          "required_card": "driver1"
+        },
+        {
+          "id": "M_PRINT_DRIVER2",
+          "text": "výtisk řidič 2",
+          "display_icon": "2",
+          "action_type": "ENTER_SETTINGS",
+          "sub_menu_id": "PRINT_DRIVER2_MENU",
+          "required_card": "driver2"
+        },
+        {
+          "id": "M_PRINT_VEHICLE",
+          "text": "výtisk vozidlo",
+          "display_icon": "",
+          "action_type": "ENTER_SETTINGS",
+          "sub_menu_id": "PRINT_VEHICLE_MENU"
+        },
+        {
+          "id": "M_INPUT_DRIVER1",
+          "text": "zadání řidič 1",
+          "display_icon": "1",
+          "action_type": "ENTER_SETTINGS",
+          "sub_menu_id": "INPUT_DRIVER1_MENU",
+          "required_card": "driver1"
+        },
+        {
+          "id": "M_INPUT_DRIVER2",
+          "text": "zadání řidič 2",
+          "display_icon": "2",
+          "action_type": "ENTER_SETTINGS",
+          "sub_menu_id": "INPUT_DRIVER2_MENU",
+          "required_card": "driver2"
+        },
+        {
+          "id": "M_INPUT_VEHICLE",
+          "text": "zadání vozidlo",
+          "display_icon": "",
+          "action_type": "ENTER_SETTINGS",
+          "sub_menu_id": "INPUT_VEHICLE_MENU"
+        },
+        {
+          "id": "M_DISPLAY_DRIVER1",
+          "text": "displej řidič 1",
+          "display_icon": "1",
+          "action_type": "ENTER_SETTINGS",
+          "sub_menu_id": "DISPLAY_DRIVER1_MENU",
+          "required_card": "driver1"
+        },
+        {
+          "id": "M_DISPLAY_DRIVER2",
+          "text": "displej řidič 2",
+          "display_icon": "2",
+          "action_type": "ENTER_SETTINGS",
+          "sub_menu_id": "DISPLAY_DRIVER2_MENU",
+          "required_card": "driver2"
+        },
+        {
+          "id": "M_DISPLAY_VEHICLE",
+          "text": "displej vozidlo",
+          "display_icon": "",
+          "action_type": "ENTER_SETTINGS",
+          "sub_menu_id": "DISPLAY_VEHICLE_MENU"
+        },
+        {
+          "id": "M_CONTROL_DISPLAY",
+          "text": "Displej Kontrola",
+          "display_icon": "",
+          "action_type": "DISPLAY_INFO",
+          "sub_menu_id": "CONTROL_DISPLAY_MENU",
+          "required_card": "company"
+        },
+        {
+          "id": "M_TOLL_MENU",
+          "text": "menu Mýtné",
+          "display_icon": "",
+          "action_type": "ENTER_SETTINGS",
+          "sub_menu_id": "TOLL_MENU",
+          "optional": true,
+          "required_card": "driver1"
+        }
+      ]
+    },
+    "print_driver1_menu": {
+      "id": "PRINT_DRIVER1_MENU",
+      "parent_id": "M_PRINT_DRIVER1",
+      "items": [
+        {
+          "id": "PD1_24H_DAY",
+          "text": "24h den-tisk",
+          "display_icon": "24h",
+          "action_type": "PRINT_REPORT",
+          "sub_menu_id": null
+        },
+        {
+          "id": "PD1_EVENTS",
+          "text": "událost",
+          "display_icon": "!x",
+          "action_type": "PRINT_REPORT",
+          "sub_menu_id": null
+        },
+        {
+          "id": "PD1_ACTIVITIES",
+          "text": "aktivity",
+          "display_icon": "",
+          "action_type": "PRINT_REPORT",
+          "sub_menu_id": null
+        }
+      ]
+    },
+    "print_driver2_menu": {
+      "id": "PRINT_DRIVER2_MENU",
+      "parent_id": "M_PRINT_DRIVER2",
+      "items": [
+        {
+          "id": "PD2_24H_DAY",
+          "text": "24h den-tisk",
+          "display_icon": "24h",
+          "action_type": "PRINT_REPORT",
+          "sub_menu_id": null
+        },
+        {
+          "id": "PD2_EVENTS",
+          "text": "událost",
+          "display_icon": "!x",
+          "action_type": "PRINT_REPORT",
+          "sub_menu_id": null
+        },
+        {
+          "id": "PD2_ACTIVITIES",
+          "text": "aktivity",
+          "display_icon": "",
+          "action_type": "PRINT_REPORT",
+          "sub_menu_id": null
+        }
+      ]
+    },
+    "print_vehicle_menu": {
+      "id": "PRINT_VEHICLE_MENU",
+      "parent_id": "M_PRINT_VEHICLE",
+      "items": [
+        {
+          "id": "PV_24H_DAY",
+          "text": "24h den-tisk",
+          "display_icon": "24h",
+          "action_type": "PRINT_REPORT",
+          "sub_menu_id": null
+        },
+        {
+          "id": "PV_EVENTS",
+          "text": "událost",
+          "display_icon": "!x",
+          "action_type": "PRINT_REPORT",
+          "sub_menu_id": null
+        },
+        {
+          "id": "PV_OVERSPEED",
+          "text": "vys.rychlost",
+          "display_icon": "",
+          "action_type": "PRINT_REPORT",
+          "sub_menu_id": null
+        },
+        {
+          "id": "PV_TECH_DATA",
+          "text": "tech. data",
+          "display_icon": "",
+          "action_type": "PRINT_REPORT",
+          "sub_menu_id": null
+        },
+        {
+          "id": "PV_CARDS",
+          "text": "Karty",
+          "display_icon": "",
+          "action_type": "PRINT_REPORT",
+          "sub_menu_id": null
+        },
+        {
+          "id": "PV_V_DIAGRAM",
+          "text": "v-diagram",
+          "display_icon": "v",
+          "action_type": "PRINT_REPORT",
+          "sub_menu_id": null
+        },
+        {
+          "id": "PV_D1D2_STATUS",
+          "text": "status D1/D2",
+          "display_icon": "D",
+          "action_type": "PRINT_REPORT",
+          "sub_menu_id": null,
+          "optional": true
+        },
+        {
+          "id": "PV_V_PROFILE",
+          "text": "v-profil",
+          "display_icon": "%v",
+          "action_type": "PRINT_REPORT",
+          "sub_menu_id": null,
+          "optional": true
+        },
+        {
+          "id": "PV_N_PROFILE",
+          "text": "n-profil",
+          "display_icon": "%n",
+          "action_type": "PRINT_REPORT",
+          "sub_menu_id": null,
+          "optional": true
+        }
+      ]
+    },
+    "input_driver1_menu": {
+      "id": "INPUT_DRIVER1_MENU",
+      "parent_id": "M_INPUT_DRIVER1",
+      "items": [
+        {
+          "id": "ID1_DEPARTURE_COUNTRY",
+          "text": "výchozí země",
+          "display_icon": "",
+          "action_type": "INPUT_DATA",
+          "sub_menu_id": null,
+          "required_input": "country_code"
+        },
+        {
+          "id": "ID1_DESTINATION_COUNTRY",
+          "text": "cílová země",
+          "display_icon": "",
+          "action_type": "INPUT_DATA",
+          "sub_menu_id": null,
+          "required_input": "country_code"
+        },
+        {
+          "id": "ID1_SETTINGS",
+          "text": "Nastavení",
+          "display_icon": "?",
+          "action_type": "ENTER_SETTINGS",
+          "sub_menu_id": "SETTINGS_DRIVER1_MENU"
+        }
+      ]
+    },
+    "input_driver2_menu": {
+      "id": "INPUT_DRIVER2_MENU",
+      "parent_id": "M_INPUT_DRIVER2",
+      "items": [
+        {
+          "id": "ID2_DEPARTURE_COUNTRY",
+          "text": "výchozí země",
+          "display_icon": "",
+          "action_type": "INPUT_DATA",
+          "sub_menu_id": null,
+          "required_input": "country_code"
+        },
+        {
+          "id": "ID2_DESTINATION_COUNTRY",
+          "text": "cílová země",
+          "display_icon": "",
+          "action_type": "INPUT_DATA",
+          "sub_menu_id": null,
+          "required_input": "country_code"
+        },
+        {
+          "id": "ID2_SETTINGS",
+          "text": "Nastavení",
+          "display_icon": "?",
+          "action_type": "ENTER_SETTINGS",
+          "sub_menu_id": "SETTINGS_DRIVER2_MENU"
+        }
+      ]
+    },
+    "input_vehicle_menu": {
+      "id": "INPUT_VEHICLE_MENU",
+      "parent_id": "M_INPUT_VEHICLE",
+      "items": [
+        {
+          "id": "IV_OUT_START",
+          "text": "OUT začátek",
+          "display_icon": "OUT",
+          "action_type": "TOGGLE_MODE",
+          "sub_menu_id": null
+        },
+        {
+          "id": "IV_OUT_END",
+          "text": "OUT konec",
+          "display_icon": "OUT",
+          "action_type": "TOGGLE_MODE",
+          "sub_menu_id": null
+        },
+        {
+          "id": "IV_FERRY_START",
+          "text": "začátek Trajekt/Vlak",
+          "display_icon": "",
+          "action_type": "TOGGLE_MODE",
+          "sub_menu_id": null
+        },
+        {
+          "id": "IV_FERRY_END",
+          "text": "konec Trajekt/Vlak",
+          "display_icon": "",
+          "action_type": "TOGGLE_MODE",
+          "sub_menu_id": null
+        },
+        {
+          "id": "IV_LOAD_UNLOAD",
+          "text": "nalož./vylož.",
+          "display_icon": "",
+          "action_type": "INPUT_DATA",
+          "sub_menu_id": null,
+          "required_input": "load_type"
+        },
+        {
+          "id": "IV_LOCAL_TIME",
+          "text": "místní čas",
+          "display_icon": "",
+          "action_type": "INPUT_DATA",
+          "sub_menu_id": null,
+          "required_input": "time_offset"
+        },
+        {
+          "id": "IV_COMPANY_TIME",
+          "text": "čas majitel",
+          "display_icon": "",
+          "action_type": "INPUT_DATA",
+          "sub_menu_id": null,
+          "required_input": "time_offset"
+        },
+        {
+          "id": "IV_LICENSE_CODE",
+          "text": "Licenční kód",
+          "display_icon": "$",
+          "action_type": "INPUT_DATA",
+          "sub_menu_id": null,
+          "required_input": "license_code"
+        },
+        {
+          "id": "IV_WEIGHT",
+          "text": "hmotnost",
+          "display_icon": "",
+          "action_type": "INPUT_DATA",
+          "sub_menu_id": null,
+          "required_input": "weight"
+        },
+        {
+          "id": "IV_CENTRAL_LANGUAGE",
+          "text": "centr. jazyk",
+          "display_icon": "",
+          "action_type": "INPUT_DATA",
+          "sub_menu_id": null,
+          "required_input": "language",
+          "optional": true
+        },
+        {
+          "id": "IV_DTCO_VERSION",
+          "text": "verze DTCO",
+          "display_icon": "",
+          "action_type": "DISPLAY_INFO",
+          "sub_menu_id": null
+        },
+        {
+          "id": "IV_IN_VEHICLE_CONNECTION",
+          "text": "In-Vehicle Připojení",
+          "display_icon": "",
+          "action_type": "ENTER_SETTINGS",
+          "sub_menu_id": null,
+          "required_card": "company",
+          "optional": true
+        },
+        {
+          "id": "IV_BLUETOOTH_DEVICE_MGMT",
+          "text": "Bluetooth Správa zařízení",
+          "display_icon": "",
+          "action_type": "ENTER_SETTINGS",
+          "sub_menu_id": null,
+          "required_card": "company",
+          "optional": true
+        },
+        {
+          "id": "IV_BLUETOOTH_CONFIG",
+          "text": "Bluetooth Konfigurace",
+          "display_icon": "",
+          "action_type": "ENTER_SETTINGS",
+          "sub_menu_id": null,
+          "required_card": "company",
+          "optional": true
+        },
+        {
+          "id": "IV_SENSOR_SERIAL",
+          "text": "Sériové číslo snímače",
+          "display_icon": "",
+          "action_type": "DISPLAY_INFO",
+          "sub_menu_id": null,
+          "required_card": "company"
+        }
+      ]
+    },
+    "settings_driver1_menu": {
+      "id": "SETTINGS_DRIVER1_MENU",
+      "parent_id": "ID1_SETTINGS",
+      "items": [
+        {
+          "id": "SD1_BLUETOOTH",
+          "text": "Bluetooth",
+          "display_icon": "",
+          "action_type": "ENTER_SETTINGS",
+          "sub_menu_id": null
+        },
+        {
+          "id": "SD1_VARIOUS",
+          "text": "Různé",
+          "display_icon": "",
+          "action_type": "ENTER_SETTINGS",
+          "sub_menu_id": null
+        }
+      ]
+    },
+    "settings_driver2_menu": {
+      "id": "SETTINGS_DRIVER2_MENU",
+      "parent_id": "ID2_SETTINGS",
+      "items": [
+        {
+          "id": "SD2_BLUETOOTH",
+          "text": "Bluetooth",
+          "display_icon": "",
+          "action_type": "ENTER_SETTINGS",
+          "sub_menu_id": null
+        },
+        {
+          "id": "SD2_VARIOUS",
+          "text": "Různé",
+          "display_icon": "",
+          "action_type": "ENTER_SETTINGS",
+          "sub_menu_id": null
+        }
+      ]
+    },
+    "display_driver1_menu": {
+      "id": "DISPLAY_DRIVER1_MENU",
+      "parent_id": "M_DISPLAY_DRIVER1",
+      "items": [
+        {
+          "id": "DD1_24H_DAY",
+          "text": "24h den",
+          "display_icon": "24h",
+          "action_type": "DISPLAY_INFO",
+          "sub_menu_id": null
+        },
+        {
+          "id": "DD1_EVENTS",
+          "text": "událost",
+          "display_icon": "!x",
+          "action_type": "DISPLAY_INFO",
+          "sub_menu_id": null
+        }
+      ]
+    },
+    "display_driver2_menu": {
+      "id": "DISPLAY_DRIVER2_MENU",
+      "parent_id": "M_DISPLAY_DRIVER2",
+      "items": [
+        {
+          "id": "DD2_24H_DAY",
+          "text": "24h den",
+          "display_icon": "24h",
+          "action_type": "DISPLAY_INFO",
+          "sub_menu_id": null
+        },
+        {
+          "id": "DD2_EVENTS",
+          "text": "událost",
+          "display_icon": "!x",
+          "action_type": "DISPLAY_INFO",
+          "sub_menu_id": null
+        }
+      ]
+    },
+    "display_vehicle_menu": {
+      "id": "DISPLAY_VEHICLE_MENU",
+      "parent_id": "M_DISPLAY_VEHICLE",
+      "items": [
+        {
+          "id": "DV_24H_DAY",
+          "text": "24h den",
+          "display_icon": "24h",
+          "action_type": "DISPLAY_INFO",
+          "sub_menu_id": null
+        }
+      ]
+    }
+  }
+}

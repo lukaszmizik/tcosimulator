@@ -1,0 +1,101 @@
+> Struktura nabídky (pøehled)
+
+> výtisk 4)
+(14)(18) øidiè 1 
+|--- 24h(14)(18) den-tisk
+|--- (27)(34)(14)(18) událost
+|--- (44)(14)(18) aktivity
+
+> výtisk 5) 
+(14)(18) øidiè 2 
+|--- 24h(14)(18) den-tisk
+|--- (27)(34)(14)(18) událost
+|--- (44)(14)(18) aktivity
+
+> výtisk 
+(24)(18) vozidlo
+|--- 24h(24)(18) den-tisk
+|--- (27)(34)(24)(18) událost
+|--- (39)(39)(18) vys.rychlost
+|--- (5)(17)(18) tech. data
+|--- (6)(14)(17)(18) Karty
+|--- (44)v(18) v-diagram
+|--- (44)D(18) status D1/D2 1)
+|--- %v(18) v-profil 1)
+|--- %n(18) n-profil 1)
+
+> zadání 
+(19) øidiè 1
+|--- (37)(36) výchozí zemì
+|--- (41)(37) cílová zemì
+|--- ?(19) Nastavení
+|--- (1) Bluetooth
+|--- Rùzné
+
+> zadání 
+(19) øidiè 2
+|--- (37)(36) výchozí zemì
+|--- (41)(37) cílová zemì
+|--- ?(19) Nastavení
+|--- (1) Bluetooth
+|--- Rùzné
+
+> zadání 
+(24)(42) vozidlo
+|--- OUT(59) zacátek
+|--- (59)OUT konec
+|--- (49)(59) zaèátek
+|--- (59)(49) konec
+|--- (54) nalož./vylož.
+ |--- (54) nalož./vylož.
+ |--- (52) nalož
+ |--- (53) vylož
+|--- (37)(17) místní èas
+|--- (3)(17) èas majitel
+|--- (21) Licenèní kód
+|--- centr. jazyk 1)
+|--- (1)(24)In-Vehicle Pøipojení 2)
+|--- (1) Bluetooth Správa zaøízení 3)
+|--- (1) BluetoothKonfigurace 3)
+
+> displej 4) 
+(14)(20) øidiè 1 
+|--- 24h(14)(20) den
+|--- (27)(34)(14)(20) událost
+
+> displej 5) 
+(14)(20) øidiè 2 
+|--- 24h(14)(20) den
+|--- (27)(34)(14)(20) událost
+
+> displej 
+(24)(20) vozidlo
+|--- 24h(24)(20) den
+|--- (27)(34)(24)(20) událost
+|--- (39)(39)(20) vys.rychlost
+|--- (5)(17)(20) tech. data
+|--- (6)(14)(17)(20) Karty
+|--- (3)(14) majitel
+|--- (24)(33) hmotnost
+|--- (47)(6) verze DTCO
+
+> displej 6)
+Kontrola 
+|--- (23) Sériové èíslo snímaèe
+
+> menu 7) 
+(32) Mýtné
+
+legenda (kdy se tato položka zobrazí)
+1) Volitelnì (u nás ano)
+2) Nastavení pouze s kartou majitele
+3) Funkce nabídky s vloženou kartou
+majitele
+4) Pouze s kartou øidièe zasunutou
+v šachtì pro kartu 1
+5) Pouze s kartou øidièe zasunutou
+v šachtì pro kartu 2
+6) Pouze s vloženou kontrolní kartou
+7) Pouze se zasunutým linkem VDO
+
+

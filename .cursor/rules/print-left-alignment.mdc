@@ -1,0 +1,25 @@
+---
+description: Zarovnání levého okraje textu ve výtiscích tachografu
+globs: **/PrintTemplates.tsx
+alwaysApply: false
+---
+
+# Levé zarovnání ve výtiscích (PrintTemplates)
+
+Každý nový řádek zarovnaný vlevo musí začínat na stejné pozici jako L4, L5, L6 v `PrintSection1Local` – tedy na levém okraji centrovaného bloku pomlček (L1, L7).
+
+## Výpočet pozice
+
+```typescript
+const leftEdgeX = centerX - (targetWidth * MONOSPACE_CHAR_WIDTH) / 2
+```
+
+Používej `leftEdgeX` z props (pokud je předán) nebo vypočítej ho stejně jako v `PrintSection1Local`.
+
+## Příklad
+
+```tsx
+<text x={leftEdgeX} y={y} textAnchor="start" ...>
+  {obsah}
+</text>
+```

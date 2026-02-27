@@ -1,0 +1,1985 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "TachoFont";
+  src: url("/fonts/tacho_symbol.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "SymbolTacho1";
+  src: url("/fonts/tachosymbol1.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+
+/* Globální třída pro symboly z tachosymbol1.ttf (parser (číslo) → znak) */
+.tacho-icon {
+  font-family: "SymbolTacho1", sans-serif !important;
+  text-transform: none;
+}
+
+@font-face {
+  font-family: "Doto";
+  src: url("/fonts/doto.ttf") format("truetype");
+  font-weight: 900; /* Black 900 varianta (nejtučnější) */
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "PixeloidSans";
+  src:
+    url("/ttf/pixeloidsans/PixeloidSans.ttf") format("truetype"),
+    url("/ttf/PixeloidSans.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "CasioFX9860";
+  src: url("/ttf/casio/casio-fx-9860gii.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+
+/* VDO DTCO 4.1 – vzhled tachografu */
+:root {
+  --panel-color: #2c2c2c;
+  --lcd-bg: #001a33;
+  --lcd-text: #8ba3c7;
+  --btn-gray: #3a3a3a;
+  --btn-border: #111;
+}
+
+body {
+  background-color: #444;
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.vdo-main-panel {
+  width: 800px;
+  height: 260px;
+  background: var(--panel-color);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  border: 4px solid #1a1a1a;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.vdo-top-section {
+  display: flex;
+  gap: 20px;
+  height: 160px;
+}
+
+.display-area {
+  width: 420px;
+  background: #1a1a1a;
+  padding: 15px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 1px solid #333;
+}
+
+.lcd-screen {
+  background-color: var(--lcd-bg);
+  height: 100px;
+  border-radius: 4px;
+  border: 2px solid #000;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+  overflow: hidden;
+  box-sizing: border-box; /* výška 100px = celková, aby výpočet paddingu seděl */
+}
+
+/* Ruská verze: displej používá Casio FX 9860GII */
+.app-root[data-lang="ru"] .lcd-screen,
+.app-root[data-lang="ru"] .lcd-two-rows,
+.app-root[data-lang="ru"] .lcd-menu-two-rows,
+.app-root[data-lang="ru"] .lcd-menu-item,
+.app-root[data-lang="ru"] .lcd-menu-item-text,
+.app-root[data-lang="ru"] .lcd-row-menu-title,
+.app-root[data-lang="ru"] .lcd-menu-title-inline,
+.app-root[data-lang="ru"] .lcd-rotate-spinner,
+.app-root[data-lang="ru"] .lcd-digital-time,
+.app-root[data-lang="ru"] .lcd-welcome-l1-symbols,
+.app-root[data-lang="ru"] .lcd-welcome-l1-slot,
+.app-root[data-lang="ru"] .lcd-welcome-l2-left,
+.app-root[data-lang="ru"] .lcd-welcome-l2-right,
+.app-root[data-lang="ru"] .lcd-row-sides,
+.app-root[data-lang="ru"] .lcd-row-center,
+.app-root[data-lang="ru"] .lcd-vdo-counter .lcd-row-vdo,
+.app-root[data-lang="ru"] .lcd-inline-symbols,
+.app-root[data-lang="ru"] .lcd-l2-editor-content {
+  font-family: "CasioFX9860", "Doto", "Courier New", "Lucida Console", monospace !important;
+  font-weight: 300; /* tenčí varianta */
+}
+
+/* Symboly (ikony aktivit) – vždy 28px, nezávisle na velikosti textu displeje */
+.lcd-screen .lcd-icon,
+.lcd-screen .tacho-icon,
+.lcd-menu-two-rows .lcd-icon,
+.lcd-menu-two-rows .tacho-icon {
+  font-size: 28px !important;
+}
+
+/* Vypnuté zapalování – displej mírně ztmavený (použito i pro Standby) */
+.lcd-screen-off {
+  opacity: 0.5;
+  filter: brightness(0.7);
+}
+
+/* Standby režim: čas, 0 km/h, piktogramy aktivit, symboly karet, km – vizuální pohasnutí přes .lcd-screen-off */
+
+/* Dvouřádkový displej – jednotný styl pro všechny obrazovky (provozní, menu, průvodce vložením). */
+.lcd-two-rows {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+  flex: 1;
+  box-sizing: border-box;
+  padding: 3px 12px 31px 12px;
+  font-size: 20px;
+  color: #ffffff;
+  font-family: "CasioFX9860", "Doto", "Courier New", "Lucida Console", monospace;
+  font-weight: normal;
+  gap: 6px;
+}
+
+/* Centrální nastavení – v .lcd-screen má vždy přednost (žádná obrazovka ho nesmí přebít). */
+.lcd-screen > .lcd-two-rows {
+  padding: 3px 12px 31px 12px;
+}
+.lcd-screen > .lcd-two-rows .lcd-row:last-child {
+  margin-top: -7px;
+}
+
+/* Spodní řádek o stejný kousek výš (jako při posunu obou řádků) – fallback pokud není .lcd-screen předek */
+.lcd-two-rows .lcd-row:last-child {
+  margin-top: -7px;
+}
+
+.lcd-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  width: 100%;
+  height: 42px;
+  min-height: 42px;
+  flex-shrink: 0; /* řádky se nesmí zmenšit – aby L2 nezmizel pod okrajem */
+  gap: 6px;
+}
+
+/* Řádky bez středního sloupce – flex, vlevo/vpravo beze změny */
+.lcd-row:not(:has(.lcd-row-center)) {
+  display: flex;
+  grid-template-columns: unset;
+  justify-content: space-between;
+}
+
+/* Řádek upozornění: symboly a text těsně za sebou (jízda bez karty aj.) */
+.lcd-row.lcd-row-warning-inline {
+  justify-content: flex-start;
+  gap: 0; /* parseSymbols vrací pole prvků – každý by byl flex položka; gap: 0 = symboly bez rozestupu */
+}
+
+/* Text zarovnaný doleva, bez roztažení na celou šířku (výběr data 24h den-tisk aj.) */
+.lcd-row.lcd-row-left {
+  justify-content: flex-start;
+  gap: 0; /* symboly z parseSymbols musí být těsně vedle sebe, ne s mezery mezi každým prvkem */
+}
+
+/* Wrapper pro symboly+text v řádku – obsah teče inline (jako v menu), ne jako flex položky */
+.lcd-inline-symbols {
+  display: inline;
+}
+
+
+/* Uvítací obrazovka po vložení karty – L1 a L2 rozvržení */
+.lcd-welcome {
+  width: 100%;
+}
+.lcd-welcome-l1 {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0;
+  width: 100%;
+  min-width: 0;
+}
+.lcd-welcome-l1-slot {
+  flex-shrink: 0;
+}
+.lcd-welcome-l1-symbols {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  flex-shrink: 0;
+  margin-right: 0.25em;
+}
+.lcd-welcome-l1-symbols .lcd-icon {
+  margin-right: 0;
+}
+.lcd-welcome-l1-name {
+  flex: 1;
+  min-width: 0;
+  margin-left: 0.25em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lcd-welcome-l2 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 0.5em;
+  min-width: 0;
+}
+.lcd-welcome-l2-left,
+.lcd-welcome-l2-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  flex-shrink: 0;
+}
+.lcd-welcome-l2-left .lcd-icon {
+  margin-left: 0;
+}
+
+/* VDO Counter – L1/L2 levý a pravý blok */
+.lcd-row-vdo .lcd-row-left,
+.lcd-row-vdo .lcd-row-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.lcd-row-vdo .lcd-row-right {
+  margin-left: auto;
+}
+
+.lcd-row-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.lcd-row-sides {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* Režim OUT – text "OUT" na L2 vlevo místo symbolů – stejná úroveň jako symboly */
+.lcd-row-sides .lcd-out-text {
+  font-family: "CasioFX9860", "Doto", "Courier New", monospace;
+  font-weight: normal;
+  font-size: inherit;
+  color: inherit;
+  display: inline-block;
+  white-space: nowrap;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+/* Pravý sloupec v grid řádku – zarovnání obsahu doprava */
+.lcd-row > .lcd-row-sides:last-of-type {
+  justify-content: flex-end;
+}
+
+/* Režim osádky: piktogramy obou řidičů vedle sebe, vizuální indikace */
+.lcd-multi-manning .lcd-multi-manning-label {
+  font-size: 0.7em;
+  opacity: 0.9;
+  justify-content: center;
+}
+
+/* Sekvence vložení karty (1M) – obsah řádku data/čas (flex jen uvnitř řádku, řádek má standardní lcd-row-left) */
+.lcd-l2-editor-content {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  gap: 0;
+}
+.lcd-l2-symbol {
+  margin-right: 1.5rem;
+  flex-shrink: 0;
+}
+.lcd-l2-num {
+  min-width: 2.2ch;
+  text-align: center;
+  flex-shrink: 0;
+}
+.lcd-l2-year {
+  min-width: 4.4ch;
+}
+.lcd-l2-sep {
+  flex-shrink: 0;
+  margin: 0 0.05rem;
+}
+.lcd-l2-space {
+  width: 0.5rem;
+  flex-shrink: 0;
+}
+.lcd-l2-space-big {
+  width: 1.2rem;
+}
+.lcd-blink-hide {
+  visibility: hidden;
+}
+
+/* Znak "?" (neznámá činnost) v průvodci – stejný font jako displej */
+.lcd-display-font {
+  font-family: "CasioFX9860", "Doto", "Courier New", "Lucida Console", monospace;
+  font-weight: normal;
+}
+.lcd-l2-country-text {
+  font-family: "CasioFX9860", "Doto", "Courier New", "Lucida Console", monospace;
+  font-weight: normal;
+}
+/* Průvodce vložením karty – výška řádku stejná jako všude (42px) */
+.lcd-card-insertion .lcd-row {
+  line-height: 1.4;
+}
+
+.lcd-loading-row {
+  justify-content: flex-start;
+  padding-left: 0;
+  margin-left: 0;
+}
+.lcd-loading-bargraf {
+  display: flex;
+  gap: 2px;
+  width: fit-content;
+}
+.lcd-loading-bargraf .lcd-bargraf-empty {
+  visibility: hidden;
+}
+.lcd-loading-bar {
+  width: 80%;
+  height: 8px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.lcd-loading-fill {
+  height: 100%;
+  background: #fff;
+  transition: width 0.1s linear;
+}
+
+.lcd-icon {
+  font-family: "TachoFont", sans-serif;
+  font-size: 28px;
+  line-height: 1;
+}
+
+.display-controls {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+.btn-nav {
+  width: 85px;
+  height: 32px;
+  background: var(--btn-gray);
+  color: #ccc;
+  border: 1px solid var(--btn-border);
+  border-radius: 4px;
+  font-weight: bold;
+  box-shadow: 0 3px 0 #000;
+  cursor: pointer;
+}
+
+.btn-nav:hover {
+  background: #4a4a4a;
+}
+
+.btn-nav:active {
+  box-shadow: 0 1px 0 #000;
+  transform: translateY(2px);
+}
+
+.printer-bay {
+  flex-grow: 1;
+  background: #222;
+  border-radius: 8px;
+  border: 2px solid #111;
+  position: relative;
+  overflow: hidden;
+}
+
+.printer-door {
+  position: absolute;
+  top: 10%;
+  left: 5%;
+  right: 5%;
+  bottom: 10%;
+  border: 1px solid #333;
+  background: linear-gradient(to bottom, #252525, #1a1a1a);
+  border-radius: 4px;
+}
+
+.vdo-bottom-section {
+  margin-top: auto;
+  padding-top: 10px;
+}
+
+.card-slot-row {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.slot-line {
+  flex-grow: 1;
+  height: 8px;
+  background: #111;
+  border-radius: 4px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.eject-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-eject {
+  width: 65px;
+  height: 30px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--btn-gray);
+  color: white;
+  border: 1px solid var(--btn-border);
+  border-radius: 4px;
+  font-size: 14px;
+  box-shadow: 0 3px 0 #000;
+  cursor: pointer;
+}
+
+.btn-eject-icon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  line-height: 1;
+  color: white;
+  filter: grayscale(1) brightness(0) invert(1);
+  /* 1px vnější obrys bílou barvou */
+  text-shadow:
+    -1px -1px 0 white,
+    -1px 0 0 white,
+    -1px 1px 0 white,
+    0 -1px 0 white,
+    0 1px 0 white,
+    1px -1px 0 white,
+    1px 0 0 white,
+    1px 1px 0 white;
+}
+
+.btn-eject-num {
+  position: relative;
+  z-index: 1;
+  font-weight: 900;
+  font-size: 12px;
+  color: #2c2c2c;
+  top: 2px;
+}
+
+.btn-eject:hover {
+  background: #4a4a4a;
+}
+
+.btn-eject:active {
+  box-shadow: 0 1px 0 #000;
+  transform: translateY(2px);
+}
+
+/* Sloupec přístroje – fixní šířka, rezerva vpravo pro infoboxy (nepřekrývají přístroj) */
+.device-column {
+  flex-shrink: 0;
+  padding-right: 320px;
+}
+
+.vdo-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.vdo-labels {
+  text-align: center;
+  color: #888;
+  margin-top: 15px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+/* Menu – univerzální styl řádků jako na ostatních obrazovkách (žádný vlastní padding/margin). */
+.lcd-menu-two-rows {
+  font-size: 20px;
+  font-family: "CasioFX9860", "Doto", "Courier New", "Lucida Console", monospace;
+  font-weight: normal;
+  color: #ffffff;
+  justify-content: flex-start;
+}
+
+.lcd-menu-two-rows .lcd-row {
+  justify-content: flex-start;
+}
+
+.lcd-row-menu-title {
+  font-size: 20px;
+  color: #ffffff;
+}
+
+.lcd-menu-title-inline {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.lcd-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 6px; /* pouze vodorovně – svislé řídí .lcd-row, univerzální styl */
+  border-radius: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  color: #ffffff;
+  font-family: "CasioFX9860", "Doto", "Courier New", "Lucida Console", monospace;
+  font-size: 20px;
+}
+
+.lcd-menu-item-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+/* Animace rotující čáry při vzdáleném stahování dat */
+.lcd-rotate-spinner {
+  display: inline-block;
+  margin-left: 2px;
+  font-family: "CasioFX9860", "Doto", "Courier New", monospace;
+}
+
+/* 1M vstup – doplnit? ano/ne: nabídka zarovnaná vpravo */
+.lcd-decision-1m-row {
+  justify-content: space-between;
+}
+
+/* Jednotné blikání na displeji – položky menu, výběr země, upozornění, ano/ne */
+.lcd-menu-item-selected,
+.lcd-country-code-blink,
+.lcd-card-warning-blink,
+.lcd-decision-1m-blink {
+  animation: lcd-blink 1s step-start infinite;
+}
+
+/* Blikání – 0,5 s zapnuto / 0,5 s vypnuto */
+@keyframes lcd-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Šachty – podélné tlusté čáry vlevo od tlačítka 1 a vpravo od tlačítka 2 (drop zóny pro karty) */
+.slot-shaft-line {
+  flex-grow: 1;
+  min-width: 24px;
+  height: 12px;
+  background: #111;
+  border-radius: 4px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.8);
+  transition: background 0.15s, box-shadow 0.15s;
+}
+
+.slot-drop-zone {
+  cursor: default;
+}
+
+.slot-drop-zone-highlight {
+  background: rgba(80, 200, 80, 0.5);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5), 0 0 12px rgba(80, 200, 80, 0.6);
+}
+
+/* Šachty při vypnutém zapalování – červené podkreslení */
+.slot-shaft-line-ignition-off {
+  border-bottom: 3px solid #c00;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.slot-drop-zone-occupied {
+  opacity: 0.6;
+  pointer-events: none;
+  border-bottom: 2px solid rgba(72, 180, 72, 0.7);
+}
+
+/* Posuvník rychlosti při vypnutém zapalování – zablokovaný (nelze uchopit myší) */
+.control-slider-disabled,
+.control-slider:disabled {
+  pointer-events: none;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Karty při vypnutém zapalování – nelze táhnout */
+.control-card-dragging-disabled {
+  cursor: not-allowed;
+  opacity: 0.85;
+}
+
+/* Ovládací panel pod přístrojem */
+.control-panel {
+  margin-top: 24px;
+  padding: 20px;
+  background: #333;
+  border-radius: 12px;
+  border: 2px solid #222;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: flex-start;
+  width: 100%;
+  max-width: 800px;
+  box-sizing: border-box;
+}
+
+.control-panel-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Jeden řádek: Karty, posuvník rychlosti a vpravo nastavení času (Hodiny, Minuty, ✓) ve stejné úrovni */
+.control-panel-row-main {
+  flex-basis: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: nowrap;
+}
+
+.control-panel-row-main > .control-panel-section {
+  flex: 0 0 auto;
+}
+
+/* Časový blok vpravo na stejné úrovni jako karty a posuvník */
+.control-panel-row-main > .control-panel-row-time-apply {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+/* Blok nastavení času: Hodiny, Minuty a tlačítko ✓ */
+.control-panel-row-time-apply {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 24px;
+}
+
+.control-panel-row-time-apply .control-panel-section-time {
+  flex: 0 0 auto;
+}
+
+.control-panel-row-time-apply .time-apply-section {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+}
+
+.time-apply-section {
+  display: flex;
+  align-items: center;
+}
+
+/* Sekce pro zapalování – tlačítka vlevo */
+.ignition-section {
+  width: 100%;
+  align-items: flex-start;
+}
+
+.control-panel-label {
+  font-size: 12px;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.control-panel-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #ccc;
+  cursor: pointer;
+  user-select: none;
+}
+.control-panel-checkbox-label input[type="checkbox"] {
+  accent-color: #3d6cb9;
+  cursor: pointer;
+}
+
+.cards-row {
+  display: flex;
+  gap: 16px;
+}
+
+.control-card {
+  width: 100px;
+  height: 64px;
+  background: linear-gradient(145deg, #3d6cb9, #2a4d8a);
+  border: 2px solid #1a3a6a;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  cursor: grab;
+  user-select: none;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.control-card:active {
+  cursor: grabbing;
+}
+
+.control-card-inserted {
+  background: #2a2a2a;
+  border-color: #444;
+  color: #888;
+  cursor: default;
+}
+
+.control-slider {
+  width: 200px;
+  height: 8px;
+  accent-color: #3d6cb9;
+}
+
+/* Rychlost nad 90 km/h – posuvník červený */
+.control-slider.control-slider-over-90 {
+  accent-color: #c62828;
+}
+
+/* Černý čtvereček s reflexní zelenou – hodiny / minuty */
+.time-display-box {
+  width: 48px;
+  height: 48px;
+  background: #000;
+  border: 1px solid #333;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: bold;
+  color: #00ff48;
+  text-shadow: 0 0 8px #00ff48, 0 0 16px rgba(0, 255, 72, 0.6);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Sekce Hodiny / Minuty: vlevo blok (nápis + box), vpravo tlačítka − a + pod sebou */
+.control-panel-section-time {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.time-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.time-buttons-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.control-btn-time {
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
+  padding: 0;
+}
+
+.control-btn-time:disabled,
+.control-btn-time-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: #2a2a2a;
+  color: #888;
+}
+
+.control-btn-time:disabled:hover,
+.control-btn-time-disabled:hover {
+  background: #2a2a2a;
+}
+
+.control-buttons-row {
+  display: flex;
+  gap: 8px;
+}
+
+.control-btn {
+  width: 44px;
+  height: 44px;
+  background: var(--btn-gray);
+  border: 1px solid var(--btn-border);
+  border-radius: 6px;
+  color: #eee;
+  font-size: 22px;
+  font-weight: bold;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+}
+
+.control-btn:hover {
+  background: #4a4a4a;
+}
+
+.control-btn:active {
+  transform: scale(0.97);
+}
+
+/* Potvrzující tlačítko (✓) – šířka odvozená od jednoho znaku */
+.control-btn-apply {
+  width: 2.25em;
+  min-width: 2.25em;
+  height: 2.25em;
+  padding: 0;
+  font-size: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+/* Tlačítka Start / Stop (zapalování) */
+.ignition-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.control-btn-reset {
+  min-width: 100px;
+  font-size: 14px;
+}
+
+.control-btn-simulate {
+  width: auto;
+  min-width: 180px;
+  font-size: 12px;
+  padding: 8px 12px;
+  white-space: normal;
+  line-height: 1.2;
+}
+
+.ignition-btn {
+  min-width: 90px;
+  height: 44px;
+  border-radius: 9999px;
+  border: 2px solid #111;
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  color: #f9fafb;
+  opacity: 0.7;
+  transition: background 0.15s ease, transform 0.1s ease, opacity 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ignition-btn.ignition-start {
+  background: #16a34a;
+}
+
+.ignition-btn.ignition-stop {
+  background: #991b1b;
+}
+
+.ignition-stop-wrapper {
+  position: relative;
+}
+
+.ignition-stop-overlay {
+  position: absolute;
+  inset: 0;
+  cursor: not-allowed;
+  border-radius: 9999px;
+}
+
+.ignition-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ignition-stop-toast {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  transform: translateX(-50%);
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #991b1b;
+  color: #fff;
+  font-size: 12px;
+  border-radius: 6px;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  animation: ignition-toast-fade 2.5s ease-out forwards;
+  pointer-events: none;
+  z-index: 10;
+}
+
+@keyframes ignition-toast-fade {
+  0%, 20% { opacity: 1; }
+  80%, 100% { opacity: 0; }
+}
+
+.ignition-btn.ignition-active {
+  opacity: 1;
+  box-shadow: 0 0 10px rgba(250, 250, 250, 0.6);
+}
+
+.ignition-btn:hover {
+  transform: translateY(-1px);
+}
+
+.ignition-btn:active {
+  transform: translateY(1px) scale(0.97);
+}
+
+/* ========== VÝTISKY – globální nastavení (stejný formát jako V-diagram) ========== */
+/* Hodnoty musí odpovídat Constants.ts: PRINT_FONT_SIZE (12), PRINT_FONT */
+:root {
+  --print-font-size: 12px;
+  --print-font-family: "Doto", "Courier New", "Lucida Console", monospace;
+  --print-paper-max-width: min(400px, 100vw - 40px);
+}
+
+/* Výtisky – overlay a tlačítko zavřít mimo papír */
+.print-driver1-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.print-overlay-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.95);
+  color: #333;
+  border: 1px solid #999;
+  border-radius: 50%;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.print-overlay-close:hover {
+  background: #fff;
+  color: #000;
+}
+
+/* Varování – duplicitní data na kartě */
+.duplicate-data-warning-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.duplicate-data-warning-window {
+  position: relative;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  padding: 28px 24px 24px 48px;
+  max-width: min(420px, 95vw);
+  margin: 16px;
+}
+
+.duplicate-data-warning-icon {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  width: 32px;
+  height: 32px;
+  font-size: 20px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.duplicate-data-warning-title {
+  margin: 0 0 20px;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: #333;
+}
+
+.duplicate-data-warning-close {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-family: inherit;
+  background: #1976d2;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.duplicate-data-warning-close:hover {
+  background: #1565c0;
+}
+
+.print-driver1-paper {
+  background: #fff;
+  color: #000;
+  font-family: var(--print-font-family);
+  font-size: var(--print-font-size);
+  max-width: var(--print-paper-max-width);
+  width: 90%;
+  max-height: 75vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 20px 24px;
+  border-radius: 2px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  border: 1px solid #ccc;
+}
+
+.print-driver1-content {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.print-driver1-date-header {
+  font-weight: bold;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #ccc;
+}
+
+.print-driver1-section {
+  margin-bottom: 14px;
+}
+
+.print-driver1-section strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.print-driver1-section div {
+  margin-left: 0;
+  line-height: 1.5;
+}
+
+.print-driver1-empty {
+  color: #666;
+  font-style: italic;
+}
+
+/* Výtisk V-diagram – jednotný font jako ostatní výtisky */
+.print-vdiagram-paper {
+  background: #fff;
+  color: #000;
+  font-family: var(--print-font-family);
+  font-size: var(--print-font-size);
+  font-weight: 800;
+  max-width: var(--print-paper-max-width);
+  width: 90%;
+  max-height: 75vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 16px 20px 20px;
+  border-radius: 2px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  border: 1px solid #ccc;
+}
+
+.print-vdiagram-header {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.print-vdiagram-svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  font-family: var(--print-font-family);
+  font-size: var(--print-font-size);
+  font-weight: 800;
+}
+
+.print-vdiagram-tick-label {
+  font-family: var(--print-font-family);
+  font-weight: 800;
+  font-size: var(--print-font-size);
+  fill: #000;
+}
+
+/* Osy X a Y – časové a rychlostní kotvy (font stejný jako datum nad grafem – nastaven inline v PrintTemplates) */
+.print-vdiagram-axis-time,
+.print-vdiagram-axis-speed {
+  font-weight: 800 !important;
+  font-size: var(--print-font-size) !important;
+  fill: #333 !important;
+}
+
+/* Papírová komponenta – tepelný papír 57 mm (PrintTemplates), jednotný font */
+.print-paper-strip {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  font-family: var(--print-font-family);
+  font-size: var(--print-font-size);
+}
+/* Stejná šířka obou SVG = stejné škálování viewBox = stejná velikost textu (včetně zoomu) */
+.print-driver1-paper .print-paper-strip {
+  width: 342px;
+  max-width: 100%;
+}
+.print-vdiagram-paper .print-vdiagram-svg {
+  width: 342px;
+  max-width: 100%;
+}
+.print-paper-strip text,
+.print-vdiagram-svg text {
+  font-size: var(--print-font-size) !important;
+}
+
+
+/* ========== GRAF PRACOVNÍHO TÝDNE ========== */
+.work-week-file-input-hidden {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.work-week-graph-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.work-week-graph-window {
+  position: relative;
+  background: #fff;
+  border-radius: 7px;
+  box-shadow: 0 7px 28px rgba(0, 0, 0, 0.25);
+  padding: 43px 22px 22px;
+  width: min(98vw, 1080px);
+  height: min(96vh, 810px);
+  max-height: 96vh;
+  max-width: 98vw;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.work-week-graph-close {
+  position: absolute;
+  top: 11px;
+  right: 11px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: #f0f0f0;
+  color: #333;
+  border: 1px solid #999;
+  border-radius: 50%;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.work-week-graph-close:hover {
+  background: #e0e0e0;
+}
+
+.work-week-graph-reset {
+  position: absolute;
+  top: 11px;
+  right: 50px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-family: inherit;
+  background: #f0f0f0;
+  color: #333;
+  border: 1px solid #999;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.work-week-graph-reset:hover {
+  background: #e0e0e0;
+}
+
+.work-week-graph-header {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.work-week-graph-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #111;
+  letter-spacing: 0.02em;
+}
+
+.work-week-graph-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.work-week-graph-nav-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-family: inherit;
+  border: 1px solid #999;
+  border-radius: 6px;
+  background: #f5f5f5;
+  color: #333;
+  cursor: pointer;
+}
+
+.work-week-graph-nav-btn:hover:not(:disabled) {
+  background: #e8e8e8;
+}
+
+.work-week-graph-nav-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.work-week-graph-nav-info {
+  font-size: 12px;
+  color: #666;
+}
+
+.work-week-graph-nav-calendar {
+  font-size: 14px;
+  font-weight: 600;
+  color: #222;
+  min-width: 180px;
+  text-align: center;
+}
+
+.work-week-graph-legend {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.work-week-graph-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.work-week-graph-legend-sample {
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+.work-week-graph-legend-label {
+  font-size: 16px;
+  color: #444;
+}
+
+.work-week-graph-legend-item .tacho-icon {
+  font-size: 24px;
+}
+
+.work-week-graph-legend-item .tacho-icon.tacho-icon-smaller {
+  font-size: 18px;
+}
+
+.work-week-graph-legend-summary {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.work-week-graph-legend-summary-label {
+  font-weight: 600;
+  color: #333;
+  margin-right: 8px;
+}
+
+.work-week-graph-legend-sum {
+  font-weight: 600;
+  color: #222;
+  margin-left: 2px;
+}
+
+.work-week-graph-legend-shift-length {
+  margin-left: 8px;
+}
+
+.work-week-graph-legend-shift-length-value {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(100, 149, 237, 0.15);
+  font-weight: 600;
+  color: #222;
+}
+
+.work-week-graph-table-wrapper {
+  margin: 12px 0;
+  font-size: 12px;
+  color: #333;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.work-week-graph-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #f8f8f8;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.work-week-graph-table th {
+  text-align: left;
+  padding: 10px 12px;
+  font-weight: 600;
+  background: #eee;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.work-week-graph-table td {
+  padding: 10px 12px;
+  vertical-align: top;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.work-week-graph-table td:first-child {
+  border-right: 1px solid #e0e0e0;
+  min-width: 240px;
+}
+
+.work-week-graph-table-cell {
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.work-week-graph-table-empty {
+  color: #999;
+  font-style: italic;
+}
+
+.work-week-graph-manual-list {
+  margin-top: 6px;
+  font-family: ui-monospace, monospace;
+}
+
+.work-week-graph-manual-item {
+  padding: 2px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.work-week-graph-manual-item:last-child {
+  border-bottom: none;
+}
+
+.work-week-graph-shift-start,
+.work-week-graph-shift-end {
+  font-weight: 600;
+  color: #444;
+}
+.work-week-graph-shift-separator {
+  margin: 6px 0 2px;
+  color: #999;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+.work-week-graph-shift-summary {
+  font-weight: 600;
+  color: #1a5f2a;
+}
+
+/* Režim osádky: šrafované podkreslení v grafu */
+.work-week-graph-crew-mode-bg {
+  pointer-events: none;
+}
+
+.work-week-graph-block {
+  margin-top: 16px;
+}
+.work-week-graph-block:first-of-type {
+  margin-top: 0;
+}
+.work-week-graph-block-title {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+.work-week-graph-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: calc(96vh - 90px);
+  object-fit: contain;
+}
+
+.work-week-graph-empty {
+  padding: 29px;
+  color: #666;
+  text-align: center;
+}
+
+/* Okénko výstrah – stejná šířka jako sloupec Manuální záznamy */
+.work-week-graph-warnings-wrapper {
+  width: 480px;
+}
+.work-week-warnings-panel {
+  margin-top: 20px;
+  padding: 12px 16px;
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+}
+.work-week-warnings-title {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #92400e;
+}
+.work-week-warnings-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 160px;
+  overflow-y: auto;
+}
+.work-week-warnings-item {
+  padding: 4px 0;
+  font-size: 13px;
+  color: #78350f;
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+}
+.work-week-warnings-time {
+  flex-shrink: 0;
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  color: #b45309;
+}
+
+/* Kořen aplikace – kvůli position:relative pro absolutní infoboxy */
+.app-root {
+  position: relative;
+}
+
+/* Obalující kontejner: celý proužek vlevo, prvky pod sebou */
+/* --fixed: absolutní pozice vlevo, nepůsobí na layout přístroje */
+.info-panels-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  align-self: flex-start;
+  flex-shrink: 0;
+  gap: 6px;
+}
+.info-panels-wrapper--fixed {
+  position: absolute;
+  right: 24px;
+  top: 24px;
+  z-index: 10;
+}
+/* Přimknutý k pravému okraji přístroje – jen obsah zachytává kliky, zbytek propouští na tlačítka */
+.info-panels-wrapper--attached {
+  position: absolute;
+  right: 0;
+  top: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+.info-panels-wrapper--attached > * {
+  pointer-events: auto;
+}
+
+.info-panels-toggle {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.06) 100%);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+}
+.info-panels-toggle:hover {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+.info-panels-toggle:active {
+  transform: scale(0.96);
+}
+.info-panels-toggle-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+}
+.info-panels-toggle-arrow[data-collapsed="true"] svg {
+  transform: rotate(180deg);
+}
+.info-panels-toggle-arrow svg {
+  width: 100%;
+  height: 100%;
+  transition: transform 0.2s ease;
+}
+
+/* Úzký proužek s ikonami při sbalení */
+.info-panels-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  justify-content: flex-start;
+  width: 44px;
+  min-height: 44px;
+  padding: 8px 6px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.info-panel-strip-icons {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+}
+
+/* Kontejner pro info okna – okna se posouvají od vrchní strany dolů */
+.info-panels-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-self: flex-start;
+  align-items: stretch;
+  justify-content: flex-start;
+  width: 300px;
+  min-width: 300px;
+  min-height: 60px;
+  flex-shrink: 0;
+}
+
+/* Informační okénko vpravo od simulátoru */
+.info-panel {
+  width: 300px;
+  min-width: 300px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  align-self: flex-start;
+}
+
+.info-panel-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.info-panel-inner.info-panel-stack {
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.info-panel-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 44px 14px 16px;
+  border-radius: 8px;
+  border-left: 4px solid transparent;
+  position: relative;
+}
+
+.info-panel-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: rgba(0, 0, 0, 0.15);
+  color: inherit;
+  font-size: 18px;
+  line-height: 1;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.info-panel-close:hover {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.info-panel-item--info {
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  border-left-color: #1976d2;
+  color: #0d47a1;
+}
+
+.info-panel-item--warning {
+  background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
+  border-left-color: #f57c00;
+  color: #e65100;
+}
+
+.info-panel-icon {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Georgia", "Times New Roman", serif;
+  font-weight: 700;
+  font-size: 18px;
+  border-radius: 50%;
+  line-height: 1;
+}
+
+.info-panel-icon--info {
+  background: #1976d2;
+  color: #fff;
+}
+
+.info-panel-icon--warning {
+  background: #f57c00;
+  color: #fff;
+}
+
+.info-panel-icon--nr165 {
+  background: #d32f2f;
+  color: #fff;
+}
+
+.info-panel-text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  white-space: pre-line;
+}
+
+.info-panel-content {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  flex: 1;
+  min-width: 0;
+}
+
+.info-panel-manual-label {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.info-panel-manual-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.info-panel-manual-item {
+  font-size: 11px;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: baseline;
+  gap: 2px;
+  white-space: nowrap;
+}
+
+.info-panel-manual-time {
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.info-panel-symbol {
+  font-family: "SymbolTacho1", sans-serif !important;
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* Podklad symbolů v infoboxu – zesvětlený čtvereček se zakulacenými rohy pro čitelnost */
+.info-panel-symbol-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.2em;
+  padding: 2px 4px;
+  border-radius: 6px;
+  line-height: 1;
+  color: #37474f;
+}
+
+.info-panel-manual-country {
+  font-weight: 500;
+}
+
+/* NR 165 – varování pod infopanelem při dvojím zadání výchozí země */
+.info-panel-nr165-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  padding-right: 44px;
+  border-radius: 8px;
+  border-left: 4px solid #d32f2f;
+  position: relative;
+  background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+  color: #b71c1c;
+  width: 300px;
+  min-width: 300px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.info-panel-nr165-icon {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #d32f2f;
+  color: #fff;
+  font-family: "Georgia", "Times New Roman", serif;
+  font-weight: 700;
+  font-size: 18px;
+  border-radius: 50%;
+  line-height: 1;
+}
+
+.info-panel-nr165-text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+/* Volba jazyka vlevo od simulátoru */
+.control-panel-lang-left {
+  padding-top: 8px;
+}
+
+/* Kompaktní rozbalovací volba jazyka – nezabírá místo důležitých prvků */
+.control-panel-lang-wrap {
+  flex: 0 0 auto;
+  min-width: 0;
+  margin-left: 12px;
+}
+.control-panel-lang-select {
+  padding: 4px 8px;
+  font-size: 12px;
+  border: 1px solid #555;
+  border-radius: 4px;
+  background: #3a3a3a;
+  color: #e0e0e0;
+  cursor: pointer;
+  min-width: 90px;
+}
+.control-panel-lang-select:hover,
+.control-panel-lang-select:focus {
+  border-color: #1976d2;
+  outline: none;
+}
+
+/* Panel logování akcí – bílé okno vpravo vedle simulátoru */
+.action-log-panel {
+  display: flex;
+  flex-direction: column;
+  width: 340px;
+  min-width: 340px;
+  max-height: 90vh;
+  background: #fff;
+  color: #000;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.action-log-header {
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #e0e0e0;
+  background: #f8f8f8;
+  color: #222;
+}
+
+.action-log-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  font-size: 13px;
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
+}
+
+.action-log-empty {
+  color: #666;
+  font-style: italic;
+  line-height: 1.5;
+}
+
+.action-log-row {
+  margin-bottom: 8px;
+}
+
+.action-log-row-inner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+
+.action-log-row-inner:hover {
+  background: #f0f0f0;
+}
+
+.action-log-action {
+  flex: 1;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.action-log-checkbox {
+  flex-shrink: 0;
+  margin-top: 2px;
+  cursor: pointer;
+  accent-color: #2d7a3e;
+}
+
+.action-log-footer {
+  padding: 12px 16px;
+  border-top: 1px solid #e0e0e0;
+  background: #f8f8f8;
+}
+
+.action-log-save-btn {
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  background: #2d7a3e;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.action-log-save-btn:hover {
+  background: #246b30;
+}
+
+.action-log-save-btn:active {
+  background: #1e5a28;
+}

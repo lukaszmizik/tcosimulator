@@ -1,0 +1,84 @@
+{
+  "buttons": [
+    {
+      "button_name": "UP",
+      "physical_symbol": "↑",
+      "short_press_action": "NAV_UP",
+      "long_press_action": "AUTO_SCROLL_UP",
+      "press_duration_ms": 2000,
+      "description": "Navigace nahoru v menu, listování"
+    },
+    {
+      "button_name": "DOWN",
+      "physical_symbol": "↓",
+      "short_press_action": "NAV_DOWN",
+      "long_press_action": "AUTO_SCROLL_DOWN",
+      "press_duration_ms": 2000,
+      "description": "Navigace dolů v menu, listování"
+    },
+    {
+      "button_name": "OK",
+      "physical_symbol": "✓",
+      "short_press_action": "CONFIRM",
+      "long_press_action": null,
+      "press_duration_ms": null,
+      "description": "Potvrzení výběru nebo zadání"
+    },
+    {
+      "button_name": "BACK",
+      "physical_symbol": "↩",
+      "short_press_action": "BACK_ONE_LEVEL",
+      "long_press_action": null,
+      "press_duration_ms": null,
+      "description": "Návrat o úroveň zpět, zrušení zadávání"
+    },
+    {
+      "button_name": "DRIVER1_COMBINED",
+      "physical_symbol": "🔘1",
+      "short_press_action": "CHANGE_ACTIVITY_D1",
+      "long_press_action": "EJECT_CARD_D1",
+      "press_duration_ms": 2000,
+      "description": "Krátký stisk: změna aktivity řidiče 1, Dlouhý stisk: vysunutí karty řidiče 1"
+    },
+    {
+      "button_name": "DRIVER2_COMBINED",
+      "physical_symbol": "🔘2",
+      "short_press_action": "CHANGE_ACTIVITY_D2",
+      "long_press_action": "EJECT_CARD_D2",
+      "press_duration_ms": 2000,
+      "description": "Krátký stisk: změna aktivity řidiče 2, Dlouhý stisk: vysunutí karty řidiče 2"
+    }
+  ],
+  "button_behaviors": {
+    "short_press_threshold_ms": 500,
+    "long_press_threshold_ms": 2000,
+    "auto_scroll_repeat_delay_ms": 200,
+    "menu_timeout_no_input_seconds": 30,
+    "card_eject_min_hold_ms": 2000
+  },
+  "activity_cycle": {
+    "description": "Sekvence aktivit při stisku kombinovaného tlačítka",
+    "activities": [
+      {
+        "symbol": "",
+        "name": "Řízení",
+        "code": "DRIVING"
+      },
+      {
+        "symbol": "",
+        "name": "Pracovní doba",
+        "code": "WORK"
+      },
+      {
+        "symbol": "",
+        "name": "Pohotovost",
+        "code": "AVAILABILITY"
+      },
+      {
+        "symbol": "",
+        "name": "Přestávka/Odpočinek",
+        "code": "REST"
+      }
+    ]
+  }
+}

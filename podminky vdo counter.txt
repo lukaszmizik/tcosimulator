@@ -1,0 +1,34 @@
+do souboru vdo counter implementuj tyto funkce pro vyhodnocování aktivit:
+1) maximální doba aktivity øizení je 4h30m
+2) aby mohla zaèít nová doba øízení, musí probìhnout aktivita pauzy (postýlka) na minimálnì 45 minut
+3) pauza mùže být rozdìlena na 15m a 30m (napøiklad pokud bude 10m øízení, 15m pauza, dále zbývá 4h20m øízení a poté musí být pauza 30m)
+4) pro výpoèet od jaké doby do jaké doby zaèiná pracovní smìna použij již uloženou logiku
+5)  maximální doba øízení pro jednoho øidièe v jedné pracovní smìnì je 9 hodin.
+6) dvakrát v kalendáøním týdnu lze mít v pracovní smìnì maximální dobu øízení 10h0m. pokud øidiè øídí více jak 9h01m vèetnì, považuje se to za jednu uplatnìnou prodlouženou dobu øizení
+7) týdenní doba odpoèinku je minimálnì 24h
+8) pokud je týdenní doba odpoèinku v rozsahu 24h00m až 44h59m, považuje se za zkrácenou
+9) týdenní doba odpoèinku nad 45h vèetnì, je standartní
+10) týdenní doba odpoèinku musí nastat nejpozdìji po 144h00m od zahájení první aktivity po skonèení pøedchozí týdenní doby odpoèinku. období mezi dvìma týdenními odpoèinky je "plovoucí týden"
+11) "plovoucí den" zaèíná zadáním výchozí zemì a trvá 24h.
+12) plovoucí den se skládá v tomto poøadí: z pracovní smìny a denního odpoèinku
+13) minimální délka denního odpoèinku má 3 varianty: první je 11h00m , z toho vyplývá maximální délka pracovní smìny 13h00m
+14) druhá varianta minimální délky denního odpoèinku je, pokud v prùbìhu smìny uvidíš souvislý záznam aktivity "postýlka", potom vyhovuje na koci smìny denní doba odpoèinku v rozsahu 9h00m
+15) zkrácená týdenní doba odpoèinku vyhovuje 9h
+16) v období mezi dvìma týdenními odpoèinky lze provést zkrácenou denní dobu odpoèinku maximálne 3x
+17) denní dobu odpoèinku promìò v týdenní dobu odpoèinku pokud se blíží doba, kdy konèí limit 144h. není povinnost na konci smìny vykonat denní dobu odpoèinku a následnì týdenní dobu odpoèinku
+18) každá doba pøestávky vcelku nad 24h00m resetuje limit zkrýcených denních odpoèinkù a po ní je opìt možné zkrátit denní dobu odpoèinku na 9h maximálnì 3x
+19) doba øizení od skonèení denní doby odpoèinku, týdenní doby odpoèinku, nebo od skonèení pauzy 45m nebo dìlené pauzy 15m a 30m se nazvývá "blok øízení"
+20) maximálný doba øízení v jednom kalendáøním týdnu je 56h
+21) maximální doba øízení ve dvou po sobì jdoucích kalendáøních týdnech je 90h
+
+Funkce
+4 – aggregateOtherWorkInWorkShift – používá WorkShift.getFirstStartMinuteUtc (výchozí zemì)
+19 – remainingDrivingToLimit430 – zbývající doba bloku øízení
+20–21 – aggregateDrivingTwoWeeks, isWeeklyDrivingLimitExceeded, isTwoWeeksDrivingLimitExceeded
+2–3 – isRestResetSatisfied, isSplitRestFirstSatisfied, isSplitRestSecondSatisfied
+8–9 – getWeeklyRestType – standard / reduced / short
+Zachované pùvodní exporty: formatDurationHhMm, remainingDrivingToLimit430, aggregateDrivingTwoWeeks, aggregateOtherWorkInWorkShift, REST_RESET_MS, VDODurationsMs, DRIVING_LIMIT_415_MS, DRIVING_LIMIT_430_MS.
+
+Vytvoøil jsem funkci countReducedDailyRestsInFloatingWeek, která podle pravidla 16 poèítá zkrácené denní odpoèinky v plovoucím týdnu.
+
+TachoDisplay (L1 vpravo) teï používá tuto funkci místo pøímo REST_RESET_MS - restSinceLastBreakMs.

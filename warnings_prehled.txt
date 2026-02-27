@@ -1,0 +1,32 @@
+Přehled výstrah tachografu – řádky L1 a L2
+============================================
+
+28 – Jízda bez vložené karty
+L1: jízda bez
+L2: vložené karty 28
+---
+
+29 – Jízda bez platné karty
+L1: jízda bez
+L2: platné karty 29
+---
+
+415 – Varování: doba řízení 4h15m, nutná pauza
+L1: pauza!
+L2: doba řízení 04h15m pauza 00h15
+---
+
+430 – Varování: doba řízení 4h30m, nutná pauza
+L1: pauza!
+L2: doba řízení 04h30m pauza 00h15
+---
+
+30 – Karta nevložena (zapalování zapnuto)
+L1: karta!
+---
+(není L2)
+
+31 – Prodloužená směna 10h nedostupná
+L1: 10h prodloužená směna
+L2: nedostupná 31
+---

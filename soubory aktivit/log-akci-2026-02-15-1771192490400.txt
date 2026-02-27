@@ -1,0 +1,16 @@
+=== Log nepotvrzených akcí (problematické chování) ===
+Vygenerováno: 15. 2. 2026 22:54:50
+
+[22:52:12] Stisk OK | uloženo: segment pohotovost 08.02. 18:52
+[22:52:27] Stisk OK | uloženo: segment Výchozí země 15.02. 22:51
+[22:52:28] Stisk OK | uloženo: razítko výchozí země CZ
+[22:52:56] Stisk OK | uloženo: segment odpočinek 15.02. 22:51
+[22:52:56] Stisk OK | uloženo: segment odpočinek 15.02. 22:51
+[22:52:56] Stisk OK | uloženo: segment odpočinek 15.02. 22:51
+[22:52:57] Stisk OK | uloženo: segment odpočinek 15.02. 22:51
+[22:52:58] Stisk OK | uloženo: segment odpočinek 15.02. 22:51
+[22:54:14] Stisk OK
+[22:54:15] Stisk OK | uloženo: výchozí země CZ
+[22:54:16] Stisk OK | uloženo: celý manuální záznam (5 segmentů)
+
+Celkem nepotvrzených: 11

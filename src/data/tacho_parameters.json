@@ -1,0 +1,267 @@
+{
+  "system_parameters": {
+    "device": {
+      "model": "DTCO 4.1x",
+      "versions": ["DTCO 4.1", "DTCO 4.1a", "DTCO 4.1b"],
+      "manufacturer": "Continental Automotive Technologies GmbH",
+      "product_code": "DTCO 1381"
+    },
+    "display": {
+      "type": "LCD",
+      "brightness_adjustable": false,
+      "contrast_adjustable": false,
+      "dimming_adjustable": true,
+      "dimming_configurable_in_workshop": true,
+      "standby_mode_available": true,
+      "standby_exit_methods": ["button_press", "ignition_on", "vehicle_movement"]
+    },
+    "languages": {
+      "default_source": "card_issuing_authority",
+      "max_stored_languages": 5,
+      "available_languages": [
+        {"code": "cs", "name": "čeština"},
+        {"code": "en", "name": "english"},
+        {"code": "de", "name": "deutsch"},
+        {"code": "es", "name": "español"},
+        {"code": "fr", "name": "français"},
+        {"code": "it", "name": "italiano"},
+        {"code": "nl", "name": "nederlands"},
+        {"code": "pl", "name": "polski"},
+        {"code": "pt", "name": "português"},
+        {"code": "ro", "name": "română"},
+        {"code": "ru", "name": "русский"},
+        {"code": "tr", "name": "türkçe"}
+      ]
+    },
+    "time_settings": {
+      "utc_based": true,
+      "local_time_offset_step_minutes": 30,
+      "max_utc_deviation_minutes": 20,
+      "gnss_time_conflict_threshold_minutes": 1,
+      "automatic_dst_adjustment": false,
+      "time_zones_supported": true
+    },
+    "card_slots": {
+      "count": 2,
+      "slot_1": {
+        "primary_use": "driver1_card",
+        "alternative_use": "company_card"
+      },
+      "slot_2": {
+        "primary_use": "driver2_card",
+        "alternative_use": "company_card"
+      },
+      "card_types_supported": ["driver", "company", "control", "workshop"]
+    },
+    "memory": {
+      "mass_memory_available": true,
+      "driver_card_data_storage_days": 28,
+      "company_card_data_storage_days": 365,
+      "vehicle_mass_memory_storage_days": 365,
+      "download_interval_days": 90,
+      "driver_card_download_interval_days": 28
+    },
+    "gnss": {
+      "enabled": true,
+      "position_recording_interval_hours": 3,
+      "position_recording_trigger": "cumulative_driving_time",
+      "cross_border_detection": true,
+      "time_synchronization": true
+    },
+    "driving_time_regulations": {
+      "daily_driving_limit_hours": 9,
+      "extended_daily_driving_limit_hours": 10,
+      "extended_driving_days_per_week": 2,
+      "continuous_driving_limit_hours": 4.5,
+      "minimum_break_minutes": 45,
+      "split_break_allowed": true,
+      "split_break_first_part_minutes": 15,
+      "split_break_second_part_minutes": 30,
+      "biweekly_driving_limit_hours": 90,
+      "daily_rest_minimum_hours": 11,
+      "reduced_daily_rest_hours": 9,
+      "reduced_rest_allowed_per_week": 3,
+      "weekly_rest_regular_hours": 45,
+      "weekly_rest_reduced_hours": 24,
+      "weekly_rest_max_interval_hours": 144
+    },
+    "speed_monitoring": {
+      "overspeed_threshold_kmh": 90,
+      "overspeed_recording_enabled": true,
+      "overspeed_duration_threshold_seconds": 60
+    },
+    "bluetooth": {
+      "available_from_version": "DTCO 4.1a",
+      "in_vehicle_connection_supported": true,
+      "requires_company_card_for_pairing": true,
+      "requires_its_data_access_permission": true,
+      "max_paired_devices": 10,
+      "connection_modes": [
+        "on_24h",
+        "on_continuous", 
+        "ignition_off_bluetooth_off"
+      ]
+    },
+    "printer": {
+      "integrated": true,
+      "paper_type": "thermal",
+      "paper_width_mm": 57,
+      "paper_end_detection": true,
+      "tear_edge_available": true
+    },
+    "interfaces": {
+      "front_interface": {
+        "type": "download_port",
+        "access_control": "card_based",
+        "supported_operations": ["data_download", "parametrization"]
+      },
+      "dsrc": {
+        "optional": true,
+        "purpose": "toll_systems"
+      },
+      "can_bus": {
+        "available": true,
+        "sensor_communication": true
+      }
+    },
+    "calibration": {
+      "required": true,
+      "periodic_check_interval_years": 2,
+      "performed_by": "authorized_workshop",
+      "requires_workshop_card": true
+    },
+    "operating_modes": {
+      "modes": [
+        {
+          "name": "Production",
+          "symbol": "",
+          "description": "Režim výroby - před kalibrací"
+        },
+        {
+          "name": "Operation",
+          "symbol": "",
+          "description": "Normální provoz s kartou řidiče"
+        },
+        {
+          "name": "Company",
+          "symbol": "",
+          "description": "Režim majitele s kartou majitele"
+        },
+        {
+          "name": "Control",
+          "symbol": "",
+          "description": "Režim kontroly s kontrolní kartou"
+        },
+        {
+          "name": "Calibration",
+          "symbol": "",
+          "description": "Režim kalibrace s dílenskou kartou"
+        }
+      ]
+    },
+    "activities": {
+      "driver_activities": [
+        {
+          "symbol": "",
+          "name": "Řízení",
+          "code": "DRIVING",
+          "automatic_trigger": "vehicle_movement"
+        },
+        {
+          "symbol": "",
+          "name": "Pracovní doba",
+          "code": "WORK",
+          "automatic_trigger": null
+        },
+        {
+          "symbol": "",
+          "name": "Pohotovost",
+          "code": "AVAILABILITY",
+          "automatic_trigger": "ignition_on_no_card"
+        },
+        {
+          "symbol": "",
+          "name": "Přestávka/Odpočinek",
+          "code": "REST",
+          "automatic_trigger": "ignition_off"
+        },
+        {
+          "symbol": "?",
+          "name": "Neznámá aktivita",
+          "code": "UNKNOWN",
+          "automatic_trigger": null
+        }
+      ],
+      "automatic_activity_change": {
+        "ignition_on_no_card": "AVAILABILITY",
+        "ignition_off": "REST",
+        "vehicle_starts_moving": "DRIVING"
+      }
+    },
+    "special_modes": {
+      "out_of_scope": {
+        "symbol": "OUT",
+        "description": "Mimo oblast platnosti předpisů",
+        "recording_active": false,
+        "manual_activation_required": true,
+        "auto_deactivation_triggers": ["card_insert", "card_eject"]
+      },
+      "ferry_train": {
+        "symbol": "",
+        "description": "Přeprava na trajektu nebo vlaku",
+        "prevents_movement_conflict": true,
+        "manual_activation_required": true,
+        "auto_deactivation_triggers": ["vehicle_movement_1min", "card_eject"]
+      },
+      "loading_unloading": {
+        "symbols": ["", "", ""],
+        "description": "Nakládka/vykládka/kabotáž",
+        "records_time_and_position": true
+      }
+    },
+    "vdo_counter": {
+      "optional": true,
+      "activation_requires": "workshop",
+      "features": [
+        "remaining_driving_time",
+        "remaining_break_time",
+        "next_rest_requirement",
+        "daily_weekly_planning"
+      ],
+      "calculation_basis": "regulation_561_2006",
+      "warning_thresholds": {
+        "driving_time_low_minutes": 15,
+        "break_required": true
+      }
+    },
+    "adr_variant": {
+      "available": true,
+      "model_suffix": "Ex",
+      "explosion_protection": "ATEX_certified",
+      "special_requirements": [
+        "ignition_must_be_on",
+        "no_card_operations_in_hazardous_area",
+        "no_printer_access_in_hazardous_area",
+        "no_interface_access_in_hazardous_area"
+      ]
+    },
+    "data_security": {
+      "digital_signature": true,
+      "encryption": true,
+      "tamper_detection": true,
+      "motion_conflict_detection": true,
+      "security_breach_recording": true
+    }
+  },
+  "default_values": {
+    "language": "from_card",
+    "brightness": "auto",
+    "time_zone_offset": "+00:00",
+    "activity_on_ignition_on": "AVAILABILITY",
+    "activity_on_ignition_off": "REST",
+    "vdo_counter_enabled": false,
+    "bluetooth_enabled": false,
+    "out_of_scope_active": false,
+    "ferry_train_mode_active": false
+  }
+}

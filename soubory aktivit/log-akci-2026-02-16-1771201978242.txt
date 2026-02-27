@@ -1,0 +1,27 @@
+=== Log nepotvrzených akcí (problematické chování) ===
+Vygenerováno: 16. 2. 2026 1:32:58
+
+[01:29:20] Vložení karty Zmizík do šachty 1
+[01:29:31] Stisk OK
+[01:29:33] Stisk OK
+[01:29:33] Stisk OK
+[01:29:34] Stisk Dolů
+[01:29:36] Stisk OK
+[01:29:36] Stisk OK
+[01:29:37] Stisk Nahoru
+[01:29:38] Stisk Nahoru
+[01:29:38] Stisk Nahoru
+[01:29:39] Stisk OK
+[01:29:40] Stisk OK | uloženo: segment odpočinek 08.02. 22:30
+[01:29:41] Stisk Dolů
+[01:29:42] Stisk Dolů
+[01:29:42] Stisk Dolů
+[01:29:43] Stisk Dolů
+[01:29:44] Stisk OK | uloženo: segment Výchozí země 16.02. 01:29
+[01:29:45] Stisk OK | uloženo: razítko výchozí země CZ
+[01:30:37] Stisk Zpět
+[01:30:43] Stisk OK | uloženo: celý manuální záznam (2 segmentů)
+[01:30:44] Stisk OK
+[01:30:44] Stisk OK
+
+Celkem nepotvrzených: 22

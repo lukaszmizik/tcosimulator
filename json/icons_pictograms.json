@@ -1,0 +1,469 @@
+{
+  "icons": {
+    "activities": {
+      "driving": {
+        "symbol": "",
+        "unicode": "🚗",
+        "description": "Řízení"
+      },
+      "work": {
+        "symbol": "",
+        "unicode": "🔧",
+        "description": "Pracovní doba"
+      },
+      "availability": {
+        "symbol": "",
+        "unicode": "⏸",
+        "description": "Pohotovost"
+      },
+      "rest": {
+        "symbol": "",
+        "unicode": "🛏",
+        "description": "Přestávka/Odpočinek"
+      },
+      "unknown": {
+        "symbol": "?",
+        "unicode": "❓",
+        "description": "Neznámá aktivita"
+      }
+    },
+    "operating_modes": {
+      "operation": {
+        "symbol": "",
+        "description": "Provozní režim"
+      },
+      "company": {
+        "symbol": "",
+        "description": "Režim majitele"
+      },
+      "control": {
+        "symbol": "",
+        "description": "Kontrolní režim"
+      },
+      "calibration": {
+        "symbol": "",
+        "description": "Režim kalibrace"
+      },
+      "production": {
+        "symbol": "",
+        "description": "Stav výroby"
+      }
+    },
+    "cards": {
+      "driver": {
+        "symbol": "",
+        "description": "Karta řidiče"
+      },
+      "company": {
+        "symbol": "",
+        "description": "Karta majitele"
+      },
+      "control": {
+        "symbol": "",
+        "description": "Kontrolní karta"
+      },
+      "workshop": {
+        "symbol": "",
+        "description": "Dílenská karta"
+      },
+      "no_card": {
+        "symbol": "---",
+        "description": "Není vložena žádná karta"
+      }
+    },
+    "card_slots": {
+      "slot_1": {
+        "symbol": "1",
+        "description": "Šachta pro kartu 1; řidič 1"
+      },
+      "slot_2": {
+        "symbol": "2",
+        "description": "Šachta pro kartu 2; řidič 2"
+      }
+    },
+    "messages": {
+      "event": {
+        "symbol": "!",
+        "description": "Událost"
+      },
+      "fault": {
+        "symbol": "x",
+        "description": "Porucha"
+      },
+      "warning": {
+        "symbol": "",
+        "description": "Výstraha pro dobu řízení"
+      },
+      "notification": {
+        "symbol": "",
+        "description": "Upozornění"
+      },
+      "info": {
+        "symbol": "",
+        "description": "Informace"
+      }
+    },
+    "functions": {
+      "print": {
+        "symbol": "",
+        "description": "Tiskárna/výtisk"
+      },
+      "input": {
+        "symbol": "",
+        "description": "Zadání"
+      },
+      "display": {
+        "symbol": "",
+        "description": "Zobrazení"
+      },
+      "clock": {
+        "symbol": "",
+        "description": "Hodiny"
+      },
+      "settings": {
+        "symbol": "?",
+        "description": "Nastavení"
+      },
+      "bluetooth": {
+        "symbol": "",
+        "description": "Bluetooth"
+      },
+      "gnss": {
+        "symbol": "",
+        "description": "GNSS"
+      },
+      "dsrc": {
+        "symbol": "",
+        "description": "DSRC"
+      },
+      "its": {
+        "symbol": "",
+        "description": "ITS"
+      },
+      "toll": {
+        "symbol": "",
+        "description": "Mýtné"
+      },
+      "remote": {
+        "symbol": "R",
+        "description": "Dálkové ovládání"
+      },
+      "license_code": {
+        "symbol": "$",
+        "description": "Licenční kód"
+      }
+    },
+    "special_modes": {
+      "out_of_scope_start": {
+        "symbol": "OUT",
+        "description": "Začátek Out of scope"
+      },
+      "out_of_scope_end": {
+        "symbol": "OUT",
+        "description": "Konec Out of scope"
+      },
+      "ferry_train_start": {
+        "symbol": "",
+        "description": "Začátek trajekt/vlak"
+      },
+      "ferry_train_end": {
+        "symbol": "",
+        "description": "Konec trajekt/vlak"
+      },
+      "loading": {
+        "symbol": "",
+        "description": "Nakládka"
+      },
+      "unloading": {
+        "symbol": "",
+        "description": "Vykládka"
+      },
+      "load_unload": {
+        "symbol": "",
+        "description": "Nakládka/vykládka současně"
+      }
+    },
+    "locations": {
+      "shift_start": {
+        "symbol": "",
+        "description": "Místo na začátku pracovního dne"
+      },
+      "shift_end": {
+        "symbol": "",
+        "description": "Místo na konci pracovního dne"
+      },
+      "border_crossing": {
+        "symbol": "",
+        "description": "Poloha překročení hranic"
+      },
+      "loading_location": {
+        "symbol": "",
+        "description": "Poloha nakládky"
+      },
+      "unloading_location": {
+        "symbol": "",
+        "description": "Poloha vykládky"
+      },
+      "current_load_unload": {
+        "symbol": "",
+        "description": "Poloha současné nakládky/vykládky"
+      },
+      "position_3h_driving": {
+        "symbol": "",
+        "description": "Poloha po 3 hodinách kumulativní doby jízdy"
+      },
+      "control_location": {
+        "symbol": "",
+        "description": "Místo kontroly"
+      }
+    },
+    "vehicle": {
+      "speed": {
+        "symbol": "",
+        "description": "Rychlost"
+      },
+      "overspeed": {
+        "symbol": "",
+        "description": "Překročení rychlosti"
+      },
+      "weight": {
+        "symbol": "",
+        "description": "Hmotnost jízdní soupravy"
+      },
+      "weight_max": {
+        "symbol": "max",
+        "description": "Přípustná celková hmotnost"
+      },
+      "tire_size": {
+        "symbol": "",
+        "description": "Velikost pneumatik"
+      }
+    },
+    "reports": {
+      "daily_24h": {
+        "symbol": "24h",
+        "description": "Denní aktivity řidiče"
+      },
+      "events_faults": {
+        "symbol": "!x",
+        "description": "Události a poruchy"
+      },
+      "technical_data": {
+        "symbol": "",
+        "description": "Technické údaje"
+      },
+      "v_diagram": {
+        "symbol": "v",
+        "description": "v-diagram"
+      },
+      "d1d2_status": {
+        "symbol": "D",
+        "description": "Stav D1/D2 diagram"
+      },
+      "v_profile": {
+        "symbol": "%v",
+        "description": "Profily rychlosti"
+      },
+      "n_profile": {
+        "symbol": "%n",
+        "description": "Profily frekvence otáček"
+      },
+      "activities": {
+        "symbol": "",
+        "description": "Aktivity řidiče"
+      },
+      "cards_inserted": {
+        "symbol": "",
+        "description": "Vložené karty tachografu"
+      }
+    },
+    "time": {
+      "utc": {
+        "symbol": "UTC",
+        "description": "Čas UTC"
+      },
+      "local": {
+        "symbol": "",
+        "description": "Místní čas"
+      },
+      "company_time": {
+        "symbol": "",
+        "description": "Místní čas ve firmě"
+      },
+      "initial_time": {
+        "symbol": "",
+        "description": "Počáteční doba"
+      }
+    },
+    "status_indicators": {
+      "ready": {
+        "symbol": "",
+        "description": "Připraven k jízdě"
+      },
+      "team_operation": {
+        "symbol": "",
+        "description": "Provoz v týmu"
+      },
+      "card_loaded": {
+        "symbol": "",
+        "description": "Karta tachografu (zcela načtena)"
+      },
+      "card_inserted": {
+        "symbol": "",
+        "description": "Karta tachografu vložena; relevantní data načtena"
+      },
+      "data_transfer": {
+        "symbol": "|",
+        "description": "Přenos dat"
+      },
+      "remote_download": {
+        "symbol": "|",
+        "description": "Stahování dat na dálku"
+      },
+      "wait": {
+        "symbol": "",
+        "description": "Vyčkejte prosím"
+      }
+    },
+    "power_issues": {
+      "undervoltage": {
+        "symbol": "",
+        "description": "Podpětí"
+      },
+      "overvoltage": {
+        "symbol": "",
+        "description": "Přepětí"
+      },
+      "power_interrupt": {
+        "symbol": "!",
+        "description": "Přerušení napětí"
+      }
+    },
+    "miscellaneous": {
+      "total_sum": {
+        "symbol": "Σ",
+        "description": "Celkem/souhrn"
+      },
+      "difference": {
+        "symbol": "Δ",
+        "description": "Rozdíl"
+      },
+      "manual_entry": {
+        "symbol": "M",
+        "description": "Manuální zadání aktivit"
+      },
+      "user_record": {
+        "symbol": "",
+        "description": "Záznam uživatele"
+      },
+      "country": {
+        "symbol": "",
+        "description": "Výchozí/cílová země"
+      },
+      "valid_break": {
+        "symbol": "",
+        "description": "Platné přerušení"
+      },
+      "biweekly_driving": {
+        "symbol": "",
+        "description": "Součet časů řízení dvojitých týdnů"
+      },
+      "remote_period": {
+        "symbol": "",
+        "description": "Období s aktivovaným dálkovým ovládáním"
+      },
+      "sensor_info": {
+        "symbol": "i",
+        "description": "Informace ze sensorů"
+      },
+      "security_info": {
+        "symbol": "i",
+        "description": "Bezpečnostní informace"
+      }
+    },
+    "input_types": {
+      "activity_input": {
+        "symbol": "//",
+        "description": "Zadání Aktivity"
+      },
+      "unknown_input": {
+        "symbol": "?",
+        "description": "Zadání Neznámá aktivita"
+      },
+      "shift_end_place": {
+        "symbol": "?",
+        "description": "Zadání Místa na konci směny"
+      },
+      "shift_start_place": {
+        "symbol": "?",
+        "description": "Zadání Místa na začátku směny"
+      },
+      "manual_process": {
+        "symbol": "",
+        "description": "Manuální proces zadávání"
+      }
+    },
+    "cargo_types": {
+      "passengers": {
+        "symbol": "",
+        "description": "Standardní náklad: Cestující"
+      },
+      "goods": {
+        "symbol": "",
+        "description": "Standardní náklad: Zboží"
+      },
+      "undefined": {
+        "symbol": "?",
+        "description": "Standardní náklad: nedefinováno"
+      }
+    },
+    "conflicts": {
+      "time_overlap": {
+        "symbol": "!",
+        "description": "Překrývání času"
+      },
+      "time_conflict": {
+        "symbol": "!",
+        "description": "Časový konflikt"
+      },
+      "movement_conflict": {
+        "symbol": "!",
+        "description": "Konflikt pohybů vozidla"
+      },
+      "gnss_discrepancy": {
+        "symbol": "",
+        "description": "Nesrovnalosti GNSS"
+      },
+      "dsrc_error": {
+        "symbol": "!",
+        "description": "Chyba komunikace DSRC"
+      },
+      "speed_monitoring": {
+        "symbol": "",
+        "description": "Kontrola překročení rychlosti"
+      }
+    },
+    "card_issues": {
+      "invalid_card": {
+        "symbol": "!",
+        "description": "Vložení neplatné karty tachografu"
+      },
+      "card_inserted_driving": {
+        "symbol": "!",
+        "description": "Vložení karty řidiče během jízdy"
+      },
+      "card_fault": {
+        "symbol": "x",
+        "description": "Chybná funkce karty"
+      }
+    },
+    "menu_blocked": {
+      "symbol": "",
+      "description": "Přístup do nabídky není možný"
+    },
+    "wrong_input": {
+      "symbol": "",
+      "description": "Chybné zadání"
+    }
+  }
+}

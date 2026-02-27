@@ -1,0 +1,16 @@
+---
+description: Při přidání nového požadavku do infoPanel automaticky generuj všechny jazykové mutace
+globs: src/InfoPanel.tsx, src/translations/*.ts, src/translations/types.ts
+---
+
+# Pravidlo: InfoPanel - automatické překlady
+
+Když přidáváš nový požadavek (InfoItem) do `useInfoPanelItems` v `InfoPanel.tsx`:
+
+1. **Přidej klíč do `types.ts`** v sekci `infoPanel`
+2. **Přidej překlad do všech jazykových souborů:**
+   - `src/translations/cs.ts`
+   - `src/translations/en.ts`
+   - `src/translations/ru.ts`
+
+Vždy doplň všechny tři mutace (cs, en, ru) – nikdy nepřidávej jen češtinu.

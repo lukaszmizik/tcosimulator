@@ -1,0 +1,65 @@
+---
+description: Dorozumívací znaky výtisků – linka ---(N)---, vlož utc čas, typ karty GEN2 V2
+globs: **/PrintTemplates.tsx **/components/overlays/Print*.tsx
+alwaysApply: false
+---
+
+# Dorozumívací znaky výtisků
+
+## Výtisk linka ---(N)---
+
+**Dorozumívací znak:** Když uživatel zadá požadavek ve tvaru **„výtisk linka ---(N)---“** (např. „výtisk linka ---(2)---“), znamená to:
+
+- Udělej **linku s pomlčkami na šířku textové oblasti výtisku**.
+- **Doprostřed** umísti **symbol (N)** (např. (2), (18), (37)).
+
+## Implementace
+
+Použij pomocnou funkci `renderPrintDashedLineWithSymbol()` z `PrintTemplates.tsx`, nebo stejný vzor jako v `PrintSection1UTC` (řádek L3) / `PrintSection1Local` (řádek L7):
+
+- Jeden `<text>` element, `textAnchor="middle"`, `x={centerX}`.
+- Pomlčky vlevo + `<tspan fontFamily={symbolMap?.[id] ? PRINT_SYMBOL_FONT : undefined}>{symbolText}</tspan>` + pomlčky vpravo.
+- Počet pomlček: celková šířka v znacích minus délka symbolu, rozdělit na levou/pravou polovinu.
+- Šířka textové oblasti: `PRINT_TEXT_AREA_WIDTH_CHARS` (konstanta) nebo předaná šířka v počtu znaků.
+
+## Příklad volání
+
+```tsx
+{renderPrintDashedLineWithSymbol(2, centerX, y, symbolMap, { fontSize: PRINT_FONT_SIZE_PX })}
+```
+
+---
+
+## Vlož utc čas
+
+**Dorozumívací znak:** Když uživatel napíše **„vlož utc čas“**, znamená to:
+
+- **Vlož stejný řádek jako je první řádek na v-diagramu** – tedy linku samých pomlček (řádek L1 v `PrintSection1UTC`), se stejnou délkou jako nad/pod řádkem s UTC časem.
+
+## Implementace
+
+Použij pomocnou funkci `renderPrintUtcFirstLine(centerX, y, dateUtc, symbolMap?, options?)` z `PrintTemplates.tsx`. Délka pomlček se počítá stejně jako na v-diagramu: délka textu „(18) DD.MM.RRRR HH:MM UTC“ + 2.
+
+## Příklad volání
+
+```tsx
+{renderPrintUtcFirstLine(centerX, y, dateUtc, symbolMap)}
+```
+
+---
+
+## Další řádek vlož typ karty
+
+**Dorozumívací znak:** Když uživatel napíše **„další řádek vlož typ karty“**, znamená to:
+
+- **Další řádek** obsahuje text **doprostřed**: **„GEN2 V2“** (typ karty / tachografu).
+
+## Implementace
+
+Použij pomocnou funkci `renderPrintCardTypeLine(centerX, y, options?)` z `PrintTemplates.tsx`. Výchozí text je konstanta `PRINT_CARD_TYPE_TEXT` („GEN2 V2“), lze přepsat přes `options.text`.
+
+## Příklad volání
+
+```tsx
+{renderPrintCardTypeLine(centerX, y)}
+```

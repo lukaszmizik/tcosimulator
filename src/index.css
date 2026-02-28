@@ -57,10 +57,17 @@
   --btn-border: #111;
 }
 
+html {
+  overflow-x: auto;
+  overflow-y: scroll;
+}
+
 body {
   background-color: #444;
   margin: 0;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  overflow-x: auto;
+  min-width: min-content;
 }
 
 .vdo-main-panel {
@@ -1565,9 +1572,10 @@ body {
   color: #b45309;
 }
 
-/* Kořen aplikace – kvůli position:relative pro absolutní infoboxy */
+/* Kořen aplikace – min-width zajišťuje horizontální posouvání na mobilu */
 .app-root {
   position: relative;
+  min-width: 1100px;
 }
 
 /* Obalující kontejner: celý proužek vlevo, prvky pod sebou */

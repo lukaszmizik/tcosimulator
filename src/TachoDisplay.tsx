@@ -111,7 +111,24 @@ function LoadUnloadConfirmDisplay() {
 }
 
 export function TachoDisplay(props: TachoDisplayProps) {
-  const { symbolMap, cardInsertionState, cardWithdrawalState, drivingWithoutCardWarningActive, drivingWithoutValidCardWarningActive, breakWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, overrideWarningCode, menuCountryInputState, menuLoadUnloadConfirmState, printWizardState, printStartedToastUntil, displayMode } = props
+  const { symbolMap, cardInsertionState, cardWithdrawalState, drivingWithoutCardWarningActive, drivingWithoutValidCardWarningActive, breakWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, overrideWarningCode, menuCountryInputState, menuLoadUnloadConfirmState, printWizardState, printStartedToastUntil, displayMode, showOutOnL2 = false } = props
+
+  if (typeof window !== 'undefined' && window.location.search.includes('debug=1')) {
+    // Diagnostika: která větev se vykresluje (otevři konzoli F12)
+    const branch =
+      overrideWarningCode ? 'override' :
+      excessSpeedWarningActive ? 'excessSpeed' :
+      ejectionBlockedWarningActive ? 'ejectionBlocked' :
+      showOutOnL2 && props.displayMode === 'operating' ? 'OUT_OperatingDisplay' :
+      cardInsertionState ? 'cardInsertion' :
+      cardWithdrawalState ? 'cardWithdrawal' :
+      drivingWithoutCardWarningActive && !showOutOnL2 ? 'drivingWithoutCardWarning' :
+      drivingWithoutValidCardWarningActive ? 'drivingWithoutValidCard' :
+      breakWarningActive ? 'breakWarning' :
+      displayMode === 'operating' ? 'OperatingDisplay' :
+      'MenuDisplay'
+    console.log('[TachoDisplay]', { showOutOnL2, displayMode: props.displayMode, drivingWithoutCardWarningActive, branch })
+  }
 
   if (overrideWarningCode) {
     const def = getWarning(overrideWarningCode)
@@ -126,6 +143,10 @@ export function TachoDisplay(props: TachoDisplayProps) {
   /** Při jízdě nelze vysunout kartu – blikající výstraha (35)(14) výhoz není / možný */
   if (ejectionBlockedWarningActive) {
     return <EjectionBlockedWarningDisplay symbolMap={symbolMap} />
+  }
+  /** Režim OUT (bez vložené karty): na hlavní obrazovce zobrazit nápis OUT místo symbolů aktivit. V menu zůstane menu. */
+  if (showOutOnL2 && props.displayMode === 'operating') {
+    return <OperatingDisplay {...props} />
   }
   if (cardInsertionState) {
     return (
@@ -151,7 +172,8 @@ export function TachoDisplay(props: TachoDisplayProps) {
   if (cardWithdrawalState) {
     return <CardWithdrawalDisplay {...props} />
   }
-  if (drivingWithoutCardWarningActive) {
+  /** V režimu OUT se výstraha „jízda bez karty“ nezobrazuje – místo ní hlavní obrazovka s nápisem OUT. */
+  if (drivingWithoutCardWarningActive && !showOutOnL2) {
     return <DrivingWithoutCardWarningDisplay symbolMap={symbolMap} />
   }
   if (drivingWithoutValidCardWarningActive) {
@@ -446,7 +468,8 @@ function OperatingDisplay(props: TachoDisplayProps) {
 
   /** Standby = zapalování vypnuto – zobrazuje základní údaje pohasle, bez obtěžujících výstrah */
   const isStandby = !ignitionOn
-  const showCardWarning = !isStandby && !card1Inserted && ignitionWarningActive
+  /** V režimu OUT nezobrazovat řádek „vlož kartu“ – zobrazit hlavní obrazovku s nápisem OUT místo symbolů. */
+  const showCardWarning = !isStandby && !card1Inserted && ignitionWarningActive && !showOutOnL2
   const leftEdgeChar = getActivityCode(tachoState.leftActivityId)
   const rightEdgeChar = getActivityCode(tachoState.rightActivityId)
 

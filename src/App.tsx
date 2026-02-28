@@ -335,8 +335,10 @@ export default function App() {
   const [ferryTrainModeActive, setFerryTrainModeActive] = useState(false)
   /** Režim OUT – aktivní po zadání vozidlo–OUT začátek, končí zadáním OUT konec nebo vytažením karty */
   const [outModeActive, setOutModeActive] = useState(false)
-  /** Čas (UTC ms), kdy vozidlo zastavilo v režimu OUT – null = jede nebo režim neaktivní. Pro zobrazení "OUT" po ~30 s */
+  /** Čas (UTC ms), kdy vozidlo zastavilo v režimu OUT – null = jede nebo režim neaktivní. */
   const [outStoppedAtUtc, setOutStoppedAtUtc] = useState<number | null>(null)
+  /** Po zapnutí OUT jsme alespoň jednou jeli – pak po zastavení ukážeme 10 s kladívka, pak OUT. */
+  const [hasDrivenSinceOutActivation, setHasDrivenSinceOutActivation] = useState(false)
   const [remoteDataDownloadActive, setRemoteDataDownloadActive] = useState(false)
   const [card1EndedByTargetCountry, setCard1EndedByTargetCountry] = useState(false)
   const [activityDurationsMs, setActivityDurationsMs] = useState<ActivityDurationsMs>(() => ({ ...INITIAL_ACTIVITY_DURATIONS }))
@@ -566,6 +568,7 @@ export default function App() {
       setOutStoppedAtUtc(null)
       setDrivingMode(true)
       if (!wasMoving) setRightActivityId('AVAILABILITY')
+      if (outModeActive) setHasDrivenSinceOutActivation(true)
     } else if (wasMoving && isStopped) {
       if (outModeActive) {
         leftActivityIdRef.current = 'WORK'
@@ -590,13 +593,14 @@ export default function App() {
     }
   }, [currentSpeed, displayMode])
 
-  /** Režim OUT: při aktivaci při stojícím vozidle nastav outStoppedAtUtc, aby se po 30 s zobrazil "OUT" */
+  /** Režim OUT: při stojícím vozidle nastav outStoppedAtUtc (pro 10 s odpočet do nápisu OUT po zastavení) */
   useEffect(() => {
     if (outModeActive && currentSpeed === 0 && outStoppedAtUtc === null) {
       setOutStoppedAtUtc(simulatedUtcTime)
     }
     if (!outModeActive) {
       setOutStoppedAtUtc(null)
+      setHasDrivenSinceOutActivation(false)
     }
   }, [outModeActive, currentSpeed, outStoppedAtUtc, simulatedUtcTime])
 
@@ -1110,15 +1114,27 @@ export default function App() {
     }
   }, [card1Inserted, card2Inserted, ferryTrainModeActive])
 
-  // Režim OUT: konec při vytažení karty
+  // Režim OUT: konec jen při vytažení poslední karty (přechod z „byla karta“ na „žádná“), ne když už žádná karta není a uživatel OUT právě zapnul
+  const hadCardBeforeRef = useRef(card1Inserted || card2Inserted)
   useEffect(() => {
-    if (!card1Inserted && !card2Inserted && outModeActive) {
+    const hadCardBefore = hadCardBeforeRef.current
+    const hasCardNow = card1Inserted || card2Inserted
+    hadCardBeforeRef.current = hasCardNow
+    if (hadCardBefore && !hasCardNow && outModeActive) {
       const minuteStartUtc = Math.floor(simulatedUtcTimeRef.current / 60000) * 60000
       const gpsStr = virtualLocationRef.current?.name
       setOutModeEvents((prev) => [...prev, { minuteStartUtc, gpsLocation: gpsStr, type: 'deactivation' }])
       setOutModeActive(false)
     }
   }, [card1Inserted, card2Inserted, outModeActive])
+
+  /** Kdykoli je aktivní režim OUT, výstraha „jízda bez karty“ se nesmí zobrazovat – ihned ji zruš. */
+  useEffect(() => {
+    if (outModeActive) {
+      setDrivingWithoutCardWarningActive(false)
+      drivingWithoutCardEventAddedRef.current = false
+    }
+  }, [outModeActive])
 
   // Jízda bez vložené karty – původní tachoEvents zachováme jen pro případné budoucí rozšíření
 
@@ -1170,6 +1186,12 @@ export default function App() {
   // Důležité: i při vypnutém zapalování (vozidlo v klidu) se aktualizují aktivity (REST), aby L1 vpravo správně odečítal čas přestávky
   useEffect(() => {
     const id = setInterval(() => {
+      /** V režimu OUT se výstraha „jízda bez karty“ nesmí zobrazovat – každý tick ji zrušíme. */
+      if (outModeActiveRef.current) {
+        setDrivingWithoutCardWarningActive(false)
+        drivingWithoutCardEventAddedRef.current = false
+      }
+
       const ignition = ignitionOnRef.current
       const target = targetSpeedRef.current
       let curr = currentSpeedRef.current
@@ -1753,7 +1775,11 @@ export default function App() {
         const minuteStartUtc = Math.floor(simulatedUtcTimeRef.current / 60000) * 60000
         const gpsStr = virtualLocationRef.current?.name
         setOutModeEvents((prev) => [...prev, { minuteStartUtc, gpsLocation: gpsStr, type: 'activation' }])
+        outModeActiveRef.current = true
         setOutModeActive(true)
+        setHasDrivenSinceOutActivation(false)
+        setDrivingWithoutCardWarningActive(false)
+        drivingWithoutCardEventAddedRef.current = false
         if (currentSpeedRef.current <= SPEED_STOPPED_THRESHOLD_KMH) {
           leftActivityIdRef.current = 'WORK'
           setLeftActivityId('WORK')
@@ -2979,8 +3005,8 @@ export default function App() {
     remoteDataDownloadActive,
     driver1ManualEntryBuffer,
     driver2ManualEntryBuffer,
-    /** Režim OUT: zobrazit "OUT" na L2 vlevo hned po zadání OUT začátek */
-    showOutOnL2: outModeActive,
+    /** Režim OUT: po zapnutí OUT = hned nápis OUT; při jízdě = symbol řízení; po zastavení = kladívka 10 s, pak znovu OUT */
+    showOutOnL2: outModeActive && currentSpeed === 0 && (!hasDrivenSinceOutActivation || (outStoppedAtUtc != null && simulatedUtcTime - outStoppedAtUtc >= 10000)),
   }
 
   const isDriving = currentSpeed > 0
@@ -3010,6 +3036,9 @@ export default function App() {
     driver1ManualEntryBuffer,
     driver2ManualEntryBuffer,
   })
+
+  /** Diagnostika režimu OUT: v URL přidej ?debug=1 a zobrazí se panel se stavem. */
+  const showDebugPanel = typeof window !== 'undefined' && window.location.search.includes('debug=1')
 
   return (
     <div className="app-root" data-lang={language} style={{ minHeight: '100vh', background: '#444', display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-start', margin: 0, padding: 24, gap: 24 }}>
@@ -3043,10 +3072,36 @@ export default function App() {
         data-event-log={JSON.stringify(eventLog)}
         data-driver2-manual-entries={JSON.stringify(driver2ManualEntryBuffer)}
         data-extended-driving-unavailable={extendedDrivingUnavailableWarning}
+        data-debug-out-mode-active={String(outModeActive)}
+        data-debug-show-out-on-l2={String(outModeActive)}
+        data-debug-driving-without-card-warning={String(drivingWithoutCardWarningActive)}
+        data-debug-display-mode={displayMode}
       >
         <div className="vdo-main-panel">
           <div className="vdo-top-section">
-            <div className="display-area">
+            <div className="display-area" style={{ position: 'relative' }}>
+              {showDebugPanel && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    background: 'rgba(0,0,0,0.85)',
+                    color: '#0f0',
+                    fontSize: 11,
+                    fontFamily: 'monospace',
+                    padding: 6,
+                    zIndex: 10,
+                    pointerEvents: 'none',
+                  }}
+                  aria-hidden
+                >
+                  <div>OUT režim: outModeActive={String(outModeActive)} | showOutOnL2={String(displayProps.showOutOnL2)}</div>
+                  <div>Výstraha: drivingWithoutCardWarningActive={String(drivingWithoutCardWarningActive)}</div>
+                  <div>displayMode={displayMode} | card1Inserted={String(card1Inserted)}</div>
+                </div>
+              )}
               <div
                 id="main-display"
                 className={`lcd-screen ${!ignitionOn && !displayAwakeFromStandby ? 'lcd-screen-off' : ''}`}

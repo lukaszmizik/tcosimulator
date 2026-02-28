@@ -552,7 +552,7 @@ function GraphBlock({ days, countryMarkers, manualEntryBuffer, lastWithdrawalUtc
               })}
               {getOutModeOnDay(visibleOutMode, day.dateUtc).map((ev, i) => {
                 const x = LABEL_WIDTH + timeToX(dayStart, ev.minuteStartUtc) * CHART_WIDTH
-                const label = ev.type === 'activation' ? `${t.workWeek.outModeStartMark}►` : `◄${t.workWeek.outModeEndMark}`
+                const label = ev.type === 'activation' ? 'OUT►' : '◄OUT'
                 const dx = ev.type === 'activation' ? 3 : -3
                 const textAnchor = ev.type === 'activation' ? 'start' : 'end'
                 const rowCenter = yBase + ROW_HEIGHT / 2

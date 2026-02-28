@@ -250,6 +250,8 @@ export type CardWithdrawalState = {
   phase: CardWithdrawalPhase
   phaseStartTime: number
   cardName: string
+  /** Příjmení – při vytažení karty se zobrazuje pouze příjmení. */
+  cardSurname?: string
   countryIndex: number
   cardData: CardData
   /** Ve fázi print24hQuestion: true = ano, false = ne (výchozí). */

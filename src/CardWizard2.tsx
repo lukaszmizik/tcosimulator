@@ -504,8 +504,9 @@ export function useCardWizard2(params: UseCardWizard2Params) {
           const progress = Math.min(1, elapsed / LOADING_MS)
           if (progress >= 1) {
             if (prev.supplementDeclined) return { ...prev, phase: 'readyToDrive', phaseStartTime: Date.now(), loadingProgress: 1, supplementDeclined: false }
-            /* Stejná pravidla pro kartu 1 i 2: bez okna „První vložení“, vždy přechod na decision1M */
-            return { ...prev, phase: 'decision1M', phaseStartTime: Date.now(), loadingProgress: 1 }
+            /* Při opětovném vložení karty nejdřív obrazovka „Poslední vyjmutí“, pak decision1M. Při prvním vložení rovnou decision1M. */
+            if (prev.firstInsertion) return { ...prev, phase: 'decision1M', phaseStartTime: Date.now(), loadingProgress: 1 }
+            return { ...prev, phase: 'lastRemoval', phaseStartTime: Date.now(), loadingProgress: 1 }
           }
           return { ...prev, loadingProgress: progress }
         }

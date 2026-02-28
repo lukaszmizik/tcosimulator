@@ -198,9 +198,10 @@ function CardWithdrawalDisplay(props: TachoDisplayProps) {
       { char: '\u00a6' },
     ]
     const slotLabel = String(ws.slot)
+    const displayName = ws.cardSurname ?? ws.cardName
     return (
       <div className="lcd-two-rows lcd-card-insertion lcd-withdrawal">
-        <div className="lcd-row lcd-row-left">{slotLabel} {ws.cardName}</div>
+        <div className="lcd-row lcd-row-left">{slotLabel} {displayName}</div>
         <div className="lcd-row lcd-row-left lcd-loading-row lcd-loading-bargraf">
           {barSegments.map((seg, i) => {
             const ch = seg.sym !== undefined ? (symbolMap?.[seg.sym!] ?? `(${seg.sym})`) : seg.char

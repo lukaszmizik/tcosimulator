@@ -169,8 +169,9 @@ export default function App() {
       const timestamp = next
       const speed = currentSpeedRef.current
       const isDriving = speed > 0
-      const leftChar = isDriving ? DRIVING_SYMBOL : getActivityCode(leftActivityIdRef.current)
-      const rightChar = isDriving ? getActivityCode('AVAILABILITY') : getActivityCode(rightActivityIdRef.current)
+      const effectiveDriving = isDriving && !outModeActiveRef.current
+      const leftChar = effectiveDriving ? DRIVING_SYMBOL : getActivityCode(leftActivityIdRef.current)
+      const rightChar = effectiveDriving ? getActivityCode('AVAILABILITY') : getActivityCode(rightActivityIdRef.current)
       const driver1Activity = activityFromChar(leftChar)
       const driver2Activity = activityFromChar(rightChar)
 
@@ -563,9 +564,18 @@ export default function App() {
     prevSpeedRef.current = currentSpeed
 
     if (currentSpeed > 0) {
-      setDrivingMode(true)
-      if (!wasMoving) setRightActivityId('AVAILABILITY')
       setOutStoppedAtUtc(null)
+      if (outModeActive) {
+        leftActivityIdRef.current = 'WORK'
+        setLeftActivityId('WORK')
+        if (!wasMoving && isMultiManning) {
+          rightActivityIdRef.current = 'REST'
+          setRightActivityId('REST')
+        }
+      } else {
+        setDrivingMode(true)
+        if (!wasMoving) setRightActivityId('AVAILABILITY')
+      }
     } else if (wasMoving && isStopped) {
       if (outModeActive) {
         leftActivityIdRef.current = 'WORK'
@@ -1244,8 +1254,10 @@ export default function App() {
         ])
       }
 
-      const leftChar = isDriving ? DRIVING_SYMBOL : getActivityCode(leftActivityIdRef.current)
-      const rightChar = isDriving ? getActivityCode('AVAILABILITY') : getActivityCode(rightActivityIdRef.current)
+      /** Režim OUT: při jízdě se nezapočítává řízení, ale jiná práce (WORK). */
+      const effectiveDriving = isDriving && !outModeActiveRef.current
+      const leftChar = effectiveDriving ? DRIVING_SYMBOL : getActivityCode(leftActivityIdRef.current)
+      const rightChar = effectiveDriving ? getActivityCode('AVAILABILITY') : getActivityCode(rightActivityIdRef.current)
       const add = (char: string) => {
         if (char === DRIVING_SYMBOL) return { driving: SIM_DT_MS, rest: 0, otherWork: 0, availability: 0 }
         const act = MANUAL_ACTIVITIES.find((a) => a.code === char)
@@ -1879,6 +1891,7 @@ export default function App() {
             phase: 'bargraf',
             phaseStartTime: Date.now(),
             cardName: cardData.name,
+            cardSurname: cardData.surname,
             countryIndex,
             cardData,
           })
@@ -1925,6 +1938,7 @@ export default function App() {
             phase: 'bargraf',
             phaseStartTime: Date.now(),
             cardName: cardData.name,
+            cardSurname: cardData.surname,
             countryIndex,
             cardData,
           })
@@ -2070,8 +2084,9 @@ export default function App() {
     if (deltaMinutes > 0) {
       const speedNow = currentSpeedRef.current
       const isDrivingNow = speedNow > 0
-      const leftCharNow = isDrivingNow ? DRIVING_SYMBOL : getActivityCode(leftActivityIdRef.current)
-      const rightCharNow = isDrivingNow ? getActivityCode('AVAILABILITY') : getActivityCode(rightActivityIdRef.current)
+      const effectiveDrivingNow = isDrivingNow && !outModeActiveRef.current
+      const leftCharNow = effectiveDrivingNow ? DRIVING_SYMBOL : getActivityCode(leftActivityIdRef.current)
+      const rightCharNow = effectiveDrivingNow ? getActivityCode('AVAILABILITY') : getActivityCode(rightActivityIdRef.current)
 
       const driver1Activity = activityFromChar(leftCharNow)
       const driver2Activity = activityFromChar(rightCharNow)

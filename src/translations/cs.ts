@@ -186,6 +186,8 @@ export const cs: Translations = {
     outModeSection: 'Režim OUT:',
     activation: 'aktivace',
     deactivation: 'deaktivace',
+    outModeStartMark: 'out začátek',
+    outModeEndMark: 'out konec',
     legendRest45h: '≥ 45h',
     legendRest24h: '24h - 44h 59m',
     shiftSumLabel: 'Součet aktivit v probíhající směně:',

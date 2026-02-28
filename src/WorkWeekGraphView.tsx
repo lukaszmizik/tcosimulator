@@ -396,7 +396,7 @@ function GraphBlock({ days, countryMarkers, manualEntryBuffer, lastWithdrawalUtc
             <line x1="0" y1="0" x2="6" y2="6" stroke="rgba(100, 149, 237, 0.18)" strokeWidth="1" />
           </pattern>
           <pattern id={`out-driving-hatch-${blockId}`} patternUnits="userSpaceOnUse" width="4" height="4">
-            <line x1="0" y1="0" x2="4" y2="4" stroke="#e85c7a" strokeWidth="2.2" />
+            <line x1="0" y1="0" x2="4" y2="4" stroke="#c62828" strokeWidth="2.2" />
           </pattern>
         </defs>
         <g id={`day-separators-${blockId}`}>
@@ -550,7 +550,7 @@ function GraphBlock({ days, countryMarkers, manualEntryBuffer, lastWithdrawalUtc
               })}
               {getOutModeOnDay(visibleOutMode, day.dateUtc).map((ev, i) => {
                 const x = LABEL_WIDTH + timeToX(dayStart, ev.minuteStartUtc) * CHART_WIDTH
-                const label = ev.type === 'activation' ? 'OUT►' : '◄OUT'
+                const label = ev.type === 'activation' ? `${t.workWeek.outModeStartMark}►` : `◄${t.workWeek.outModeEndMark}`
                 const dx = ev.type === 'activation' ? 3 : -3
                 const textAnchor = ev.type === 'activation' ? 'start' : 'end'
                 const rowCenter = yBase + ROW_HEIGHT / 2

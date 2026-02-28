@@ -186,6 +186,8 @@ export const en: Translations = {
     outModeSection: 'OUT mode:',
     activation: 'activation',
     deactivation: 'deactivation',
+    outModeStartMark: 'out start',
+    outModeEndMark: 'out end',
     legendRest45h: '≥ 45h',
     legendRest24h: '24h - 44h 59m',
     shiftSumLabel: 'Sum of activities in current shift:',

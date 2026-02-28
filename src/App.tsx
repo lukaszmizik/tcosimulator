@@ -169,9 +169,8 @@ export default function App() {
       const timestamp = next
       const speed = currentSpeedRef.current
       const isDriving = speed > 0
-      const effectiveDriving = isDriving && !outModeActiveRef.current
-      const leftChar = effectiveDriving ? DRIVING_SYMBOL : getActivityCode(leftActivityIdRef.current)
-      const rightChar = effectiveDriving ? getActivityCode('AVAILABILITY') : getActivityCode(rightActivityIdRef.current)
+      const leftChar = isDriving ? DRIVING_SYMBOL : getActivityCode(leftActivityIdRef.current)
+      const rightChar = isDriving ? getActivityCode('AVAILABILITY') : getActivityCode(rightActivityIdRef.current)
       const driver1Activity = activityFromChar(leftChar)
       const driver2Activity = activityFromChar(rightChar)
 
@@ -565,17 +564,8 @@ export default function App() {
 
     if (currentSpeed > 0) {
       setOutStoppedAtUtc(null)
-      if (outModeActive) {
-        leftActivityIdRef.current = 'WORK'
-        setLeftActivityId('WORK')
-        if (!wasMoving && isMultiManning) {
-          rightActivityIdRef.current = 'REST'
-          setRightActivityId('REST')
-        }
-      } else {
-        setDrivingMode(true)
-        if (!wasMoving) setRightActivityId('AVAILABILITY')
-      }
+      setDrivingMode(true)
+      if (!wasMoving) setRightActivityId('AVAILABILITY')
     } else if (wasMoving && isStopped) {
       if (outModeActive) {
         leftActivityIdRef.current = 'WORK'
@@ -1240,7 +1230,7 @@ export default function App() {
         }
       }
       const noCardSlot1 = !card1InsertedRef.current
-      if (isDriving && noCardSlot1 && !drivingWithoutCardEventAddedRef.current) {
+      if (isDriving && noCardSlot1 && !outModeActiveRef.current && !drivingWithoutCardEventAddedRef.current) {
         drivingWithoutCardEventAddedRef.current = true
         const ts = simulatedUtcTimeRef.current
         setDrivingWithoutCardWarningActive(true)
@@ -1254,10 +1244,8 @@ export default function App() {
         ])
       }
 
-      /** Režim OUT: při jízdě se nezapočítává řízení, ale jiná práce (WORK). */
-      const effectiveDriving = isDriving && !outModeActiveRef.current
-      const leftChar = effectiveDriving ? DRIVING_SYMBOL : getActivityCode(leftActivityIdRef.current)
-      const rightChar = effectiveDriving ? getActivityCode('AVAILABILITY') : getActivityCode(rightActivityIdRef.current)
+      const leftChar = isDriving ? DRIVING_SYMBOL : getActivityCode(leftActivityIdRef.current)
+      const rightChar = isDriving ? getActivityCode('AVAILABILITY') : getActivityCode(rightActivityIdRef.current)
       const add = (char: string) => {
         if (char === DRIVING_SYMBOL) return { driving: SIM_DT_MS, rest: 0, otherWork: 0, availability: 0 }
         const act = MANUAL_ACTIVITIES.find((a) => a.code === char)
@@ -2084,9 +2072,8 @@ export default function App() {
     if (deltaMinutes > 0) {
       const speedNow = currentSpeedRef.current
       const isDrivingNow = speedNow > 0
-      const effectiveDrivingNow = isDrivingNow && !outModeActiveRef.current
-      const leftCharNow = effectiveDrivingNow ? DRIVING_SYMBOL : getActivityCode(leftActivityIdRef.current)
-      const rightCharNow = effectiveDrivingNow ? getActivityCode('AVAILABILITY') : getActivityCode(rightActivityIdRef.current)
+      const leftCharNow = isDrivingNow ? DRIVING_SYMBOL : getActivityCode(leftActivityIdRef.current)
+      const rightCharNow = isDrivingNow ? getActivityCode('AVAILABILITY') : getActivityCode(rightActivityIdRef.current)
 
       const driver1Activity = activityFromChar(leftCharNow)
       const driver2Activity = activityFromChar(rightCharNow)
@@ -2992,8 +2979,8 @@ export default function App() {
     remoteDataDownloadActive,
     driver1ManualEntryBuffer,
     driver2ManualEntryBuffer,
-    /** Režim OUT: zobrazit "OUT" na L2 vlevo – vozidlo stojí ≥30 s */
-    showOutOnL2: outModeActive && currentSpeed === 0 && outStoppedAtUtc != null && simulatedUtcTime - outStoppedAtUtc >= 30000,
+    /** Režim OUT: zobrazit "OUT" na L2 vlevo hned po zadání OUT začátek */
+    showOutOnL2: outModeActive,
   }
 
   const isDriving = currentSpeed > 0

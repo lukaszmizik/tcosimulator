@@ -168,6 +168,8 @@ export type Translations = {
     outModeSection: string
     activation: string
     deactivation: string
+    outModeStartMark: string
+    outModeEndMark: string
     legendRest45h: string
     legendRest24h: string
     shiftSumLabel: string

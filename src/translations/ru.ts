@@ -186,6 +186,8 @@ export const ru: Translations = {
     outModeSection: 'Режим OUT:',
     activation: 'активация',
     deactivation: 'деактивация',
+    outModeStartMark: 'OUT начало',
+    outModeEndMark: 'OUT конец',
     legendRest45h: '≥ 45ч',
     legendRest24h: '24ч - 44ч 59м',
     shiftSumLabel: 'Сумма активностей в текущей смене:',

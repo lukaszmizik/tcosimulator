@@ -3056,7 +3056,8 @@ export default function App() {
           <option value="ru">Русский</option>
         </select>
       </div>
-      <div className="device-column" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0, position: 'relative' }}>
+      <div className="device-column">
+      <div className="vdo-with-toggle">
       <div
         ref={vdoWrapperRef}
         className="vdo-wrapper"
@@ -3231,21 +3232,22 @@ export default function App() {
           onCardDragStart={handleCardDragStart}
         />
       </div>
+        <button
+          type="button"
+          className="info-panels-toggle info-panels-toggle--at-tacho"
+          onClick={() => setInfoPanelsCollapsed((c) => !c)}
+          aria-label={infoPanelsCollapsed ? t.ui.expandInfoboxes : t.ui.collapseInfoboxes}
+          aria-expanded={!infoPanelsCollapsed}
+        >
+          <span className="info-panels-toggle-arrow" data-collapsed={infoPanelsCollapsed}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </span>
+        </button>
+      </div>
 
       <div className={`info-panels-wrapper info-panels-wrapper--attached ${infoPanelsCollapsed ? 'info-panels-wrapper--collapsed' : ''}`}>
-          <button
-            type="button"
-            className="info-panels-toggle"
-            onClick={() => setInfoPanelsCollapsed((c) => !c)}
-            aria-label={infoPanelsCollapsed ? t.ui.expandInfoboxes : t.ui.collapseInfoboxes}
-            aria-expanded={!infoPanelsCollapsed}
-          >
-            <span className="info-panels-toggle-arrow" data-collapsed={infoPanelsCollapsed}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M15 18l-6-6 6-6" />
-              </svg>
-            </span>
-          </button>
           {infoPanelsCollapsed ? (
             <div className="info-panels-strip">
               <InfoPanel items={infoPanelItems} resetTrigger={infoPanelResetTrigger} symbolMap={symbolMap} collapsed />

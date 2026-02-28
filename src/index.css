@@ -520,10 +520,23 @@ body {
   transform: translateY(2px);
 }
 
-/* Sloupec přístroje – fixní šířka, rezerva vpravo pro infoboxy (nepřekrývají přístroj) */
+/* Sloupec přístroje – tachograf má fixní místo; infoboxy jsou vpravo v rezervované oblasti (tachograf se nepohybuje) */
 .device-column {
+  position: relative;
   flex-shrink: 0;
   padding-right: 320px;
+}
+
+/* Obal tachografu + šipka rozbalení (šipka vpravo vedle těla přístroje) */
+.vdo-with-toggle {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.info-panels-toggle--at-tacho {
+  position: absolute;
+  right: -40px;
+  top: 0;
 }
 
 .vdo-wrapper {
@@ -1574,6 +1587,7 @@ body {
   z-index: 10;
 }
 /* Přimknutý k pravému okraji přístroje – jen obsah zachytává kliky, zbytek propouští na tlačítka */
+/* Infoboxy vpravo – absolutní pozice, aby rozbalení/sbalení neposunulo tachograf */
 .info-panels-wrapper--attached {
   position: absolute;
   right: 0;

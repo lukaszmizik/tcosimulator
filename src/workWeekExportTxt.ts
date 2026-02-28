@@ -242,25 +242,9 @@ export function simulatorToGraphData(
     }
   })
 
-  if (countryMarkers.length === 0 && activityHistory.length > 0) {
-    const activeEntries = activityHistory.filter(
-      (e) =>
-        e[driverKey] === 'driving' ||
-        e[driverKey] === 'rest' ||
-        e[driverKey] === 'otherWork' ||
-        e[driverKey] === 'availability'
-    )
-    if (activeEntries.length > 0) {
-      const firstMs = activeEntries[0]!.minuteStartUtc
-      const lastMs = activeEntries[activeEntries.length - 1]!.minuteStartUtc + 60000
-      const d1 = new Date(firstMs)
-      const d2 = new Date(lastMs)
-      countryMarkers.push(
-        { activityId: 'START_COUNTRY', countryCode: 'CZ', timeStr: `${String(d1.getUTCHours()).padStart(2, '0')}:${String(d1.getUTCMinutes()).padStart(2, '0')}`, dateStr: msToDateStr(firstMs) },
-        { activityId: 'END_COUNTRY', countryCode: 'CZ', timeStr: `${String(d2.getUTCHours()).padStart(2, '0')}:${String(d2.getUTCMinutes()).padStart(2, '0')}`, dateStr: msToDateStr(lastMs) },
-      )
-    }
-  }
+  // Začátek a konec směny (šrafované pozadí v grafu) se zobrazují jen při explicitním zadání
+  // výchozí/cílová země v manuálním bufferu. Při zapnutí funkce OUT se automaticky
+  // nepřidávají START_COUNTRY/END_COUNTRY, aby v grafu nefigurovala směna.
 
   return { activities: merged, countryMarkers }
 }

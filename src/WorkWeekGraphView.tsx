@@ -347,6 +347,8 @@ type GraphBlockProps = {
       outModeSection: string
       activation: string
       deactivation: string
+      outModeStartMark: string
+      outModeEndMark: string
     }
     manualEntry: { load: string; unload: string; loadUnload: string }
   }

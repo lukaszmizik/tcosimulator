@@ -477,9 +477,9 @@ function OperatingDisplay(props: TachoDisplayProps) {
 
   /** VDO counter – zobraz jen po stisku šipky; jinak vždy základní obrazovka */
   if (!vdoCounterActive) {
-    /* Základní obrazovka – čas, rychlost, km, karty */
+    /* Základní obrazovka – stejné rozložení jako při načítání karty (lcd-card-insertion) */
     return (
-      <div className={`lcd-two-rows ${tachoState.isMultiManning ? 'lcd-multi-manning' : ''} ${isStandby ? 'lcd-standby' : ''}`} data-multi-manning={tachoState.isMultiManning || undefined} data-standby={isStandby || undefined}>
+      <div className={`lcd-two-rows lcd-card-insertion ${tachoState.isMultiManning ? 'lcd-multi-manning' : ''} ${isStandby ? 'lcd-standby' : ''}`} data-multi-manning={tachoState.isMultiManning || undefined} data-standby={isStandby || undefined}>
         <div className="lcd-row">
           <div className="lcd-row-sides">{timeStr}{parseSymbols('(37)', symbolMap)}{remoteDataDownloadActive && <span className="lcd-rotate-spinner">{ROTATING_CHARS[rotateIndex]}</span>}</div>
           <div className="lcd-row-center">
@@ -528,9 +528,6 @@ function OperatingDisplay(props: TachoDisplayProps) {
                   <TachoIcon code={SPECIAL_SYMBOLS.CARD_SYMBOL} />
                 )}
                 <TachoIcon code={rightEdgeChar} />
-                {card2Inserted && (
-                  <span className="lcd-icon" style={{ fontFamily: TACHO_FONT }}>{getIconChar('card')}</span>
-                )}
               </div>
             </>
           )}
@@ -632,9 +629,9 @@ function OperatingDisplay(props: TachoDisplayProps) {
     )
   }
 
-  /* Obrazovka 2–6 a výchozí: Info – čas, rychlost, km, karty */
+  /* Obrazovka 2–6 a výchozí: Info – stejné rozložení jako při načítání karty (lcd-card-insertion) */
   return (
-    <div className={`lcd-two-rows ${tachoState.isMultiManning ? 'lcd-multi-manning' : ''} ${isStandby ? 'lcd-standby' : ''}`} data-multi-manning={tachoState.isMultiManning || undefined} data-standby={isStandby || undefined}>
+    <div className={`lcd-two-rows lcd-card-insertion ${tachoState.isMultiManning ? 'lcd-multi-manning' : ''} ${isStandby ? 'lcd-standby' : ''}`} data-multi-manning={tachoState.isMultiManning || undefined} data-standby={isStandby || undefined}>
       <div className="lcd-row">
         <div className="lcd-row-sides">{timeStr}{parseSymbols('(37)', symbolMap)}{remoteDataDownloadActive && <span className="lcd-rotate-spinner">{ROTATING_CHARS[rotateIndex]}</span>}</div>
         <div className="lcd-row-center">
@@ -683,9 +680,6 @@ function OperatingDisplay(props: TachoDisplayProps) {
                 <TachoIcon code={SPECIAL_SYMBOLS.CARD_SYMBOL} />
               )}
               <TachoIcon code={rightEdgeChar} />
-              {card2Inserted && (
-                <span className="lcd-icon" style={{ fontFamily: TACHO_FONT }}>{getIconChar('card')}</span>
-              )}
             </div>
           </>
         )}

@@ -345,7 +345,6 @@ export function CardInsertionDisplay2(props: CardInsertionDisplay2Props) {
           <div className="lcd-row-sides">
             {showSlot2Card && (cs.slot === 2 ? cardSymbolEl : <TachoIcon code={SPECIAL_SYMBOLS.CARD_SYMBOL} />)}
             <TachoIcon code={rightEdgeChar} />
-            {showSlot2Card && (cs.slot === 2 ? null : <span className="lcd-icon" style={{ fontFamily: TACHO_FONT }}>{getIconChar('card')}</span>)}
           </div>
         </div>
       </div>

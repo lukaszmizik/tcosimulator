@@ -367,6 +367,10 @@ body {
 .lcd-card-insertion .lcd-row {
   line-height: 1.4;
 }
+/* Počítadlo km na jeden řádek (L2 střed) – platí pro načítání karty i main dashboard */
+.lcd-card-insertion .lcd-row:last-child .lcd-row-center {
+  white-space: nowrap;
+}
 
 .lcd-loading-row {
   justify-content: flex-start;

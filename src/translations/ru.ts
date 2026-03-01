@@ -45,6 +45,7 @@ export const ru: Translations = {
     decrementHours: 'Уменьшить часы',
     decrementMinutes: 'Уменьшить минуты',
     applyTimeTitle: 'Применить установленное время на дисплей тахографа',
+    selectedDateTimeLabel: 'Выбранные дата и время:',
     remoteDataDownloadActive: 'Удалённая загрузка данных активна',
     card1EndedByTargetCountry: 'Карта 1 завершена целевой страной',
     ignitionLabel: 'Зажигание',

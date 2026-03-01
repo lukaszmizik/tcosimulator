@@ -45,6 +45,7 @@ export const en: Translations = {
     decrementHours: 'Decrement hours',
     decrementMinutes: 'Decrement minutes',
     applyTimeTitle: 'Apply set time to tachograph display',
+    selectedDateTimeLabel: 'Selected date and time:',
     remoteDataDownloadActive: 'Remote data download active',
     card1EndedByTargetCountry: 'Card 1 ended by target country',
     ignitionLabel: 'Ignition',

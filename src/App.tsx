@@ -101,6 +101,7 @@ import { SPLIT_REST_FIRST_MS, SPLIT_REST_SECOND_MS } from './VDOCounter'
 import { isWarningCode } from './data/warnings'
 import { useLanguage } from './translations'
 import { ControlPanel } from './ControlPanel'
+import { DriverCardVisual } from './DriverCardVisual'
 import { usePrintState } from './print/usePrintState'
 import { PrintOverlays } from './print/PrintOverlays'
 
@@ -2608,7 +2609,6 @@ export default function App() {
     restSinceLastBreakMsByDriverRef.current = { 1: 0, 2: 0 }
     setDrivingSinceLastBreakMsByDriver({ 1: 0, 2: 0 })
     setRestSinceLastBreakMsByDriver({ 1: 0, 2: 0 })
-    exportWorkWeekToTxt(generated, manualEntryBuffer, slotIndex)
     const { activities, countryMarkers } = simulatorToGraphData(generated, manualEntryBuffer, slotIndex)
     const days = activitiesByDay(activities)
     const daysToShow = activities.length > 0 ? expandToWeeksContainingData(days, Math.min(...activities.map((a) => a.startMs))) : expandToWeeksContainingData([], nowUtc)
@@ -3055,6 +3055,22 @@ export default function App() {
           <option value="en">English</option>
           <option value="ru">Русский</option>
         </select>
+        <div className="driver-cards-column" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <DriverCardVisual
+            cardId="zmizik"
+            data={card1Data?.templateId === 'zmizik' ? card1Data : card2Data?.templateId === 'zmizik' ? card2Data : TEST_CARDS.zmizik}
+            insertedSlot={card1Data?.templateId === 'zmizik' ? 1 : card2Data?.templateId === 'zmizik' ? 2 : null}
+            draggable={!(card1Data?.templateId === 'zmizik' || card2Data?.templateId === 'zmizik') && ignitionOn}
+            onDragStart={(e) => handleCardDragStart(e, 'zmizik')}
+          />
+          <DriverCardVisual
+            cardId="novak"
+            data={card1Data?.templateId === 'novak' ? card1Data : card2Data?.templateId === 'novak' ? card2Data : TEST_CARDS.novak}
+            insertedSlot={card1Data?.templateId === 'novak' ? 1 : card2Data?.templateId === 'novak' ? 2 : null}
+            draggable={!(card1Data?.templateId === 'novak' || card2Data?.templateId === 'novak') && ignitionOn}
+            onDragStart={(e) => handleCardDragStart(e, 'novak')}
+          />
+        </div>
       </div>
       <div className="device-column">
       <div className="vdo-with-toggle">
@@ -3206,6 +3222,7 @@ export default function App() {
           currentSpeed={currentSpeed}
           panelHours={panelHours}
           panelMinutes={panelMinutes}
+          panelDateTime={panelDateTime}
           canDecrementHours={canDecrementHours}
           canDecrementMinutes={canDecrementMinutes}
           onAdjustHours={adjustHours}
@@ -3229,7 +3246,6 @@ export default function App() {
           onOpenWorkWeekData={handleOpenWorkWeekData}
           onSaveCard1ToFile={handleSaveCard1ToFile}
           onShowCardData={handleShowCardData}
-          onCardDragStart={handleCardDragStart}
         />
       </div>
         <button

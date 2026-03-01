@@ -45,6 +45,7 @@ export const cs: Translations = {
     decrementHours: 'Zmenšit hodiny',
     decrementMinutes: 'Zmenšit minuty',
     applyTimeTitle: 'Přenést nastavený čas na displej tachografu',
+    selectedDateTimeLabel: 'Zvolený datum a čas:',
     remoteDataDownloadActive: 'Vzdálené stahování dat aktivní',
     card1EndedByTargetCountry: 'Karta 1 ukončena cílovou zemí',
     ignitionLabel: 'Zapalování',

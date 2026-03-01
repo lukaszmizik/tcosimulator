@@ -3,6 +3,7 @@
  * Extrahováno z App.tsx pro zlepšení udržovatelnosti.
  */
 
+import { useState } from 'react'
 import type { CardData } from './TachoTypes'
 import type { Translations } from './translations/types'
 
@@ -17,6 +18,8 @@ export type ControlPanelProps = {
   currentSpeed: number
   panelHours: number
   panelMinutes: number
+  /** Datum a čas, které se nastaví po stisknutí potvrzovacího tlačítka */
+  panelDateTime: Date
   canDecrementHours: boolean
   canDecrementMinutes: boolean
   onAdjustHours: (delta: number) => void
@@ -41,7 +44,6 @@ export type ControlPanelProps = {
   onOpenWorkWeekData: () => void
   onSaveCard1ToFile: () => void
   onShowCardData: () => void
-  onCardDragStart: (e: React.DragEvent, cardId: 'zmizik' | 'novak') => void
 }
 
 export function ControlPanel({
@@ -55,6 +57,7 @@ export function ControlPanel({
   currentSpeed,
   panelHours,
   panelMinutes,
+  panelDateTime,
   canDecrementHours,
   canDecrementMinutes,
   onAdjustHours,
@@ -78,30 +81,17 @@ export function ControlPanel({
   onOpenWorkWeekData,
   onSaveCard1ToFile,
   onShowCardData,
-  onCardDragStart,
 }: ControlPanelProps) {
+  const [generateWorkWeekFlash, setGenerateWorkWeekFlash] = useState(false)
+  const handleGenerateWorkWeekClick = () => {
+    if (isMultiManning || ignitionOn) return
+    onGenerateWorkWeek()
+    setGenerateWorkWeekFlash(true)
+    setTimeout(() => setGenerateWorkWeekFlash(false), 400)
+  }
   return (
     <div className="control-panel">
       <div className="control-panel-row-main">
-        <div className="control-panel-section">
-          <div className="control-panel-label">{t.ui.driverCardsTest}</div>
-          <div className="cards-row">
-            <div
-              className={`control-card ${card1Data?.templateId === 'zmizik' || card2Data?.templateId === 'zmizik' ? 'control-card-inserted' : ''} ${!ignitionOn ? 'control-card-dragging-disabled' : ''}`}
-              draggable={!(card1Data?.templateId === 'zmizik' || card2Data?.templateId === 'zmizik') && ignitionOn}
-              onDragStart={(e) => ignitionOn && !(card1Data?.templateId === 'zmizik' || card2Data?.templateId === 'zmizik') && onCardDragStart(e, 'zmizik')}
-            >
-              {card1Data?.templateId === 'zmizik' ? t.ui.cardZmizikSlot1 : card2Data?.templateId === 'zmizik' ? t.ui.cardZmizikSlot2 : t.ui.cardZmizik}
-            </div>
-            <div
-              className={`control-card ${card1Data?.templateId === 'novak' || card2Data?.templateId === 'novak' ? 'control-card-inserted' : ''} ${!ignitionOn ? 'control-card-dragging-disabled' : ''}`}
-              draggable={!(card1Data?.templateId === 'novak' || card2Data?.templateId === 'novak') && ignitionOn}
-              onDragStart={(e) => ignitionOn && !(card1Data?.templateId === 'novak' || card2Data?.templateId === 'novak') && onCardDragStart(e, 'novak')}
-            >
-              {card1Data?.templateId === 'novak' ? t.ui.cardRomanSlot1 : card2Data?.templateId === 'novak' ? t.ui.cardRomanSlot2 : t.ui.cardRoman}
-            </div>
-          </div>
-        </div>
         <div className="control-panel-section">
           <div className="control-panel-label">{t.ui.speedLabel}: {Math.round(currentSpeed)} km/h</div>
           <input
@@ -114,51 +104,59 @@ export function ControlPanel({
             disabled={!ignitionOn}
           />
         </div>
-        <div className="control-panel-row-time-apply">
-          <div className="control-panel-section control-panel-section-time">
-            <div className="time-block">
-              <div className="control-panel-label">{t.ui.hoursLabel}</div>
-              <div className="time-display-box" aria-label={t.ui.hoursLabel}>
-                {panelHours.toString().padStart(2, '0')}
+        <div className="control-panel-time-block">
+          <div className="control-panel-row-time-apply">
+            <div className="control-panel-section control-panel-section-time">
+              <div className="time-block">
+                <div className="control-panel-label">{t.ui.hoursLabel}</div>
+                <div className="time-display-box" aria-label={t.ui.hoursLabel}>
+                  {panelHours.toString().padStart(2, '0')}
+                </div>
+              </div>
+              <div className="time-buttons-col">
+                <button type="button" className="control-btn control-btn-time" disabled={false} onClick={() => onAdjustHours(1)}>+</button>
+                <button
+                  type="button"
+                  className={`control-btn control-btn-time ${!canDecrementHours ? 'control-btn-time-disabled' : ''}`}
+                  onClick={() => canDecrementHours && onAdjustHours(-1)}
+                  disabled={!canDecrementHours}
+                  title={!canDecrementHours ? t.ui.cannotDecrementTime : t.ui.decrementHours}
+                >
+                  −
+                </button>
               </div>
             </div>
-            <div className="time-buttons-col">
-              <button type="button" className="control-btn control-btn-time" disabled={false} onClick={() => onAdjustHours(1)}>+</button>
-              <button
-                type="button"
-                className={`control-btn control-btn-time ${!canDecrementHours ? 'control-btn-time-disabled' : ''}`}
-                onClick={() => canDecrementHours && onAdjustHours(-1)}
-                disabled={!canDecrementHours}
-                title={!canDecrementHours ? t.ui.cannotDecrementTime : t.ui.decrementHours}
-              >
-                −
+            <div className="control-panel-section control-panel-section-time">
+              <div className="time-block">
+                <div className="control-panel-label">{t.ui.minutesLabel}</div>
+                <div className="time-display-box" aria-label={t.ui.minutesLabel}>
+                  {panelMinutes.toString().padStart(2, '0')}
+                </div>
+              </div>
+              <div className="time-buttons-col">
+                <button type="button" className="control-btn control-btn-time" onClick={() => onAdjustMinutes(1)}>+</button>
+                <button
+                  type="button"
+                  className={`control-btn control-btn-time ${!canDecrementMinutes ? 'control-btn-time-disabled' : ''}`}
+                  onClick={() => canDecrementMinutes && onAdjustMinutes(-1)}
+                  disabled={!canDecrementMinutes}
+                  title={!canDecrementMinutes ? t.ui.cannotDecrementTime : t.ui.decrementMinutes}
+                >
+                  −
+                </button>
+              </div>
+            </div>
+            <div className="control-panel-section time-apply-section">
+              <button type="button" className="control-btn control-btn-apply" onClick={onApplyTime} title={t.ui.applyTimeTitle}>
+                ✓
               </button>
             </div>
           </div>
-          <div className="control-panel-section control-panel-section-time">
-            <div className="time-block">
-              <div className="control-panel-label">{t.ui.minutesLabel}</div>
-              <div className="time-display-box" aria-label={t.ui.minutesLabel}>
-                {panelMinutes.toString().padStart(2, '0')}
-              </div>
-            </div>
-            <div className="time-buttons-col">
-              <button type="button" className="control-btn control-btn-time" onClick={() => onAdjustMinutes(1)}>+</button>
-              <button
-                type="button"
-                className={`control-btn control-btn-time ${!canDecrementMinutes ? 'control-btn-time-disabled' : ''}`}
-                onClick={() => canDecrementMinutes && onAdjustMinutes(-1)}
-                disabled={!canDecrementMinutes}
-                title={!canDecrementMinutes ? t.ui.cannotDecrementTime : t.ui.decrementMinutes}
-              >
-                −
-              </button>
-            </div>
-          </div>
-          <div className="control-panel-section time-apply-section">
-            <button type="button" className="control-btn control-btn-apply" onClick={onApplyTime} title={t.ui.applyTimeTitle}>
-              ✓
-            </button>
+          <div className="control-panel-apply-preview" title={t.ui.applyTimeTitle}>
+            {t.ui.selectedDateTimeLabel}{' '}
+            {panelDateTime.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric', year: 'numeric' })}
+            {' · '}
+            {panelDateTime.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })}
           </div>
         </div>
       </div>
@@ -236,8 +234,8 @@ export function ControlPanel({
           </button>
           <button
             type="button"
-            className={`control-btn control-btn-simulate ${isMultiManning || ignitionOn ? 'control-slider-disabled' : ''}`}
-            onClick={onGenerateWorkWeek}
+            className={`control-btn control-btn-simulate control-btn-generate-work-week ${isMultiManning || ignitionOn ? 'control-slider-disabled' : ''} ${generateWorkWeekFlash ? 'control-btn-generate-work-week-flash' : ''}`}
+            onClick={handleGenerateWorkWeekClick}
             disabled={isMultiManning || ignitionOn}
             title={ignitionOn ? t.controls.generateWorkWeekDisabledIgnitionTitle : isMultiManning ? t.controls.generateWorkWeekDisabledTitle : t.controls.generateWorkWeekTitle}
           >

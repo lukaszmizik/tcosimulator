@@ -731,12 +731,24 @@ body {
   margin-left: auto;
 }
 
-/* Blok nastavení času: Hodiny, Minuty a tlačítko ✓ */
+/* Blok nastavení času: Hodiny, Minuty, tlačítko ✓ a náhled data/času */
+.control-panel-time-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
 .control-panel-row-time-apply {
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 24px;
+}
+.control-panel-apply-preview {
+  font-size: 11px;
+  font-weight: 600;
+  color: #0ea5e9;
+  letter-spacing: 0.02em;
 }
 
 .control-panel-row-time-apply .control-panel-section-time {
@@ -846,7 +858,7 @@ body {
 /* Sekce Hodiny / Minuty: vlevo blok (nápis + box), vpravo tlačítka − a + pod sebou */
 .control-panel-section-time {
   flex-direction: row;
-  align-items: flex-start;
+  align-items: flex-end;
   gap: 8px;
 }
 
@@ -863,10 +875,11 @@ body {
 }
 
 .control-btn-time {
-  width: 28px;
-  height: 28px;
-  font-size: 14px;
+  width: 36px;
+  height: 24px;
+  font-size: 13px;
   padding: 0;
+  border-radius: 4px;
 }
 
 .control-btn-time:disabled,
@@ -909,17 +922,34 @@ body {
   transform: scale(0.97);
 }
 
-/* Potvrzující tlačítko (✓) – šířka odvozená od jednoho znaku */
+/* Tlačítka nastavení času – obdélník, na výškové úrovni boxu s číslem (přepíše .control-btn) */
+.control-btn.control-btn-time {
+  width: 36px;
+  height: 24px;
+  font-size: 13px;
+  border-radius: 4px;
+}
+
+/* Potvrzující tlačítko (✓) – zmenšené */
 .control-btn-apply {
-  width: 2.25em;
-  min-width: 2.25em;
-  height: 2.25em;
+  width: 1.85em;
+  min-width: 1.85em;
+  height: 1.85em;
   padding: 0;
-  font-size: 18px;
+  font-size: 15px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   line-height: 1;
+  background: #16a34a;
+  color: #fff;
+  border-color: #15803d;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+.control-btn-apply:hover {
+  background: #15803d;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
 }
 
 /* Tlačítka Start / Stop (zapalování) */
@@ -942,6 +972,15 @@ body {
   padding: 8px 12px;
   white-space: normal;
   line-height: 1.2;
+}
+
+/* Krátké podbarvení po kliknutí na „Generovat pracovní týden“ */
+.control-btn-generate-work-week-flash {
+  animation: control-btn-generate-work-week-flash 0.4s ease-out;
+}
+@keyframes control-btn-generate-work-week-flash {
+  0% { background: #4a7c59; }
+  100% { background: var(--btn-gray); }
 }
 
 .ignition-btn {
@@ -2008,4 +2047,208 @@ body {
 
 .action-log-save-btn:active {
   background: #1e5a28;
+}
+
+/* Orientační vizuál karty řidiče (KARTA ŘIDIČE) */
+.driver-card-visual {
+  position: relative;
+  width: 320px;
+  height: 202px;
+  background: #f5f5f0;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  padding: 12px 14px;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-size: 11px;
+  color: #1a1a1a;
+  overflow: hidden;
+}
+
+.driver-card-visual__eu {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  width: 52px;
+  height: 40px;
+  background: #003399;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.driver-card-visual__eu-stars {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.driver-card-visual__eu-star {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: #ffcc00;
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  margin-left: -1px;
+  margin-top: -1px;
+  transform-origin: 50% 50%;
+}
+
+.driver-card-visual__eu-cz {
+  position: relative;
+  z-index: 1;
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.12em;
+  text-shadow:
+    0 0 1px rgba(0, 0, 0, 0.6),
+    0 1px 2px rgba(0, 0, 0, 0.5),
+    0 2px 4px rgba(0, 0, 0, 0.35);
+}
+
+.driver-card-visual__cz-corner {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  font-size: 16px;
+  font-weight: 800;
+  color: #8b0000;
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 1px rgba(0, 0, 0, 0.15);
+}
+
+.driver-card-visual__title {
+  margin: 0 0 8px 70px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e3a5f;
+  letter-spacing: 0.02em;
+}
+
+.driver-card-visual__photo {
+  position: absolute;
+  left: 12px;
+  top: 56px;
+  width: 52px;
+  height: 64px;
+  background: #e8e8e0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.driver-card-visual__person-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.driver-card-visual__person-head {
+  width: 20px;
+  height: 20px;
+  background: #c0c0c0;
+  border-radius: 50%;
+}
+
+.driver-card-visual__person-body {
+  width: 28px;
+  height: 28px;
+  background: #c0c0c0;
+  border-radius: 50% 50% 0 0;
+  margin-top: -6px;
+}
+
+.driver-card-visual__body {
+  margin-left: 72px;
+  padding-right: 8px;
+  min-height: 100px;
+  margin-top: 2px;
+}
+
+.driver-card-visual__field {
+  line-height: 1.35;
+  margin-bottom: 2px;
+}
+
+.driver-card-visual__field--dates {
+  display: flex;
+  gap: 16px;
+}
+
+.driver-card-visual__field--mono {
+  font-family: ui-monospace, "Cascadia Code", "Consolas", monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.driver-card-visual__decoration {
+  position: absolute;
+  right: -20px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, rgba(200, 220, 255, 0.5), rgba(255, 220, 220, 0.3) 40%, rgba(220, 255, 220, 0.2) 70%);
+  pointer-events: none;
+}
+
+.driver-card-visual__signature {
+  margin-top: 6px;
+  margin-left: 72px;
+  font-size: 10px;
+  font-style: italic;
+  color: #444;
+}
+
+.driver-card-visual__g2 {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #1e3a5f;
+}
+
+/* Obal karty řidiče – přesouvatelný / vložený stav */
+.driver-card-visual-wrapper {
+  position: relative;
+  user-select: none;
+}
+
+.driver-card-visual-wrapper--draggable {
+  cursor: grab;
+}
+
+.driver-card-visual-wrapper--draggable:active {
+  cursor: grabbing;
+}
+
+.driver-card-visual-wrapper--inserted {
+  opacity: 0.88;
+  cursor: default;
+  filter: saturate(0.7);
+}
+
+.driver-card-visual-wrapper__slot-badge {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  z-index: 2;
+  font-size: 11px;
+  font-weight: 700;
+  color: #1e3a5f;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 2px 8px;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }

@@ -47,6 +47,7 @@ export type Translations = {
     decrementHours: string
     decrementMinutes: string
     applyTimeTitle: string
+    selectedDateTimeLabel: string
     remoteDataDownloadActive: string
     card1EndedByTargetCountry: string
     ignitionLabel: string

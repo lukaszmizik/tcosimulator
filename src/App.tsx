@@ -3213,8 +3213,6 @@ export default function App() {
 
         <ControlPanel
           t={t}
-          card1Data={card1Data}
-          card2Data={card2Data}
           ignitionOn={ignitionOn}
           onIgnitionStart={() => setIgnitionOn(true)}
           targetSpeed={targetSpeed}

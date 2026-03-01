@@ -4,13 +4,10 @@
  */
 
 import { useState } from 'react'
-import type { CardData } from './TachoTypes'
 import type { Translations } from './translations/types'
 
 export type ControlPanelProps = {
   t: Translations
-  card1Data: CardData | null
-  card2Data: CardData | null
   ignitionOn: boolean
   onIgnitionStart: () => void
   targetSpeed: number
@@ -48,8 +45,6 @@ export type ControlPanelProps = {
 
 export function ControlPanel({
   t,
-  card1Data,
-  card2Data,
   ignitionOn,
   onIgnitionStart,
   targetSpeed,

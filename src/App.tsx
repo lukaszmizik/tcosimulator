@@ -3209,7 +3209,7 @@ export default function App() {
             </div>
           </div>
         </div>
-        <div className="vdo-labels">Continental VDO DTCO 4.1 G2V2</div>
+        <div className="vdo-labels">Continental VDO DTCO 4.1 G2V2 · lukas@zmizik.com</div>
 
         <ControlPanel
           t={t}

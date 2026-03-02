@@ -928,6 +928,13 @@ body {
   height: 24px;
   font-size: 13px;
   border-radius: 4px;
+  background: #48658f;
+  border-color: #3b5578;
+  color: #fff;
+}
+
+.control-btn.control-btn-time:hover:not(.control-btn-time-disabled):not(:disabled) {
+  background: #3b5578;
 }
 
 /* Potvrzující tlačítko (✓) – zmenšené */

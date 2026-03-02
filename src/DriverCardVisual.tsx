@@ -30,14 +30,17 @@ function getBirthDateForCard(cardId: 'zmizik' | 'novak'): string {
   return `${String(day).padStart(2, '0')}.${String(month).padStart(2, '0')}.${year}`
 }
 
-/** Začátek a konec platnosti karty (platnost 5 let), deterministicky podle cardId. */
+/** Začátek a konec platnosti karty (platnost 5 let).
+ *  Rok 2026 je prvním rokem platnosti a aktuální datum (2026) spadá dovnitř intervalu.
+ *  Pro každou kartu je zvolen jiné (lépe „náhodné“) datum v roce 2026, ne 1.1.
+ */
 function getValidityDatesForCard(cardId: 'zmizik' | 'novak'): { from: string; to: string } {
-  const startYear = cardId === 'zmizik' ? 2019 : 2020
-  const startMonth = 6
-  const startDay = cardId === 'zmizik' ? 15 : 1
-  const from = `${String(startDay).padStart(2, '0')}.${String(startMonth).padStart(2, '0')}.${startYear}`
-  const to = `${String(startDay).padStart(2, '0')}.${String(startMonth).padStart(2, '0')}.${startYear + 5}`
-  return { from, to }
+  if (cardId === 'zmizik') {
+    // Platnost: 17.03.2026 – 17.03.2031
+    return { from: '17.03.2026', to: '17.03.2031' }
+  }
+  // Karta Roman: platnost 06.02.2026 – 06.02.2031
+  return { from: '06.02.2026', to: '06.02.2031' }
 }
 
 export function DriverCardVisual({ data, insertedSlot, draggable, onDragStart, cardId }: DriverCardVisualProps) {

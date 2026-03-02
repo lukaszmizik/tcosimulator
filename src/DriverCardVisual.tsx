@@ -36,8 +36,8 @@ function getBirthDateForCard(cardId: 'zmizik' | 'novak'): string {
  */
 function getValidityDatesForCard(cardId: 'zmizik' | 'novak'): { from: string; to: string } {
   if (cardId === 'zmizik') {
-    // Platnost: 17.03.2026 – 17.03.2031
-    return { from: '17.03.2026', to: '17.03.2031' }
+    // Karta Lukáš: platnost 28.01.2026 – 28.01.2031
+    return { from: '28.01.2026', to: '28.01.2031' }
   }
   // Karta Roman: platnost 06.02.2026 – 06.02.2031
   return { from: '06.02.2026', to: '06.02.2031' }

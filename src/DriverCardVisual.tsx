@@ -61,12 +61,13 @@ export function DriverCardVisual({ data, insertedSlot, draggable, onDragStart, c
       draggable={draggable && !isInserted}
       onDragStart={handleDragStart}
     >
-      {isInserted && (
-        <div className="driver-card-visual-wrapper__slot-badge" aria-hidden="true">
-          Slot {insertedSlot}
+      {isInserted ? (
+        <div className="driver-card-visual driver-card-visual--inserted-placeholder" aria-hidden="true">
+          <span className="driver-card-visual-wrapper__slot-badge driver-card-visual-wrapper__slot-badge--on-placeholder">Slot {insertedSlot}</span>
         </div>
-      )}
-      <div className="driver-card-visual">
+      ) : (
+        <>
+          <div className="driver-card-visual">
         <div className="driver-card-visual__eu">
           <div className="driver-card-visual__eu-stars" aria-hidden="true">
             {Array.from({ length: 12 }, (_, i) => (
@@ -104,6 +105,8 @@ export function DriverCardVisual({ data, insertedSlot, draggable, onDragStart, c
         <div className="driver-card-visual__signature">Podpis</div>
         <span className="driver-card-visual__g2">G2</span>
       </div>
+        </>
+      )}
     </div>
   )
 }

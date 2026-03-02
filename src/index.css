@@ -2252,3 +2252,17 @@ body {
   border-radius: 6px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
+
+.driver-card-visual-wrapper__slot-badge--on-placeholder {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+}
+
+/* Prázdné šedé místo když je karta vložená v tachografu */
+.driver-card-visual--inserted-placeholder {
+  background: #b0b0b0;
+  border: 1px solid #999;
+  min-height: 202px;
+  position: relative;
+}

@@ -24,6 +24,14 @@ const INPUT_WAITING_PHASES: CardInsertionState['phase'][] = ['decision1M', 'manu
 
 const MANUAL_ENTRY_PHASES_FOR_SPEED: CardInsertionState['phase'][] = ['welcome', 'loading', 'lastRemoval', 'decision1M', 'manualEditor', 'country', 'finalConfirm', 'itsQuestion', 'vdoQuestion', 'idleWarning']
 
+/** Výměna řidičů: karta vytažena a vložena do 1 minuty, L1 a L2 by byly stejné → přeskočit doplňování časů a jít rovnou na výběr výchozí země. */
+function shouldSkipToCountryStep(prev: CardInsertionState): boolean {
+  if (prev.firstInsertion || prev.lastWithdrawal == null) return false
+  const withinOneMinute = prev.cardInsertionTime - prev.lastWithdrawal <= 60000
+  const sameMinute = floorToMinute(prev.lastWithdrawal) === floorToMinute(prev.cardInsertionTime)
+  return withinOneMinute && sameMinute
+}
+
 // Zkopírované časy zobrazení obrazovek
 const WELCOME_MS = 3000
 const LOADING_MS = 3000
@@ -510,7 +518,12 @@ export function useCardWizard2(params: UseCardWizard2Params) {
           return { ...prev, loadingProgress: progress }
         }
         if (prev.phase === 'lastRemoval') {
-          if (elapsed >= LAST_REMOVAL_MS) return { ...prev, phase: 'decision1M', phaseStartTime: Date.now() }
+          if (elapsed >= LAST_REMOVAL_MS) {
+            if (shouldSkipToCountryStep(prev)) {
+              return { ...prev, phase: 'country', phaseStartTime: Date.now(), insertionTimeFixed: floorToMinute(prev.cardInsertionTime) }
+            }
+            return { ...prev, phase: 'decision1M', phaseStartTime: Date.now() }
+          }
           return prev
         }
         return prev

@@ -200,8 +200,6 @@ export default function App() {
       return new Date(localTimeMs)
     })
   }, [simulatedUtcTime, timeOffsetMs])
-  const panelHours = panelDateTime.getHours()
-  const panelMinutes = panelDateTime.getMinutes()
   // Minus: povolit pokud (panel - 1h) zaokrouhleno na minutu >= local zaokrouhleno na minutu
   // (přísná porovnání ms způsobovala, že po ticku simulace minus zůstal neaktivní)
   const canDecrementHours =
@@ -3174,13 +3172,12 @@ export default function App() {
 
         <ControlPanel
           t={t}
+          language={language}
           ignitionOn={ignitionOn}
           onIgnitionStart={() => setIgnitionOn(true)}
           targetSpeed={targetSpeed}
           onTargetSpeedChange={setTargetSpeed}
           currentSpeed={currentSpeed}
-          panelHours={panelHours}
-          panelMinutes={panelMinutes}
           panelDateTime={panelDateTime}
           canDecrementHours={canDecrementHours}
           canDecrementMinutes={canDecrementMinutes}

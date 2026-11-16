@@ -5,7 +5,9 @@
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
+    "predev": "node scripts/prepare-cardviewer.mjs",
     "dev": "vite",
+    "prebuild": "node scripts/prepare-cardviewer.mjs",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -13,7 +15,7 @@
     "electron:dev": "set ELECTRON_DEV=1&& electron .",
     "build:win": "npm run build && electron-builder --win",
     "dist": "npm run build && electron-builder --win",
-    "dist:quick": "vite build && electron-builder --win"
+    "dist:quick": "node scripts/prepare-cardviewer.mjs && vite build && electron-builder --win"
   },
   "dependencies": {
     "react": "^18.3.1",

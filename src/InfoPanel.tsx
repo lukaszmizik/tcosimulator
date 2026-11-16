@@ -9,6 +9,8 @@
 import { useState, useEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
 import type { ActivityHistoryEntry, CardInsertionState, ManualEntrySegment, MenuCountryInputState } from './TachoTypes'
+import type { VdoNamedScreen } from './slot1DddCounter'
+import type { Translations } from './translations/types'
 import type { SymbolMap } from './TachoTypes'
 import { ACTIVITY_SYMBOLS } from './TachoTypes'
 import { segmentToMsUtc } from './CardLogic'
@@ -21,8 +23,15 @@ export type InfoItem = {
   id: string
   type: 'info' | 'warning'
   message: string
+  /** Nadpis karty. Stávající hlášení ho nemají. */
+  title?: string
   /** Automaticky zavřít, jakmile přestane platit podmínka hlášení. */
   activeOnly?: boolean
+  /**
+   * ID zůstává v seznamu, karta se ale nekreslí.
+   * Zavření × se tím nezapomene, dokud položka ze seznamu nezmizí.
+   */
+  hidden?: boolean
   /** Volitelný React obsah – místo textu message se vykreslí content (pro výpis s symboly apod.) */
   content?: ReactNode
 }
@@ -72,13 +81,13 @@ export function InfoPanel({ items, resetTrigger, symbolMap, collapsed = false }:
     prevLanguageRef.current = language
 
     setOpenItems((prev) => {
-      const kept = prev.filter((p) => !dismissed.has(p.id) && (!p.activeOnly || currentIds.has(p.id)))
-      const toAdd = items.filter((i) => !kept.some((p) => p.id === i.id) && !dismissed.has(i.id))
+      const kept = prev.filter((p) => !dismissed.has(p.id) && (!p.activeOnly || currentIds.has(p.id)) && !itemsById.get(p.id)?.hidden)
+      const toAdd = items.filter((i) => !i.hidden && !kept.some((p) => p.id === i.id) && !dismissed.has(i.id))
       const updated = kept.map((p) => itemsById.get(p.id) ?? p)
       const hasChanges =
         toAdd.length > 0 ||
         languageChanged ||
-        kept.some((p, i) => updated[i]?.message !== p.message || (updated[i]?.content != null) !== (p.content != null))
+        kept.some((p, i) => updated[i]?.message !== p.message || updated[i]?.title !== p.title || (updated[i]?.content != null) !== (p.content != null))
       if (!hasChanges && kept.length === prev.length) return prev
       return [...toAdd, ...updated]
     })
@@ -110,7 +119,10 @@ export function InfoPanel({ items, resetTrigger, symbolMap, collapsed = false }:
             {item.content != null ? (
               <div className="info-panel-content">{item.content}</div>
             ) : (
-              <p className="info-panel-text">{parseSymbols(item.message, symbolMap, { symbolBg: true })}</p>
+              <div className="info-panel-content">
+                {item.title ? <div className="info-panel-manual-label">{item.title}</div> : null}
+                <p className="info-panel-text">{parseSymbols(item.message, symbolMap, { symbolBg: true })}</p>
+              </div>
             )}
             <button
               type="button"
@@ -243,6 +255,127 @@ function ManualEntryBufferDisplay({ buffer, label }: { buffer: ManualEntrySegmen
       </div>
     </div>
   )
+}
+
+function activityMark(activityId: string): string {
+  if (activityId === 'DRIVING') return '(2)'
+  if (activityId === 'WORK') return '(9)'
+  if (activityId === 'AVAILABILITY') return '(7)'
+  return '(8)'
+}
+
+function teachLine(symbols: string, text: string): string {
+  return symbols ? `${symbols} ${text}` : text
+}
+
+export type LcdTeachScreen = 'driveRest' | 'card' | 'vdo' | 'work' | 'vdo24h' | 'vdoWeek' | 'vdoi'
+
+/** Obrazovka, jejíž výuka patří do InfoPanelu. Informační indexy 2–6 sem nepatří. */
+export function visibleLcdTeachScreen(input: {
+  displayMode: string
+  vdoCounterActive: boolean
+  vdoNamedScreen: VdoNamedScreen | null
+  operatingScreenIndex: number
+  cardInserted: boolean
+}): LcdTeachScreen | null {
+  if (input.displayMode !== 'operating' || !input.vdoCounterActive || !input.cardInserted) return null
+  if (input.vdoNamedScreen === 'driveRest') return 'driveRest'
+  if (input.vdoNamedScreen === 'vdoCard') return 'card'
+  if (input.vdoNamedScreen === 'workTime') return 'work'
+  if (input.vdoNamedScreen === 'vdo24h') return 'vdo24h'
+  if (input.vdoNamedScreen === 'vdoWeek') return 'vdoWeek'
+  if (input.vdoNamedScreen === 'vdoi') return 'vdoi'
+  if (input.vdoNamedScreen == null && (input.operatingScreenIndex === 0 || input.operatingScreenIndex === 1)) return 'vdo'
+  return null
+}
+
+/**
+ * Jedna modrá karta k právě zobrazené výukové obrazovce.
+ * Skrytá karta drží stejné ID, aby zavření × přežilo výstrahu i překreslení.
+ */
+export function lcdTeachInfoItem(input: {
+  t: Translations
+  screen: LcdTeachScreen | null
+  covered: boolean
+  driver: 1 | 2
+  leftActivityId: string
+  rightActivityId: string
+  breakCountingDown: boolean
+}): InfoItem | null {
+  if (!input.screen) return null
+  const teach = input.t.lcdTeach
+  const driverSymbol = input.driver === 1 ? '(12)' : '(13)'
+  const cardActivity = activityMark(input.driver === 1 ? input.leftActivityId : input.rightActivityId)
+  const vdoActivity = activityMark(input.driver === 1 ? input.leftActivityId : input.rightActivityId)
+  const lines: Record<LcdTeachScreen, { title: string; message: string }> = {
+    driveRest: {
+      title: teach.screenDriveRest,
+      message: [
+        teachLine('(12)(2)', teach.driveSinceRestDriver1),
+        teachLine('(10)', teach.recognizedBreak),
+        teachLine(`(13)${activityMark(input.rightActivityId)}`, teach.driver2ActivityDuration),
+      ].join('\n'),
+    },
+    card: {
+      title: teach.screenCard,
+      message: [
+        teachLine(`${driverSymbol}(2)`, teach.driveSinceRestSelected),
+        teachLine('(10)', teach.recognizedBreak),
+        teachLine(`${driverSymbol}(2)(58)`, teach.fortnightSum),
+        teachLine(cardActivity, teach.activitySinceChange),
+      ].join('\n'),
+    },
+    vdo: {
+      title: teach.screenVdo,
+      message: [
+        teachLine(vdoActivity, teach.currentActivity),
+        teachLine('(2)(41)', teach.drivingRemaining),
+        teachLine('(8)(41)', input.breakCountingDown ? teach.breakOrRestRemaining : teach.nextBreakOrRest),
+      ].join('\n'),
+    },
+    work: {
+      title: teach.screenWork,
+      message: [
+        teachLine('(47)(9)', teach.workCurrent),
+        teachLine('24h', teach.workSinceRest),
+        teachLine('(9)(10)', teach.workBreaks),
+        teachLine('(57)', teach.workWeek),
+      ].join('\n'),
+    },
+    vdo24h: {
+      title: teach.screenVdo24h,
+      message: [
+        teachLine('(2)', teach.dailyDrivingRemaining),
+        teachLine('(8)', teach.nextDailyRest),
+        teachLine('(17)', teach.latestRestStart),
+      ].join('\n'),
+    },
+    vdoWeek: {
+      title: teach.screenVdoWeek,
+      message: [
+        teachLine('(2)', teach.weeklyDrivingRemaining),
+        teachLine('(8)', teach.nextWeeklyRest),
+        teachLine('(17)', teach.latestRestStart),
+      ].join('\n'),
+    },
+    vdoi: {
+      title: teach.screenVdoi,
+      message: [
+        teachLine('(8)', `9h ${teach.reducedDailyRestCount}`),
+        teachLine('(2)', `10h ${teach.extendedDrivingCount}`),
+        teach.weeklyRestCompensation,
+      ].join('\n'),
+    },
+  }
+  const body = lines[input.screen]
+  return {
+    id: `lcd-teach-${input.screen}`,
+    type: 'info',
+    title: body.title,
+    message: body.message,
+    activeOnly: true,
+    hidden: input.covered,
+  }
 }
 
 /** Shromáždí položky pro InfoPanel podle aktuálního stavu simulátoru */

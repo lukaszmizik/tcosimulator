@@ -87,6 +87,40 @@ export type Translations = {
     menuComingSoon: string
     outModeActiveInfo: string
   }
+  lcdTeach: {
+    screenDriveRest: string
+    screenCard: string
+    screenVdo: string
+    screenWork: string
+    screenVdo24h: string
+    screenVdoWeek: string
+    screenVdoi: string
+    driveSinceRestDriver1: string
+    recognizedBreak: string
+    driver2ActivityDuration: string
+    driveSinceRestSelected: string
+    fortnightSum: string
+    activitySinceChange: string
+    currentActivity: string
+    drivingRemaining: string
+    nextBreakOrRest: string
+    breakOrRestRemaining: string
+    workCurrent: string
+    workSinceRest: string
+    workBreaks: string
+    workWeek: string
+    dailyDrivingRemaining: string
+    weeklyDrivingRemaining: string
+    nextDailyRest: string
+    nextWeeklyRest: string
+    latestRestStart: string
+    reducedDailyRestCount: string
+    extendedDrivingCount: string
+    weeklyRestCompensation: string
+    missingPreviousWeek: string
+    notCalculated: string
+    cannotDetermine: string
+  }
   cardWizard: {
     pleaseWait: string
     lastRemoval: string

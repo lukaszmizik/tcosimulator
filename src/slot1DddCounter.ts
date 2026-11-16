@@ -2,7 +2,9 @@ import type { DrivingBreakDisplay } from './drivingBreakDisplay'
 
 /**
  * Nový Counter pro jednoho řidiče, pro dvě karty bez osádky a pro osádku zapnutou dvěma kartami.
- * Podmínky zapnutí a přerušení osádky se nemění. Trajekt a OUT zůstávají na původní větvi.
+ * Podmínky zapnutí a přerušení osádky se nemění.
+ * Trajekt používá dvouřádkový Counter. Pojmenované obrazovky a časy karty zůstávají zavřené.
+ * OUT používá nový Counter. Jízda v doloženém OUT se jako jiná práce vyhodnotí dřív, než sem intervaly přijdou.
  * Rozdíl karet je v přípravě intervalů, ne v těchto podmínkách.
  */
 export type Slot1DddCounterContext = {
@@ -19,8 +21,98 @@ export type Slot1DddCounterContext = {
   slot2CardNumber?: string | null
 }
 
-/** Prozatímní obrazovky simulátoru: časy karty, VDO24h, týdenní hodnoty, VDOi. Hlavní Counter je výchozí obrazovka. */
-export type VdoNamedScreen = 'vdoCard' | 'vdo24h' | 'vdoWeek' | 'vdoi'
+/** Přehled za jízdy, počitadlo pracovní doby, časy karty, VDO24h, týdenní hodnoty a VDOi. Hlavní Counter je obrazovka bez názvu. */
+export type VdoNamedScreen = 'driveRest' | 'workTime' | 'vdoCard' | 'vdo24h' | 'vdoWeek' | 'vdoi'
+
+export type TimesLocation =
+  | { kind: 'standard' }
+  | { kind: 'driveRest' }
+  | { kind: 'card'; slot: 1 | 2 }
+  | { kind: 'counter'; slot: 1 | 2 }
+  | { kind: 'workTime' }
+  | { kind: 'vdo24h'; slot: 1 | 2 }
+  | { kind: 'vdoWeek'; slot: 1 | 2 }
+  | { kind: 'vdoi'; slot: 1 | 2 }
+  | { kind: 'info'; index: number }
+
+/**
+ * Za jízdy: přehled řízení a odpočinku, hlavní Counter a počitadlo pracovní doby.
+ * Při stání: časy každé šachty zvlášť, potom Counter a při jiné práci nebo pohotovosti VDO24h, týden a VDOi.
+ * Trajekt časy karet neotvírá.
+ */
+export function buildTimesSequence(input: {
+  moving: boolean
+  card1: boolean
+  card2: boolean
+  counterOn: boolean
+  ferry: boolean
+  entry: { 1: boolean; 2: boolean }
+}): TimesLocation[] {
+  const slots: Array<1 | 2> = []
+  if (input.card1) slots.push(1)
+  if (input.card2) slots.push(2)
+  if (input.moving) {
+    const steps: TimesLocation[] = [{ kind: 'driveRest' }]
+    if (input.counterOn && slots[0]) steps.push({ kind: 'counter', slot: slots[0] }, { kind: 'workTime' })
+    return steps
+  }
+  const steps: TimesLocation[] = []
+  if (!input.ferry) {
+    for (const slot of slots) steps.push({ kind: 'card', slot })
+  }
+  if (input.counterOn) {
+    for (const slot of slots) {
+      steps.push({ kind: 'counter', slot })
+      if (input.entry[slot]) {
+        steps.push({ kind: 'vdo24h', slot }, { kind: 'vdoWeek', slot }, { kind: 'vdoi', slot })
+      }
+    }
+  }
+  for (let index = 2; index <= 6; index += 1) steps.push({ kind: 'info', index })
+  return steps
+}
+
+export function timesLocationFrom(active: boolean, named: VdoNamedScreen | null, index: number): TimesLocation {
+  if (!active) return { kind: 'standard' }
+  const slot: 1 | 2 = index === 1 ? 2 : 1
+  if (named === 'driveRest') return { kind: 'driveRest' }
+  if (named === 'workTime') return { kind: 'workTime' }
+  if (named === 'vdoCard') return { kind: 'card', slot }
+  if (named === 'vdo24h') return { kind: 'vdo24h', slot }
+  if (named === 'vdoWeek') return { kind: 'vdoWeek', slot }
+  if (named === 'vdoi') return { kind: 'vdoi', slot }
+  if (index >= 2) return { kind: 'info', index }
+  return { kind: 'counter', slot }
+}
+
+function sameTimesLocation(a: TimesLocation, b: TimesLocation): boolean {
+  if (a.kind !== b.kind) return false
+  if (a.kind === 'card' || a.kind === 'counter' || a.kind === 'vdo24h' || a.kind === 'vdoWeek' || a.kind === 'vdoi') {
+    return b.kind === a.kind && a.slot === b.slot
+  }
+  if (a.kind === 'info') return b.kind === 'info' && a.index === b.index
+  return true
+}
+
+/** Další nebo předchozí provozní obrazovka. Ze standardní obrazovky nahoru nikam neodchází. */
+export function stepTimesLocation(
+  current: TimesLocation,
+  direction: 'down' | 'up',
+  sequence: TimesLocation[],
+): TimesLocation {
+  if (current.kind === 'standard') {
+    if (direction === 'down' && sequence.length > 0) return sequence[0]
+    return current
+  }
+  const index = sequence.findIndex((item) => sameTimesLocation(item, current))
+  if (index < 0) {
+    if (direction === 'up' || sequence.length === 0) return { kind: 'standard' }
+    return sequence[0]
+  }
+  if (direction === 'down') return sequence[Math.min(sequence.length - 1, index + 1)]
+  if (index === 0) return { kind: 'standard' }
+  return sequence[index - 1]
+}
 
 export function slot1DddCounterSelected(input: Slot1DddCounterContext): boolean {
   if (!input.vdoCounterActive || input.operatingScreenIndex !== 0 || !input.card1Inserted) return false
@@ -106,11 +198,11 @@ export type Slot1CounterLcdProps = {
 }
 
 /**
- * Běžný režim s kartou ve čtené šachtě. Trajekt a OUT sem nepatří.
+ * Běžný režim, OUT a trajekt s kartou ve čtené šachtě.
  * Index 0 bez karty 1 nečte kartu 2: otevřený Counter na ni přejde změnou indexu.
  */
 export function normalInsertedCardCounter(input: Slot1DddCounterContext): boolean {
-  if (!input.vdoCounterActive || input.ferryTrainModeActive || input.outModeActive) return false
+  if (!input.vdoCounterActive) return false
   if (input.operatingScreenIndex === 0) return input.card1Inserted
   if (input.operatingScreenIndex === 1) return Boolean(input.card2Inserted || input.card1Inserted)
   return false
@@ -189,7 +281,7 @@ export function vdo24hEntryAvailable(input: Slot1DddCounterContext & {
 /**
  * Další obrazovka. V běžném režimu je mezi Counterem a VDO24h obrazovka časů karty.
  * index znamená posun číselného indexu a nemění se při čtení časů vybrané karty.
- * Trajekt a OUT kartu časů neotvírají.
+ * Trajekt kartu časů neotvírá. OUT používá stejný průchod jako běžný režim.
  */
 export function vdoScreenAfterDown(current: VdoNamedScreen | null, entryAvailable: boolean, cardTimes = false): VdoNamedScreen | 'index' {
   if (current === 'vdoi') return 'vdoi'

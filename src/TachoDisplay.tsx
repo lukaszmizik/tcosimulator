@@ -10,19 +10,8 @@ import type { TachoState } from './TachoTypes'
 import type { VDODurationsMs } from './VDOCounter'
 import {
   formatDurationHhMm,
-  remainingDrivingToLimit430,
-  aggregateDrivingTwoWeeks,
-  aggregateDrivingInWorkShift,
-  aggregateOtherWorkInWorkShift,
-  getMinimumRestAfterDrivingBlockMs,
-  countExtendedDrivingDaysThisWeek,
-  getRequiredDailyRestMs,
-  getShiftStartFromManualBuffer,
-  hasRestBlockInShiftFor9hDaily,
-  EXTENDED_DRIVING_LIMIT_MS,
-  DAILY_DRIVING_LIMIT_MS,
+  formatDurationHm,
 } from './VDOCounter'
-import * as WorkShift from './WorkShift'
 import type { MenuItem, MenuNode } from './MenuStructure'
 import type { CountryEntry } from './data/countriesLoader'
 import { getWarning } from './data/warnings'
@@ -37,8 +26,6 @@ import {
   ExcessSpeedWarningDisplay,
   OverrideWarningDisplay,
 } from './WarningDisplays'
-import { loadCard1ActivityHistory } from './data/card1_write_data'
-import { loadCard2ActivityHistory } from './data/card2_write_data'
 import type { DrivingBreakDisplay } from './drivingBreakDisplay'
 import type { VdoNamedScreen } from './slot1DddCounter'
 
@@ -86,8 +73,24 @@ export type TachoDisplayProps = {
   vdoCounterActive?: boolean
   /** Index obrazovky VDO counter (0–6) na základní obrazovce */
   operatingScreenIndex?: number
-  /** Pojmenovaná obrazovka. vdo24h, vdoWeek a vdoi jsou prozatímní přechody z hlavního Counteru. */
+  /** Pojmenovaná obrazovka. Hlavní Counter je výchozí obrazovka bez názvu. */
   vdoNamedScreen?: VdoNamedScreen | null
+  /** Odjetý čas od platného odpočinku. null je neznámý a na přehledu se ukáže jako pomlčky. */
+  drivenSinceRestMs?: number | null
+  /** Uznaná přestávka. null je neznámá. 0 je skutečná nula. */
+  recognizedBreakMs?: number | null
+  /** Trvání aktuální činnosti od její poslední změny, zvlášť pro každou šachtu. */
+  activityDurationMsByDriver?: { 1: number | null; 2: number | null }
+  /**
+   * Počitadlo pracovní doby řidiče, jehož Counter je otevřený.
+   * null u položky je nedoložená hodnota a na LCD se ukáže jako pomlčky.
+   */
+  workTime?: {
+    currentWithoutRestMs: number | null
+    sinceDailyOrWeeklyRestMs: number | null
+    breaksInPeriodMs: number | null
+    calendarWeekMs: number | null
+  } | null
   activityDurationsMs?: VDODurationsMs
   activityHistory?: ActivityHistoryEntry[]
   /** Data z karet – klíč templateId (zmizik, novak) */
@@ -95,13 +98,6 @@ export type TachoDisplayProps = {
   card1Data?: { templateId?: string } | null
   card2Data?: { templateId?: string } | null
   simulatedUtcTime?: number
-  /** Doba řízení od poslední přestávky – per řidič (1=levý slot, 2=pravý) */
-  drivingSinceLastBreakMsByDriver?: Record<1 | 2, number>
-  restSinceLastBreakMsByDriver?: Record<1 | 2, number>
-  /** Dělená pauza: po první 15m proběhla, nyní je potřeba druhá část 30m – per řidič */
-  splitFirstPartTakenByDriver?: Record<1 | 2, boolean>
-  /** Callback při nedostupnosti prodloužené směny 10h (2× v týdnu již vyčerpáno) */
-  onExtendedDrivingUnavailable?: () => void
   /** Vzdálené stahování dat aktivní – animace rotující čáry vedle symbolu (37) */
   remoteDataDownloadActive?: boolean
   /** Manuální záznamy pro odvození začátku směny při null z WorkShift */
@@ -129,6 +125,30 @@ export type TachoDisplayProps = {
   slot1DebugDailyExtensionsRemaining?: number | null
   /** Jiná práce ve směně. null je neurčené a na LCD se ukáže ----. undefined ponechá původní součet. */
   slot1DebugOtherWorkMs?: number | null
+  /** false: zbývající řízení nelze doložit. Přestávka se tím neruší. */
+  slot1DebugDrivingKnown?: boolean
+  /**
+   * Při zapnutém trajektu zbývající pravidelný denní odpočinek.
+   * null je nedoložený odpočinek a na dolním řádku se ukáže ----. Číslo 0 je skutečná nula.
+   */
+  slot1DebugFerryRestMs?: number | null
+  /** Součet přes přerušení je podmíněný: záznamy nepotvrzují lůžko a značka trajektu ho nedokazuje. */
+  slot1DebugFerryRestConditional?: boolean
+}
+
+function activitySymbol(activityId: string): string {
+  if (activityId === 'DRIVING') return '(2)'
+  if (activityId === 'WORK') return '(9)'
+  if (activityId === 'AVAILABILITY') return '(7)'
+  return '(8)'
+}
+
+function driverSymbol(driver: 1 | 2): string {
+  return driver === 1 ? '(12)' : '(13)'
+}
+
+function formatOverviewTime(ms: number | null | undefined): string {
+  return typeof ms === 'number' ? formatDurationHm(ms) : '--h--'
 }
 
 function LoadUnloadConfirmDisplay() {
@@ -495,14 +515,10 @@ function OperatingDisplay(props: TachoDisplayProps) {
     vdoCounterActive = false,
     operatingScreenIndex = 0,
     vdoNamedScreen = null,
-    activityHistory = [],
-    card1Data = null,
-    card2Data = null,
-    simulatedUtcTime = Date.now(),
-    drivingSinceLastBreakMsByDriver = { 1: 0, 2: 0 },
-    restSinceLastBreakMsByDriver = { 1: 0, 2: 0 },
-    splitFirstPartTakenByDriver = { 1: false, 2: false },
-    onExtendedDrivingUnavailable,
+    drivenSinceRestMs = null,
+    recognizedBreakMs = null,
+    activityDurationMsByDriver = { 1: null, 2: null },
+    workTime = null,
     remoteDataDownloadActive = false,
     showOutOnL2 = false,
   } = props
@@ -539,6 +555,63 @@ function OperatingDisplay(props: TachoDisplayProps) {
 
   if (anyCard && vdoCounterActive && vdoNamedScreen === 'vdo24h') {
     return <Vdo24hDisplay symbolMap={symbolMap} dailyRemainingMs={props.slot1DebugDailyRemainingMs} />
+  }
+
+  if (anyCard && vdoCounterActive && vdoNamedScreen === 'driveRest') {
+    const driver2Activity = tachoState.rightActivityId
+    return (
+      <div className={`lcd-two-rows lcd-vdo-counter ${tachoState.isMultiManning ? 'lcd-multi-manning' : ''}`} data-vdo-screen="driveRest" data-driven-ms={drivenSinceRestMs ?? ''} data-recognized-break-ms={recognizedBreakMs ?? ''} data-activity-ms={activityDurationMsByDriver[2] ?? ''}>
+        <div className="lcd-row lcd-row-vdo">
+          <span className="lcd-row-left">
+            {parseSymbols('(12)(2)', symbolMap)}
+            <span>{formatOverviewTime(drivenSinceRestMs)}</span>
+          </span>
+          <span className="lcd-row-right">
+            {parseSymbols('(10)', symbolMap)}
+            <span>{formatOverviewTime(recognizedBreakMs)}</span>
+          </span>
+        </div>
+        <div className="lcd-row lcd-row-vdo">
+          <span className="lcd-row-left">
+            {parseSymbols(`(13)${activitySymbol(driver2Activity)}`, symbolMap)}
+            <span>{formatOverviewTime(activityDurationMsByDriver[2])}</span>
+          </span>
+        </div>
+      </div>
+    )
+  }
+
+  if (anyCard && vdoCounterActive && vdoNamedScreen === 'workTime') {
+    return (
+      <div
+        className={`lcd-two-rows lcd-vdo-counter ${tachoState.isMultiManning ? 'lcd-multi-manning' : ''}`}
+        data-vdo-screen="workTime"
+        data-work-current-ms={workTime?.currentWithoutRestMs ?? ''}
+        data-work-since-rest-ms={workTime?.sinceDailyOrWeeklyRestMs ?? ''}
+        data-work-breaks-ms={workTime?.breaksInPeriodMs ?? ''}
+        data-work-week-ms={workTime?.calendarWeekMs ?? ''}
+      >
+        <div className="lcd-row lcd-row-vdo">
+          <span className="lcd-row-left">
+            {parseSymbols('(47)(9)', symbolMap)}
+            <span>{formatOverviewTime(workTime?.currentWithoutRestMs)}</span>
+          </span>
+          <span className="lcd-row-right">
+            <span>{`24h${formatOverviewTime(workTime?.sinceDailyOrWeeklyRestMs)}`}</span>
+          </span>
+        </div>
+        <div className="lcd-row lcd-row-vdo">
+          <span className="lcd-row-left">
+            {parseSymbols('(9)(10)', symbolMap)}
+            <span>{formatOverviewTime(workTime?.breaksInPeriodMs)}</span>
+          </span>
+          <span className="lcd-row-right">
+            {parseSymbols('(57)', symbolMap)}
+            <span>{formatOverviewTime(workTime?.calendarWeekMs)}</span>
+          </span>
+        </div>
+      </div>
+    )
   }
 
   if (!vdoCounterActive || !anyCard) {
@@ -604,45 +677,12 @@ function OperatingDisplay(props: TachoDisplayProps) {
   /** Obrazovky 0 a 1: VDO Counter – řidič 1 a 2. Zdroj dat: karta vložena → ze souboru příslušné karty, jinak z paměti tachografu. */
   const screenIndex = Math.max(0, Math.min(6, operatingScreenIndex))
   const driver = screenIndex === 1 && !card2Inserted ? 1 : (screenIndex === 0 ? 1 : 2)
-  const useCardData = (driver === 1 && card1Inserted && card1Data?.templateId) || (driver === 2 && card2Inserted && card2Data?.templateId)
-  const templateId = driver === 1 ? card1Data?.templateId : card2Data?.templateId
-  /** Číslo slotu karty, ze které čerpáme data (1 nebo 2). Samotná šachta 2 je vždy 2. */
-  const soloSlot2 = !card1Inserted && card2Inserted && !tachoState.isMultiManning
-  const bothCards = card1Inserted && card2Inserted && (screenIndex === 0 || screenIndex === 1)
-  const ejectedSlot2ShowsCard1 = screenIndex === 1 && card1Inserted && !card2Inserted
-  const ferryOrOut = tachoState.ferryTrainModeActive || tachoState.outModeActive
-  const newCounter = anyCard && !ferryOrOut && (screenIndex === 0 || screenIndex === 1)
-  const cardSlotNum = newCounter || (soloSlot2 && screenIndex === 1) || bothCards || ejectedSlot2ShowsCard1
-    ? driver
-    : useCardData && templateId ? (templateId === 'zmizik' ? 1 : 2) : driver
-  const historyForDriver = useCardData && templateId
-    ? (templateId === 'zmizik' ? loadCard1ActivityHistory() : loadCard2ActivityHistory())
-    : activityHistory
+  const newCounter = anyCard && (screenIndex === 0 || screenIndex === 1)
 
-  /* VDO Counter – obrazovky 0 a 1 pro řidiče 1 a 2.
-   * L1 vlevo: do 9h limit 4h30 blok; od 9h při dostupnosti 10h: zbývá do 10h; jinak 0h0m (chyba)
-   * L1 vpravo: pauza 15/30m nebo při denním limitu: denní odpočinek 9h/11h
-   * L2 vlevo: součet dob řízení ve dvou po sobě jdoucích kalendářních týdnech
-   * L2 vpravo: doba trvání aktivity „jiná práce“ v aktuální pracovní směně */
   if (newCounter) {
     const placeholder = t.workWeek.shiftSumRestPlaceholder
     const knownTime = (ms: number | null | undefined, roundUp?: boolean) =>
-      typeof ms === 'number' ? formatDurationHhMm(ms, roundUp) : placeholder
-    const nowMinute = Math.floor(simulatedUtcTime / 60000) * 60000
-    const shiftStart =
-      WorkShift.getFirstStartMinuteUtc(driver as 1 | 2) ??
-      getShiftStartFromManualBuffer(
-        (driver === 1 ? props.driver1ManualEntryBuffer : props.driver2ManualEntryBuffer) ?? [],
-        simulatedUtcTime
-      )
-    const otherWorkInShift = shiftStart != null
-      ? aggregateOtherWorkInWorkShift(historyForDriver, driver as 1 | 2, shiftStart, nowMinute + 60000)
-      : 0
-    const otherWorkText = props.slot1DebugOtherWorkMs === null
-      ? placeholder
-      : typeof props.slot1DebugOtherWorkMs === 'number'
-        ? formatDurationHhMm(props.slot1DebugOtherWorkMs)
-        : formatDurationHhMm(otherWorkInShift)
+      typeof ms === 'number' ? formatDurationHm(ms, roundUp) : placeholder
     const capDriving = (value: number) => {
       const caps = [value]
       for (const item of [props.slot1DebugDailyRemainingMs, props.slot1DebugWeeklyRemainingMs, props.slot1DebugFortnightRemainingMs]) {
@@ -653,7 +693,6 @@ function OperatingDisplay(props: TachoDisplayProps) {
     const debugBreak = props.slot1DebugBreak ?? null
     let drivingText = placeholder
     let breakText = placeholder
-    let afterText: string | null = null
     let drivingMs: number | null = null
     let breakMs: number | null = null
     let afterMs: number | null = null
@@ -671,6 +710,10 @@ function OperatingDisplay(props: TachoDisplayProps) {
       }
       drivingText = knownTime(drivingMs, true)
       breakText = knownTime(breakMs, true)
+      if (props.slot1DebugDrivingKnown === false) {
+        drivingMs = null
+        drivingText = placeholder
+      }
     } else if (debugBreak?.phase === 'break') {
       drivingMs = capDriving(debugBreak.drivingIfStartNowMs)
       breakMs = debugBreak.remainingBreakMs
@@ -678,24 +721,43 @@ function OperatingDisplay(props: TachoDisplayProps) {
       rightKind = 'until-break'
       drivingText = knownTime(drivingMs, true)
       breakText = knownTime(breakMs, true)
-      afterText = knownTime(afterMs, true)
+      if (props.slot1DebugDrivingKnown === false) {
+        drivingMs = null
+        afterMs = null
+        drivingText = placeholder
+      }
     }
-    const activityId = driver === 1 ? tachoState.leftActivityId : tachoState.rightActivityId
-    const activityMark = activityId === 'DRIVING' ? '(2)' : activityId === 'WORK' ? '(9)' : activityId === 'AVAILABILITY' ? '(7)' : '(8)'
+    if (tachoState.ferryTrainModeActive) {
+      breakMs = typeof props.slot1DebugFerryRestMs === 'number' ? props.slot1DebugFerryRestMs : null
+      breakText = knownTime(breakMs, true)
+      afterMs = null
+      rightKind = breakMs == null ? 'missing' : 'next'
+    }
+    const displayedActivityId = driver === 1 ? tachoState.leftActivityId : tachoState.rightActivityId
+    const activityMark = displayedActivityId === 'DRIVING' ? '(2)' : displayedActivityId === 'WORK' ? '(9)' : displayedActivityId === 'AVAILABILITY' ? '(7)' : '(8)'
     if (vdoNamedScreen === 'vdoCard') {
+      const activityDurationMs = activityDurationMsByDriver[driver as 1 | 2]
+      const slotSymbol = driverSymbol(driver as 1 | 2)
       return (
-        <div className={`lcd-two-rows lcd-vdo-counter ${tachoState.isMultiManning ? 'lcd-multi-manning' : ''} ${isStandby ? 'lcd-standby' : ''}`} data-vdo-screen="vdoCard" data-standby={isStandby || undefined}>
+        <div className={`lcd-two-rows lcd-vdo-counter ${tachoState.isMultiManning ? 'lcd-multi-manning' : ''} ${isStandby ? 'lcd-standby' : ''}`} data-vdo-screen="vdoCard" data-standby={isStandby || undefined} data-driven-ms={drivenSinceRestMs ?? ''} data-recognized-break-ms={recognizedBreakMs ?? ''} data-activity-ms={activityDurationMs ?? ''}>
           <div className="lcd-row lcd-row-vdo">
             <span className="lcd-row-left">
-              {cardSlotNum}
-              {parseSymbols('(2)(58)', symbolMap)}
-              <span>{knownTime(props.slot1DebugFortnightSumMs)}</span>
+              {parseSymbols(`${slotSymbol}(2)`, symbolMap)}
+              <span>{formatOverviewTime(drivenSinceRestMs)}</span>
+            </span>
+            <span className="lcd-row-right">
+              {parseSymbols('(10)', symbolMap)}
+              <span>{formatOverviewTime(recognizedBreakMs)}</span>
             </span>
           </div>
           <div className="lcd-row lcd-row-vdo">
             <span className="lcd-row-left">
-              {parseSymbols('(9)', symbolMap)}
-              <span>{otherWorkText}</span>
+              {parseSymbols(`${slotSymbol}(2)(58)`, symbolMap)}
+              <span>{formatOverviewTime(props.slot1DebugFortnightSumMs)}</span>
+            </span>
+            <span className="lcd-row-right">
+              {parseSymbols(activitySymbol(displayedActivityId), symbolMap)}
+              <span>{formatOverviewTime(activityDurationMs)}</span>
             </span>
           </div>
         </div>
@@ -709,163 +771,29 @@ function OperatingDisplay(props: TachoDisplayProps) {
         data-lcd-driving-ms={drivingMs ?? ''}
         data-lcd-break-ms={breakMs ?? ''}
         data-lcd-after-ms={afterMs ?? undefined}
+        data-lcd-ferry-rest={props.slot1DebugFerryRestConditional ? 'conditional' : tachoState.ferryTrainModeActive ? 'recorded' : undefined}
       >
         <div className="lcd-row lcd-row-vdo">
-          <span className="lcd-row-left">VDO</span>
-          <span className="lcd-row-right">
+          <span className="lcd-row-left">
+            VDO
             {parseSymbols(activityMark, symbolMap)}
+          </span>
+          <span className="lcd-row-right">
+            {parseSymbols('(2)(41)', symbolMap)}
             <span>{drivingText}</span>
           </span>
         </div>
         <div className="lcd-row lcd-row-vdo">
           <span className="lcd-row-left">
-            {parseSymbols('(10)', symbolMap)}
+            {parseSymbols('(8)(41)', symbolMap)}
             <span>{breakText}</span>
           </span>
-          {afterText != null && (
-            <span className="lcd-row-right">
-              {parseSymbols('(2)', symbolMap)}
-              <span>{afterText}</span>
-            </span>
-          )}
         </div>
       </div>
     )
   }
 
-  if (screenIndex === 0 || screenIndex === 1) {
-    const twoWeekDriving = aggregateDrivingTwoWeeks(historyForDriver, driver as 1 | 2, simulatedUtcTime)
-    const shiftStart =
-      WorkShift.getFirstStartMinuteUtc(driver as 1 | 2) ??
-      getShiftStartFromManualBuffer(
-        (driver === 1 ? props.driver1ManualEntryBuffer : props.driver2ManualEntryBuffer) ?? [],
-        simulatedUtcTime
-      )
-    const nowMinute = Math.floor(simulatedUtcTime / 60000) * 60000
-    const d = new Date(simulatedUtcTime)
-    const dayStartUtc = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
-    const shiftStartForAgg = shiftStart ?? dayStartUtc
-    const shiftDrivingMs = aggregateDrivingInWorkShift(historyForDriver, driver as 1 | 2, shiftStartForAgg, nowMinute + 60000)
-    const extendedCountThisWeek = countExtendedDrivingDaysThisWeek(historyForDriver, driver as 1 | 2, simulatedUtcTime)
-    const isAtOrOver9h = shiftDrivingMs >= 9 * 3600 * 1000
-    const hasExtendedAvailable = extendedCountThisWeek < 2
-    const drivingSinceLastBreakMs = drivingSinceLastBreakMsByDriver[driver as 1 | 2] ?? 0
-    const restSinceLastBreakMs = restSinceLastBreakMsByDriver[driver as 1 | 2] ?? 0
-    const splitFirstPartTaken = splitFirstPartTakenByDriver[driver as 1 | 2] ?? false
-    const blockRemaining = remainingDrivingToLimit430(drivingSinceLastBreakMs)
-    const maxDrivingThisShift = hasExtendedAvailable ? EXTENDED_DRIVING_LIMIT_MS : DAILY_DRIVING_LIMIT_MS
-    const dailyRemaining = Math.max(0, maxDrivingThisShift - shiftDrivingMs)
-    const remainingDriving = isAtOrOver9h
-      ? hasExtendedAvailable
-        ? dailyRemaining
-        : 0
-      : Math.min(blockRemaining, dailyRemaining)
-    if (isAtOrOver9h && !hasExtendedAvailable) onExtendedDrivingUnavailable?.()
-    const isRestActive = (driver === 1 ? tachoState.leftActivityId : tachoState.rightActivityId) === 'REST'
-    const isCrewMode = tachoState.isMultiManning
-    const shiftEndForRest = nowMinute + 60000
-    const hasRest3hInShift = shiftStart != null
-      ? hasRestBlockInShiftFor9hDaily(historyForDriver, driver as 1 | 2, shiftStart, shiftEndForRest, isCrewMode)
-      : false
-    const requiredDailyRestMs = getRequiredDailyRestMs(isCrewMode, hasRest3hInShift)
-    /** Při denním limitu (9h+): L1 vpravo = denní odpočinek 9h/11h (při odpočinku: zbývá); jinak pauza 15/30m */
-    const breakRight = drivingSinceLastBreakMs === 0
-      ? 0
-      : isAtOrOver9h
-        ? isRestActive
-          ? Math.max(0, requiredDailyRestMs - restSinceLastBreakMs)
-          : requiredDailyRestMs
-        : isRestActive
-          ? getMinimumRestAfterDrivingBlockMs(restSinceLastBreakMs, splitFirstPartTaken)
-          : getMinimumRestAfterDrivingBlockMs(0, splitFirstPartTaken)
-    const otherWorkInShift = shiftStart != null
-      ? aggregateOtherWorkInWorkShift(historyForDriver, driver as 1 | 2, shiftStart, nowMinute + 60000)
-      : 0
-
-    const debugBreak = driver === 1 || (driver === 2 && (soloSlot2 || bothCards)) ? props.slot1DebugBreak : null
-    const dddLimits = props.slot1DebugDailyRemainingMs !== undefined
-      || props.slot1DebugWeeklyRemainingMs !== undefined
-      || props.slot1DebugFortnightRemainingMs !== undefined
-    const capDriving = (value: number) => {
-      if (!dddLimits) return Math.min(value, dailyRemaining)
-      const caps = [value]
-      for (const item of [props.slot1DebugDailyRemainingMs, props.slot1DebugWeeklyRemainingMs, props.slot1DebugFortnightRemainingMs]) {
-        if (typeof item === 'number') caps.push(item)
-      }
-      return Math.min(...caps)
-    }
-    let drivingShown = remainingDriving
-    let breakShown = breakRight
-    let drivingAfterShown: number | null = null
-    let rightKind: 'legacy' | 'fulfilled' | 'next' | 'until-break' = 'legacy'
-    if (debugBreak?.phase === 'driving') {
-      drivingShown = capDriving(debugBreak.remainingDrivingMs)
-      const resting = (driver === 1 ? tachoState.leftActivityId : tachoState.rightActivityId) === 'REST'
-      const blockReset = debugBreak.requiredBreakMs === 45 * 60 * 1000
-      if (resting && blockReset) {
-        breakShown = 0
-        rightKind = 'fulfilled'
-      } else {
-        breakShown = debugBreak.requiredBreakMs
-        rightKind = 'next'
-      }
-    } else if (debugBreak?.phase === 'break') {
-      drivingShown = dddLimits ? capDriving(debugBreak.drivingIfStartNowMs) : debugBreak.drivingIfStartNowMs
-      breakShown = debugBreak.remainingBreakMs
-      drivingAfterShown = dddLimits ? capDriving(debugBreak.drivingAfterBreakMs) : debugBreak.drivingAfterBreakMs
-      rightKind = 'until-break'
-    }
-
-    return (
-      <div
-        className={`lcd-two-rows lcd-vdo-counter ${tachoState.isMultiManning ? 'lcd-multi-manning' : ''} ${isStandby ? 'lcd-standby' : ''}`}
-        data-standby={isStandby || undefined}
-        data-lcd-right-kind={rightKind}
-        data-lcd-driving-ms={drivingShown}
-        data-lcd-break-ms={breakShown}
-        data-lcd-after-ms={drivingAfterShown ?? undefined}
-      >
-        <div className="lcd-row lcd-row-vdo">
-          <span className="lcd-row-left">
-            {cardSlotNum}
-            {parseSymbols('(2)', symbolMap)}
-            <span>{formatDurationHhMm(drivingShown, true)}</span>
-          </span>
-          {drivingAfterShown != null && (
-            <span className="lcd-row-center">
-              {parseSymbols('(10)', symbolMap)}
-              <span>{formatDurationHhMm(breakShown, true)}</span>
-            </span>
-          )}
-          <span className="lcd-row-right">
-            {parseSymbols(drivingAfterShown != null ? '(2)' : '(10)', symbolMap)}
-            <span>{formatDurationHhMm(drivingAfterShown ?? breakShown, true)}</span>
-          </span>
-        </div>
-        <div className="lcd-row lcd-row-vdo">
-          <span className="lcd-row-left">
-            {cardSlotNum}
-            {parseSymbols('(2)(58)', symbolMap)}
-            <span>{props.slot1DebugFortnightSumMs === undefined
-              ? formatDurationHhMm(twoWeekDriving)
-              : props.slot1DebugFortnightSumMs == null
-                ? t.workWeek.shiftSumRestPlaceholder
-                : formatDurationHhMm(props.slot1DebugFortnightSumMs)}</span>
-          </span>
-          <span className="lcd-row-right">
-            {parseSymbols('(9)', symbolMap)}
-            <span>{props.slot1DebugOtherWorkMs === null
-              ? t.workWeek.shiftSumRestPlaceholder
-              : typeof props.slot1DebugOtherWorkMs === 'number'
-                ? formatDurationHhMm(props.slot1DebugOtherWorkMs)
-                : formatDurationHhMm(otherWorkInShift)}</span>
-          </span>
-        </div>
-      </div>
-    )
-  }
-
-  /* Obrazovka 2–6 a výchozí: Info – stejné rozložení jako při načítání karty (lcd-card-insertion) */
+  /* Obrazovka 2–6: Info – stejné rozložení jako při načítání karty (lcd-card-insertion) */
   return (
     <div className={`lcd-two-rows lcd-card-insertion ${tachoState.isMultiManning ? 'lcd-multi-manning' : ''} ${isStandby ? 'lcd-standby' : ''}`} data-multi-manning={tachoState.isMultiManning || undefined} data-standby={isStandby || undefined}>
       <div className="lcd-row">

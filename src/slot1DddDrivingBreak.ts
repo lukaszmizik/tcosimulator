@@ -13,7 +13,8 @@
  * work je jiná práce. unknown, razítka zemí a mezery nejsou odpočinek.
  * Ruční úsek bez následujícího segmentu nemá známý konec, proto se nedomýšlí.
  * Historický slot 1 i 2 patří držiteli karty a oba se počítají.
- * Osádka, trajekt a OUT se v tomto výpočtu nerozlišují.
+ * Osádka a trajekt se v tomto výpočtu nerozlišují.
+ * OUT se sem nezapisuje: původní jízda zůstává jízda a doložený úsek se hodnotí až nad hotovými intervaly.
  */
 
 import type { DddCardRecord } from './dddCardSession'
@@ -177,6 +178,30 @@ function intervalsForCard(
 
   placed.sort((a, b) => a.startMs - b.startMs || a.endMs - b.endMs)
   return { intervals: placed, unboundedManualStartMs: manual.unboundedManualStartMs }
+}
+
+/** Import DDD, minuty simulovaného vozidla a ruční doplnění odděleně. OUT se na ně nesmí lepit dohromady. */
+export function buildSlot1DddOutSources(input: {
+  cards: Readonly<Record<string, DddCardRecord>>
+  cardNumber: string
+  secondSamples: readonly SecondActivitySnapshot[]
+  nowMs: number
+  recordedDriver?: 1 | 2
+}): { imported: DrivingBreakInterval[]; vehicle: DrivingBreakInterval[]; manual: DrivingBreakInterval[] } {
+  const card = input.cards[input.cardNumber]
+  if (!card || card.cardNumber !== input.cardNumber) return { imported: [], vehicle: [], manual: [] }
+  const recordedDriver = input.recordedDriver ?? 1
+  const openMinute = Math.floor(input.nowMs / MINUTE_MS) * MINUTE_MS
+  const vehicle = workingIntervals(card.workingActivities, openMinute, input.nowMs, recordedDriver, card.cardNumber)
+  const openMinuteIsClosed = card.workingActivities.some((entry) => entry.minuteStartUtc === openMinute)
+  if (!openMinuteIsClosed) {
+    vehicle.push(...openMinuteFromSamples(input.secondSamples, openMinute, input.nowMs, recordedDriver, card.cardNumber))
+  }
+  return {
+    imported: originalIntervals(card.original.activities, input.nowMs),
+    vehicle,
+    manual: manualIntervals(card.workingManual, input.nowMs).intervals,
+  }
 }
 
 function originalIntervals(activities: readonly DddParsedActivity[], nowMs: number): DrivingBreakInterval[] {

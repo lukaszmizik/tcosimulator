@@ -83,6 +83,67 @@ export function drivingBreakDisplay(
   return drivingView()
 }
 
+/**
+ * Odjetý čas od posledního platného odpočinku a už uznaná přestávka.
+ * Zbývající řízení a zbývající přestávka zůstávají ve `drivingBreakDisplay`.
+ * Dokončený platný odpočinek otevírá nové období, takže obě hodnoty jsou 0.
+ */
+export function drivingRestTotals(
+  intervals: readonly DrivingBreakInterval[],
+  nowMs: number,
+): { drivenSinceRestMs: number; recognizedBreakMs: number } {
+  const spans = normalize(intervals, nowMs)
+  let drivingMs = 0
+  let firstPartTaken = false
+  let recognizedBreakMs = 0
+  for (const span of spans) {
+    const durationMs = span.endMs - span.startMs
+    const ongoing = span.endMs === nowMs
+    if (span.kind === 'driving') {
+      drivingMs += durationMs
+      continue
+    }
+    if (span.kind !== 'rest') continue
+    const resets = durationMs >= FULL_BREAK_MS || (firstPartTaken && durationMs >= SECOND_PART_MS)
+    if (ongoing) {
+      if (resets) return { drivenSinceRestMs: 0, recognizedBreakMs: 0 }
+      return {
+        drivenSinceRestMs: drivingMs,
+        recognizedBreakMs: (firstPartTaken ? FIRST_PART_MS : 0) + durationMs,
+      }
+    }
+    if (resets) {
+      drivingMs = 0
+      firstPartTaken = false
+      recognizedBreakMs = 0
+    } else if (!firstPartTaken && durationMs >= FIRST_PART_MS) {
+      firstPartTaken = true
+      recognizedBreakMs = FIRST_PART_MS
+    }
+  }
+  return { drivenSinceRestMs: drivingMs, recognizedBreakMs }
+}
+
+/** Začátek bloku, ze kterého se právě počítá zbývající řízení. Probíhající přestávka ho neposouvá. */
+export function currentDrivingBlockStartMs(intervals: readonly DrivingBreakInterval[], nowMs: number): number {
+  const spans = normalize(intervals, nowMs)
+  let blockStartMs = spans[0]?.startMs ?? 0
+  let firstPartTaken = false
+  for (const span of spans) {
+    if (span.kind !== 'rest') continue
+    const durationMs = span.endMs - span.startMs
+    const resets = durationMs >= FULL_BREAK_MS || (firstPartTaken && durationMs >= SECOND_PART_MS)
+    if (span.endMs === nowMs) return resets ? span.endMs : blockStartMs
+    if (resets) {
+      firstPartTaken = false
+      blockStartMs = span.endMs
+    } else if (!firstPartTaken && durationMs >= FIRST_PART_MS) {
+      firstPartTaken = true
+    }
+  }
+  return blockStartMs
+}
+
 function normalize(intervals: readonly DrivingBreakInterval[], nowMs: number): DrivingBreakInterval[] {
   const spans: DrivingBreakInterval[] = []
   for (const interval of intervals) {

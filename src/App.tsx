@@ -92,13 +92,16 @@ import { exportWorkWeekToTxt, workWeekToTxtString, simulatorToGraphData } from '
 import { parseWorkWeekTxt, activitiesByDay, expandToWeeksContainingData, type DayData, type CountryMarker } from './workWeekTxtParser'
 import { WorkWeekGraphView } from './WorkWeekGraphView'
 import { InsertedCardsHistory } from './InsertedCardsHistory'
-import { InfoPanel, useInfoPanelItems, useNr165Warning, Nr165WarningBox } from './InfoPanel'
-import { SPLIT_REST_SECOND_MS, formatDurationHhMm } from './VDOCounter'
-import { drivingBreakDisplay } from './drivingBreakDisplay'
+import { InfoPanel, useInfoPanelItems, useNr165Warning, Nr165WarningBox, lcdTeachInfoItem, visibleLcdTeachScreen } from './InfoPanel'
+import { REDUCED_DAILY_REST_MIN_MS, SPLIT_REST_SECOND_MS, formatDurationHhMm } from './VDOCounter'
+import { drivingBreakDisplay, drivingRestTotals } from './drivingBreakDisplay'
+import { drivingRemainderUndocumented, evaluateRecordedOut, undeterminedOverlaps } from './outDrivingEvaluation'
+import { ferryDailyRestRemaining, intervalsWithRecognizedFerryRest } from './ferryRestEvaluation'
 import { buildSlot1VirtualCardDrivingBreak, buildSlot1VirtualCounterIntervals } from './slot1DrivingBreak'
-import { buildSlot1DddDrivingBreakIntervals, describeSlot1WeekCoverage } from './slot1DddDrivingBreak'
-import { slot1DddCalendarRemaining, slot1DddDailyRemaining } from './slot1DddDailyRemaining'
-import { counterCardSlot, counterIndexAfterCardRemoval, slot1CounterLcdProps, vdo24hEntryAvailable, vdoCounterClosesWithoutCard, vdoScreenAfterDown, vdoScreenAfterUp, type VdoNamedScreen } from './slot1DddCounter'
+import { buildSlot1DddDrivingBreakIntervals, buildSlot1DddOutSources, describeSlot1WeekCoverage } from './slot1DddDrivingBreak'
+import { slot1DddCalendarRemaining, slot1DddDailyRemaining, weekStartUtc } from './slot1DddDailyRemaining'
+import { workingTimeDisplay } from './workingTimeDisplay'
+import { counterCardSlot, counterIndexAfterCardRemoval, slot1CounterLcdProps, vdo24hEntryAvailable, vdoCounterClosesWithoutCard, buildTimesSequence, timesLocationFrom, stepTimesLocation, type VdoNamedScreen } from './slot1DddCounter'
 import { parseSymbols } from './Symbols'
 import { isWarningCode } from './data/warnings'
 import { useLanguage } from './translations'
@@ -108,6 +111,7 @@ import { CardPrepMenu, type CardPrep } from './CardPrepMenu'
 import { usePrintState } from './print/usePrintState'
 import { PrintOverlays } from './print/PrintOverlays'
 import { applyPrintWizardKey, resolvePrintMenuAction } from './print/printWizardHandling'
+import { driver1PrintCardActivities } from './print/prepareDriver1Print24h'
 import { useMenuCountryInput } from './useMenuCountryInput'
 import { useMenuLoadUnload } from './useMenuLoadUnload'
 import { useSimulationSecondClock, type MinuteAccumulator } from './useSimulationSecondClock'
@@ -251,8 +255,8 @@ export default function App() {
   const [remoteDataDownloadActive, setRemoteDataDownloadActive] = useState(false)
   const [activityDurationsMs, setActivityDurationsMs] = useState<ActivityDurationsMs>(() => ({ ...INITIAL_ACTIVITY_DURATIONS }))
   /** Pro VDO counter: doba řízení od poslední přestávky, doba odpočinku – per řidič (1=levý slot, 2=pravý) */
-  const [drivingSinceLastBreakMsByDriver, setDrivingSinceLastBreakMsByDriver] = useState<Record<1 | 2, number>>({ 1: 0, 2: 0 })
-  const [restSinceLastBreakMsByDriver, setRestSinceLastBreakMsByDriver] = useState<Record<1 | 2, number>>({ 1: 0, 2: 0 })
+  const [, setDrivingSinceLastBreakMsByDriver] = useState<Record<1 | 2, number>>({ 1: 0, 2: 0 })
+  const [, setRestSinceLastBreakMsByDriver] = useState<Record<1 | 2, number>>({ 1: 0, 2: 0 })
   /** Dělená pauza: po 15m přestávce následuje jízda, nyní je potřeba druhá část 30m – per řidič */
   const [splitFirstPartTakenByDriver, setSplitFirstPartTakenByDriver] = useState<Record<1 | 2, boolean>>({ 1: false, 2: false })
   // Původní události tachografu (tachoEvents) aktuálně nevyužíváme – ponecháno pro budoucí rozšíření
@@ -275,7 +279,6 @@ export default function App() {
   /** Varování pracovní doby – 4:15 nebo 4:30. null = nezobrazovat. */
   const [breakWarningActive, setBreakWarningActive] = useState<'415' | '430' | null>(null)
   /** Varování: 10h prodloužená směna nedostupná (2× v týdnu již vyčerpáno) */
-  const [extendedDrivingUnavailableWarning, setExtendedDrivingUnavailableWarning] = useState(false)
   /** Varování: překročení rychlosti >90 km/h déle než 1 min – L1 (39)(39) vys. rychlost, L2 vpravo "30" */
   const [excessSpeedWarningActive, setExcessSpeedWarningActive] = useState(false)
   /** Přepsání: zobraz výstrahu "XX" – volá se povelem zobrazVystrahu("XX") */
@@ -348,6 +351,7 @@ export default function App() {
   const targetSpeedRef = useRef(targetSpeed)
   const currentSpeedRef = useRef(currentSpeed)
   const leftActivityIdRef = useRef(leftActivityId)
+  const activitySinceRef = useRef<{ 1: { activity: string; at: number }; 2: { activity: string; at: number } } | null>(null)
   const rightActivityIdRef = useRef(rightActivityId)
   const activityDurationsMsRef = useRef(activityDurationsMs)
   activityDurationsMsRef.current = activityDurationsMs
@@ -1090,7 +1094,6 @@ export default function App() {
       setDragOverSlot(null)
       setCardWithdrawalState(null)
       cancelMenuCountryInput()
-      setExtendedDrivingUnavailableWarning(false)
       setExcessSpeedWarningActive(false)
       excessSpeedAbove90MsRef.current = 0
       drivingSinceLastBreakMsByDriverRef.current = { 1: 0, 2: 0 }
@@ -1184,6 +1187,62 @@ export default function App() {
     }, STANDBY_WAKE_TIMEOUT_MS)
   }, [])
 
+  const browseOperatingTimes = useCallback((direction: 'down' | 'up') => {
+    const entryContext = {
+      vdoCounterActive: true,
+      card1Inserted,
+      isMultiManning,
+      ferryTrainModeActive: tachoState.ferryTrainModeActive,
+      outModeActive,
+      templateId: card1Data?.templateId,
+      cardNumber: card1Data?.cardNumber,
+      card2Inserted,
+      slot2TemplateId: card2Data?.templateId,
+      slot2CardNumber: card2Data?.cardNumber,
+      speed: currentSpeed,
+      leftActivityId,
+      rightActivityId,
+    }
+    const sequence = buildTimesSequence({
+      moving: currentSpeed > 0,
+      card1: card1Inserted,
+      card2: card2Inserted,
+      counterOn: true,
+      ferry: tachoState.ferryTrainModeActive,
+      entry: {
+        1: vdo24hEntryAvailable({ ...entryContext, operatingScreenIndex: 0 }),
+        2: vdo24hEntryAvailable({ ...entryContext, operatingScreenIndex: 1 }),
+      },
+    })
+    const next = stepTimesLocation(
+      timesLocationFrom(vdoCounterActive, vdoNamedScreen, operatingScreenIndex),
+      direction,
+      sequence,
+    )
+    if (next.kind === 'standard') {
+      setVdoCounterActive(false)
+      setVdoNamedScreen(null)
+      return
+    }
+    setVdoCounterActive(true)
+    if (next.kind === 'info') {
+      setVdoNamedScreen(null)
+      setOperatingScreenIndex(next.index)
+      return
+    }
+    if (next.kind === 'driveRest') {
+      setVdoNamedScreen('driveRest')
+      return
+    }
+    if (next.kind === 'workTime') {
+      setVdoNamedScreen('workTime')
+      setOperatingScreenIndex(card1Inserted ? 0 : 1)
+      return
+    }
+    setOperatingScreenIndex(next.slot === 1 ? 0 : 1)
+    setVdoNamedScreen(next.kind === 'counter' ? null : next.kind === 'card' ? 'vdoCard' : next.kind)
+  }, [card1Inserted, card2Inserted, isMultiManning, tachoState.ferryTrainModeActive, outModeActive, card1Data, card2Data, currentSpeed, leftActivityId, rightActivityId, vdoCounterActive, vdoNamedScreen, operatingScreenIndex])
+
   const handleUp = useCallback(() => {
     if (!ignitionOn) {
       wakeDisplayFromStandby()
@@ -1210,26 +1269,12 @@ export default function App() {
     }
     if (displayMode === 'operating') {
       if (!card1Inserted && !card2Inserted) return
-      const cardTimes = (operatingScreenIndex === 0 || operatingScreenIndex === 1) && !tachoState.ferryTrainModeActive && !outModeActive
-      const upStep = vdoScreenAfterUp(vdoNamedScreen, cardTimes)
-      if (upStep !== 'index') {
-        setVdoNamedScreen(upStep)
-        return
-      }
-      setVdoCounterActive(true)
-      setOperatingScreenIndex((prev) => {
-        const canShow = (i: number) => i >= 2 || (i === 0 && card1Inserted) || (i === 1 && card2Inserted)
-        let next = prev > 0 ? prev - 1 : 6
-        for (let n = 0; n < 7 && !canShow(next); n++) {
-          next = next > 0 ? next - 1 : 6
-        }
-        return next
-      })
+      browseOperatingTimes('up')
       return
     }
     if (visibleItems.length === 0) return
     setSelectedIndex((prev) => stepMenuIndex(prev, visibleItems.length, 'up'))
-  }, [ignitionOn, wakeDisplayFromStandby, displayMode, card1Inserted, card2Inserted, visibleItems.length, cardInsertionState, cardWithdrawalState, printWizardState, menuCountryInputState, menuLoadUnloadConfirmState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, drivingWithoutCardWarningActive, drivingWithoutValidCardWarningActive, ignitionWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, isPrintoutActive, vdoNamedScreen, operatingScreenIndex, outModeActive, tachoState.ferryTrainModeActive])
+  }, [ignitionOn, wakeDisplayFromStandby, displayMode, card1Inserted, card2Inserted, visibleItems.length, cardInsertionState, cardWithdrawalState, printWizardState, menuCountryInputState, menuLoadUnloadConfirmState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, drivingWithoutCardWarningActive, drivingWithoutValidCardWarningActive, ignitionWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, isPrintoutActive, browseOperatingTimes])
 
   const handleDown = useCallback(() => {
     if (!ignitionOn) {
@@ -1257,45 +1302,12 @@ export default function App() {
     }
     if (displayMode === 'operating') {
       if (!card1Inserted && !card2Inserted) return
-      setVdoCounterActive(true)
-      if (!vdoCounterActive) {
-        setOperatingScreenIndex(card1Inserted ? 0 : card2Inserted ? 1 : 2)
-      } else {
-        const cardTimes = (operatingScreenIndex === 0 || operatingScreenIndex === 1) && !tachoState.ferryTrainModeActive && !outModeActive
-        const downStep = vdoScreenAfterDown(vdoNamedScreen, vdo24hEntryAvailable({
-          vdoCounterActive,
-          operatingScreenIndex,
-          card1Inserted,
-          isMultiManning,
-          ferryTrainModeActive: tachoState.ferryTrainModeActive,
-          outModeActive,
-          templateId: card1Data?.templateId,
-          cardNumber: card1Data?.cardNumber,
-          card2Inserted,
-          slot2TemplateId: card2Data?.templateId,
-          slot2CardNumber: card2Data?.cardNumber,
-          speed: currentSpeed,
-          leftActivityId,
-          rightActivityId,
-        }), cardTimes)
-        if (downStep !== 'index') {
-          if (downStep !== vdoNamedScreen) setVdoNamedScreen(downStep)
-          return
-        }
-        setOperatingScreenIndex((prev) => {
-          const canShow = (i: number) => i >= 2 || (i === 0 && card1Inserted) || (i === 1 && card2Inserted)
-          let next = prev < 6 ? prev + 1 : 0
-          for (let n = 0; n < 7 && !canShow(next); n++) {
-            next = next < 6 ? next + 1 : 0
-          }
-          return next
-        })
-      }
+      browseOperatingTimes('down')
       return
     }
     if (visibleItems.length === 0) return
     setSelectedIndex((prev) => stepMenuIndex(prev, visibleItems.length, 'down'))
-  }, [ignitionOn, wakeDisplayFromStandby, displayMode, card1Inserted, card2Inserted, vdoCounterActive, vdoNamedScreen, operatingScreenIndex, isMultiManning, outModeActive, card1Data, card2Data, currentSpeed, leftActivityId, rightActivityId, tachoState.ferryTrainModeActive, visibleItems.length, cardInsertionState, cardWithdrawalState, printWizardState, menuCountryInputState, menuLoadUnloadConfirmState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, drivingWithoutCardWarningActive, drivingWithoutValidCardWarningActive, ignitionWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, isPrintoutActive])
+  }, [ignitionOn, wakeDisplayFromStandby, displayMode, card1Inserted, card2Inserted, visibleItems.length, cardInsertionState, cardWithdrawalState, printWizardState, menuCountryInputState, menuLoadUnloadConfirmState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, drivingWithoutCardWarningActive, drivingWithoutValidCardWarningActive, ignitionWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, isPrintoutActive, browseOperatingTimes])
 
   const handleOK = useCallback(() => {
     if (!ignitionOn) {
@@ -1402,6 +1414,7 @@ export default function App() {
     }
     if (selectedItem.action) {
       const item = selectedItem as import('./MenuStructure').MenuItem & { requiresDate?: boolean; requiresUtcConfirm?: boolean }
+      const slot1CardNumber = card1InsertedRef.current ? card1DataRef.current?.cardNumber : undefined
       const printAction = resolvePrintMenuAction({
         action: selectedItem.action,
         line2: selectedItem.line2,
@@ -1410,6 +1423,9 @@ export default function App() {
         secondHistory,
         simulatedUtcTime,
         currentMenuPath,
+        cardActivities: driver1PrintCardActivities(
+          slot1CardNumber ? dddCardsRef.current[slot1CardNumber]?.original.activities : null,
+        ),
       })
       if (printAction?.type === 'dateWizard') {
         addEntry(t.actions.stiskOk, `${t.actions.vyberDataProTisk} ${selectedItem.line2 ?? selectedItem.action}`)
@@ -1541,6 +1557,7 @@ export default function App() {
     if (displayMode === 'operating' && vdoCounterActive) {
       addEntry(t.actions.stiskZpet, t.actions.opusteniVdoPrehledu)
       setVdoCounterActive(false)
+      setVdoNamedScreen(null)
       return
     }
     if (displayMode === 'menu' && !canGoBack) {
@@ -2510,10 +2527,6 @@ export default function App() {
   const isBargrafRunning = cardInsertionState?.phase === 'loading'
   const isCardInitializing = cardInsertionState != null && ['finalizeStep1', 'finalizeStep2', 'finalizeStep3', 'finalizeStep4'].includes(cardInsertionState.phase)
 
-  const handleExtendedDrivingUnavailable = useCallback(() => {
-    setExtendedDrivingUnavailableWarning(true)
-  }, [])
-
   const displayProps = {
     withdrawalBargrafTick,
     symbolMap,
@@ -2525,7 +2538,6 @@ export default function App() {
     excessSpeedWarningActive,
     ejectionBlockedWarningActive,
     overrideWarningCode,
-    onExtendedDrivingUnavailable: handleExtendedDrivingUnavailable,
     menuCountryInputState,
     menuLoadUnloadConfirmState,
     printWizardState,
@@ -2559,9 +2571,6 @@ export default function App() {
     card1Data,
     card2Data,
     simulatedUtcTime,
-    drivingSinceLastBreakMsByDriver,
-    restSinceLastBreakMsByDriver,
-    splitFirstPartTakenByDriver,
     remoteDataDownloadActive,
     driver1ManualEntryBuffer,
     driver2ManualEntryBuffer,
@@ -2606,7 +2615,49 @@ export default function App() {
     })
   }, [card1Inserted, card1Data?.templateId, cardActivityHistoryByTemplateId, secondHistory, simulatedUtcTime])
   const slot1CounterIntervals = useMemo(() => {
-    if (tachoState.ferryTrainModeActive || outModeActive) return null
+    const slot = vdoNamedScreen === 'driveRest'
+      ? (card1Inserted ? 1 : null)
+      : card1Inserted && card2Inserted
+        ? counterCardSlot(operatingScreenIndex, card1Inserted, card2Inserted)
+        : card1Inserted
+          ? 1
+          : card2Inserted
+            ? 2
+            : null
+    if (slot == null) return null
+    const data = slot === 1 ? card1Data : card2Data
+    const manual = slot === 1 ? driver1ManualEntryBuffer : driver2ManualEntryBuffer
+    const evaluated = data?.cardNumber && !data.templateId
+      ? evaluateRecordedOut({
+        ...buildSlot1DddOutSources({
+          cards: dddCards,
+          cardNumber: data.cardNumber,
+          secondSamples: secondHistory,
+          nowMs: simulatedUtcTime,
+          recordedDriver: slot,
+        }),
+        cardConditions: dddCards[data.cardNumber]?.original.specificConditions,
+        vehicleEvents: outModeEvents,
+        nowMs: simulatedUtcTime,
+      })
+      : data?.templateId
+        ? evaluateRecordedOut({
+          imported: [],
+          vehicle: buildSlot1VirtualCounterIntervals({
+            cardHistory: cardActivityHistoryByTemplateId[data.templateId] ?? [],
+            manual,
+            secondSamples: secondHistory,
+            nowMs: simulatedUtcTime,
+            driverSlot: slot,
+            cardId: data.templateId,
+          }),
+          vehicleEvents: outModeEvents,
+          nowMs: simulatedUtcTime,
+        })
+        : null
+    return evaluated
+  }, [card1Inserted, card2Inserted, operatingScreenIndex, vdoNamedScreen, outModeEvents, card1Data, card2Data, dddCards, secondHistory, simulatedUtcTime, cardActivityHistoryByTemplateId, driver1ManualEntryBuffer, driver2ManualEntryBuffer])
+  const slot1FerryRest = useMemo(() => {
     const slot = card1Inserted && card2Inserted
       ? counterCardSlot(operatingScreenIndex, card1Inserted, card2Inserted)
       : card1Inserted
@@ -2618,37 +2669,103 @@ export default function App() {
     const data = slot === 1 ? card1Data : card2Data
     const manual = slot === 1 ? driver1ManualEntryBuffer : driver2ManualEntryBuffer
     if (data?.cardNumber && !data.templateId) {
-      return buildSlot1DddDrivingBreakIntervals({
-        cards: dddCards,
-        cardNumber: data.cardNumber,
-        secondSamples: secondHistory,
+      return ferryDailyRestRemaining({
+        ...buildSlot1DddOutSources({
+          cards: dddCards,
+          cardNumber: data.cardNumber,
+          secondSamples: secondHistory,
+          nowMs: simulatedUtcTime,
+          recordedDriver: slot,
+        }),
+        cardConditions: dddCards[data.cardNumber]?.original.specificConditions,
+        vehicleEvents: ferryTrainEvents,
         nowMs: simulatedUtcTime,
-        recordedDriver: slot,
-      }).intervals
+      })
     }
     if (data?.templateId) {
-      return buildSlot1VirtualCounterIntervals({
-        cardHistory: cardActivityHistoryByTemplateId[data.templateId] ?? [],
-        manual,
-        secondSamples: secondHistory,
+      return ferryDailyRestRemaining({
+        imported: [],
+        vehicle: buildSlot1VirtualCounterIntervals({
+          cardHistory: cardActivityHistoryByTemplateId[data.templateId] ?? [],
+          manual,
+          secondSamples: secondHistory,
+          nowMs: simulatedUtcTime,
+          driverSlot: slot,
+          cardId: data.templateId,
+        }),
+        vehicleEvents: ferryTrainEvents,
         nowMs: simulatedUtcTime,
-        driverSlot: slot,
-        cardId: data.templateId,
       })
     }
     return null
-  }, [card1Inserted, card2Inserted, operatingScreenIndex, tachoState.ferryTrainModeActive, outModeActive, card1Data, card2Data, dddCards, secondHistory, simulatedUtcTime, cardActivityHistoryByTemplateId, driver1ManualEntryBuffer, driver2ManualEntryBuffer])
+  }, [card1Inserted, card2Inserted, operatingScreenIndex, ferryTrainEvents, card1Data, card2Data, dddCards, secondHistory, simulatedUtcTime, cardActivityHistoryByTemplateId, driver1ManualEntryBuffer, driver2ManualEntryBuffer])
+  const slot1FerryRestMs = tachoState.ferryTrainModeActive ? (slot1FerryRest ? slot1FerryRest.remainingMs : null) : undefined
+  const completedFerryRests = slot1FerryRest?.completed ?? []
+  const latestRecognizedFerryRest = completedFerryRests[completedFerryRests.length - 1]
+  const slot1FerryRestConditional = tachoState.ferryTrainModeActive
+    ? slot1FerryRest?.conditional === true
+    : latestRecognizedFerryRest?.conditional === true
   const slot1DddBreak = useMemo(() => {
     if (!slot1CounterIntervals) return null
-    return drivingBreakDisplay(slot1CounterIntervals, simulatedUtcTime)
+    return drivingBreakDisplay(slot1CounterIntervals.intervals, simulatedUtcTime)
   }, [slot1CounterIntervals, simulatedUtcTime])
+  const slotRestTotals = useMemo(() => {
+    if (!slot1CounterIntervals) return null
+    return drivingRestTotals(slot1CounterIntervals.intervals, simulatedUtcTime)
+  }, [slot1CounterIntervals, simulatedUtcTime])
+  const slot1DrivingUndocumented = slot1CounterIntervals != null && slot1DddBreak != null
+    && drivingRemainderUndocumented(slot1CounterIntervals.intervals, slot1CounterIntervals.undetermined, simulatedUtcTime)
+  const drivenSinceRestMs = slotRestTotals == null || slot1DrivingUndocumented ? null : slotRestTotals.drivenSinceRestMs
+  const recognizedBreakMs = slotRestTotals == null ? null : slotRestTotals.recognizedBreakMs
+  const slotWorkingTime = useMemo(() => {
+    if (!slot1CounterIntervals) return null
+    return workingTimeDisplay(slot1CounterIntervals.intervals, simulatedUtcTime, {
+      undetermined: slot1CounterIntervals.undetermined,
+      extraDailyRestEndsMs: (slot1FerryRest?.completed ?? []).map((item) => item.endMs),
+    })
+  }, [slot1CounterIntervals, slot1FerryRest, simulatedUtcTime])
+  if (activitySinceRef.current == null) {
+    activitySinceRef.current = {
+      1: { activity: leftActivityId, at: simulatedUtcTime },
+      2: { activity: rightActivityId, at: simulatedUtcTime },
+    }
+  } else {
+    if (activitySinceRef.current[1].activity !== leftActivityId) {
+      activitySinceRef.current[1] = { activity: leftActivityId, at: simulatedUtcTime }
+    }
+    if (activitySinceRef.current[2].activity !== rightActivityId) {
+      activitySinceRef.current[2] = { activity: rightActivityId, at: simulatedUtcTime }
+    }
+  }
+  const activityDurationMsByDriver = {
+    1: Math.max(0, simulatedUtcTime - activitySinceRef.current[1].at),
+    2: Math.max(0, simulatedUtcTime - activitySinceRef.current[2].at),
+  }
   const slot1DddDaily = useMemo(() => {
     if (!slot1CounterIntervals) return null
-    return slot1DddDailyRemaining(slot1CounterIntervals, simulatedUtcTime)
-  }, [slot1CounterIntervals, simulatedUtcTime])
+    const dailyIntervals = intervalsWithRecognizedFerryRest(slot1CounterIntervals.intervals, slot1FerryRest?.completed ?? [])
+    const daily = slot1DddDailyRemaining(dailyIntervals, simulatedUtcTime)
+    if (daily.remainingMs == null) return daily
+    const periodStart = dailyIntervals.reduce((latest, interval) => (
+      interval.kind === 'rest' && interval.endMs <= simulatedUtcTime && interval.endMs - interval.startMs >= REDUCED_DAILY_REST_MIN_MS
+        ? Math.max(latest, interval.endMs)
+        : latest
+    ), 0)
+    if (periodStart === 0 || !undeterminedOverlaps(slot1CounterIntervals.undetermined, periodStart, simulatedUtcTime)) return daily
+    return { ...daily, remainingMs: null, drivenMs: null, extensionsRemaining: null }
+  }, [slot1CounterIntervals, slot1FerryRest, simulatedUtcTime])
   const slot1DddCalendar = useMemo(() => {
     if (!slot1CounterIntervals) return null
-    return slot1DddCalendarRemaining(slot1CounterIntervals, simulatedUtcTime)
+    const calendar = slot1DddCalendarRemaining(slot1CounterIntervals.intervals, simulatedUtcTime)
+    const thisMonday = weekStartUtc(simulatedUtcTime)
+    const prevMonday = thisMonday - 7 * 24 * 60 * 60 * 1000
+    const currentUnknown = undeterminedOverlaps(slot1CounterIntervals.undetermined, thisMonday, simulatedUtcTime)
+    const previousUnknown = undeterminedOverlaps(slot1CounterIntervals.undetermined, prevMonday, thisMonday)
+    if (!currentUnknown && !previousUnknown) return calendar
+    if (currentUnknown) {
+      return { ...calendar, weeklyRemainingMs: null, fortnightRemainingMs: null, fortnightSumMs: null, currentWeekDrivingMs: null }
+    }
+    return { ...calendar, fortnightRemainingMs: null, fortnightSumMs: null, previousWeekDrivingMs: null }
   }, [slot1CounterIntervals, simulatedUtcTime])
   const slot1WeekCoverage = useMemo(() => {
     if (!card1Inserted || !card1Data?.cardNumber || card1Data.templateId) return null
@@ -2696,6 +2813,37 @@ export default function App() {
     calendar: slot1DddCalendar,
     virtualDebugBreak: card1Data?.templateId === CARD1_TEMPLATE_ID ? slot1DebugBreak : null,
   })
+
+  const teachDriver: 1 | 2 = operatingScreenIndex === 1 && card2Inserted ? 2 : 1
+  const lcdTeachCovered = Boolean(
+    overrideWarningCode
+    || excessSpeedWarningActive
+    || ejectionBlockedWarningActive
+    || cardInsertionState
+    || cardWithdrawalState
+    || (drivingWithoutCardWarningActive && !(outModeActive && currentSpeed === 0 && (!hasDrivenSinceOutActivation || (outStoppedAtUtc != null && simulatedUtcTime - outStoppedAtUtc >= 10000))))
+    || drivingWithoutValidCardWarningActive
+    || breakWarningActive
+    || menuCountryInputState
+    || menuLoadUnloadConfirmState
+    || printWizardState
+  )
+  const lcdTeachItem = lcdTeachInfoItem({
+    t,
+    screen: visibleLcdTeachScreen({
+      displayMode,
+      vdoCounterActive,
+      vdoNamedScreen,
+      operatingScreenIndex,
+      cardInserted: card1Inserted || card2Inserted,
+    }),
+    covered: lcdTeachCovered,
+    driver: teachDriver,
+    leftActivityId,
+    rightActivityId,
+    breakCountingDown: slot1LcdProps.slot1DebugBreak?.phase === 'break' && !tachoState.ferryTrainModeActive,
+  })
+  const panelItems = lcdTeachItem ? [...infoPanelItems, lcdTeachItem] : infoPanelItems
 
   const insertedSlot1 = card1Data?.cardNumber ? dddCards[card1Data.cardNumber] ?? null : null
   const insertedSlot2 = card2Data?.cardNumber ? dddCards[card2Data.cardNumber] ?? null : null
@@ -2805,7 +2953,6 @@ export default function App() {
         data-faults-events={faultsAndEventsJson}
         data-event-log={JSON.stringify(eventLog)}
         data-driver2-manual-entries={JSON.stringify(driver2ManualEntryBuffer)}
-        data-extended-driving-unavailable={extendedDrivingUnavailableWarning}
         data-debug-out-mode-active={String(outModeActive)}
         data-debug-show-out-on-l2={String(outModeActive)}
         data-debug-driving-without-card-warning={String(drivingWithoutCardWarningActive)}
@@ -2919,6 +3066,13 @@ export default function App() {
                   slot1DebugFortnightSumMs={slot1LcdProps.slot1DebugFortnightSumMs}
                   slot1DebugDailyExtensionsRemaining={slot1LcdProps.slot1DebugDailyExtensionsRemaining}
                   slot1DebugOtherWorkMs={slot1LcdProps.slot1DebugOtherWorkMs}
+                  slot1DebugDrivingKnown={!slot1DrivingUndocumented}
+                  slot1DebugFerryRestMs={slot1FerryRestMs}
+                  slot1DebugFerryRestConditional={slot1FerryRestConditional}
+                  drivenSinceRestMs={drivenSinceRestMs}
+                  recognizedBreakMs={recognizedBreakMs}
+                  activityDurationMsByDriver={activityDurationMsByDriver}
+                  workTime={slotWorkingTime}
                 />
               </div>
               {slot1DrivingBreak && (
@@ -3069,14 +3223,14 @@ export default function App() {
       <div className={`info-panels-wrapper info-panels-wrapper--attached ${infoPanelsCollapsed ? 'info-panels-wrapper--collapsed' : ''}`}>
           {infoPanelsCollapsed ? (
             <div className="info-panels-strip">
-              <InfoPanel items={infoPanelItems} resetTrigger={infoPanelResetTrigger} symbolMap={symbolMap} collapsed />
+              <InfoPanel items={panelItems} resetTrigger={infoPanelResetTrigger} symbolMap={symbolMap} collapsed />
               {showNr165Warning && !nr165Dismissed && (
                 <Nr165WarningBox onClose={() => setNr165Dismissed(true)} symbolMap={symbolMap} collapsed />
               )}
             </div>
           ) : (
             <div className="info-panels-stack">
-              <InfoPanel items={infoPanelItems} resetTrigger={infoPanelResetTrigger} symbolMap={symbolMap} />
+              <InfoPanel items={panelItems} resetTrigger={infoPanelResetTrigger} symbolMap={symbolMap} />
               {showNr165Warning && !nr165Dismissed && (
                 <Nr165WarningBox onClose={() => setNr165Dismissed(true)} symbolMap={symbolMap} />
               )}
@@ -3106,6 +3260,9 @@ export default function App() {
         card1Inserted={card1Inserted}
         card1Data={card1Data}
         driver1ManualEntryBuffer={driver1ManualEntryBuffer}
+        slot1CardActivities={driver1PrintCardActivities(
+          card1Inserted && card1Data?.cardNumber ? dddCards[card1Data.cardNumber]?.original.activities : null,
+        )}
         eventLog={eventLog}
         odometerKm={odometerKm}
       />

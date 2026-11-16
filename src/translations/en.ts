@@ -47,7 +47,6 @@ export const en: Translations = {
     applyTimeTitle: 'Apply set time to tachograph display',
     selectedDateTimeLabel: 'Selected date and time:',
     remoteDataDownloadActive: 'Remote data download active',
-    card1EndedByTargetCountry: 'Card 1 ended by target country',
     ignitionLabel: 'Ignition',
     stopIgnition: 'Stop ignition',
     drivingCannotStop: 'Cannot turn off vehicle while driving',
@@ -80,7 +79,6 @@ export const en: Translations = {
     crewModeInterruptedWarning: 'As driver no. 1 started driving without driver no. 2, crew mode was interrupted and your recorded activities exceed the parameters for a single driver\'s shift length. This is a safety violation!',
     duplicateDataWarning: 'Warning: The card already contains saved data. Cannot write data to occupied memory. Clear the data using the Reset button',
     publishDataConsentInfo: 'When using the card for the first time, you will be prompted to give consent for the processing of personal data, including special categories of personal data. You can withdraw your consent at any time through the device menu.',
-    card1EndedByTargetCountryInfo: 'I saved to the card at {dateTime} (41)(37) the end country. The original record in the simulator had no completed shift. You can change this option at any time. It is for educational purposes.',
     ejectionBlockedWarning: 'This is an error! You cannot eject the card while driving!',
     excessSpeedWarning: 'Excess speed (39)(39) has been recorded. The vehicle\'s design speed was exceeded. This event is automatically recorded in the tachograph memory!',
     menuComingSoon: 'This menu item is not yet active. Coming soon:)',
@@ -219,6 +217,11 @@ export const en: Translations = {
     saveDataToFileTitle: 'Save card 1 contents to TXT file', // 85
     showCardData: 'Show card data', // 86
     showCardDataTitle: 'Display graph with current simulator data', // 87
+    loadCardFromDdd: 'Load from DDD file',
+    loadCardFromDddTitle: 'Load a driver card file and show its history in a separate preview',
+    loadVirtualCard: 'Load virtual card',
+    simulationControlsTitle: 'Simulation controls',
+    simulationControlsHint: 'Use this panel to set the exercise conditions.',
   },
   printOverlay: {
     driver1Title: 'Printout driver 1', // 88

@@ -60,8 +60,8 @@ export const REDUCED_WEEKLY_REST_SATISFIES_MS = 9 * 3600 * 1000
 
 /** 16) Max počet zkrácených denních odpočinků mezi dvěma týdenními v plovoucím týdnu */
 export const MAX_REDUCED_DAILY_REST_PER_PERIOD = 3
-/** Zkrácená denní doba odpočinku: 9h00m – 10h59m (méně než standardních 11h) */
-const REDUCED_DAILY_REST_MIN_MS = 9 * 3600 * 1000 // 9h
+/** Zkrácená denní doba odpočinku: od 9h00m. Ukončuje denní období i jako pravidelných 11 h. */
+export const REDUCED_DAILY_REST_MIN_MS = 9 * 3600 * 1000 // 9h
 const REDUCED_DAILY_REST_MAX_MS = 11 * 3600 * 1000 - 1 // < 11h
 
 /** 18) Doba odpočinku nad 24h resetuje počítadlo zkrácených denních */
@@ -206,7 +206,7 @@ export function aggregateDurationsForDay(
 /**
  * Součet řízení v jednom kalendářním týdnu (po–ne).
  */
-function aggregateDrivingInCalendarWeek(
+export function aggregateDrivingInCalendarWeek(
   history: ActivityHistoryEntry[],
   slotIndex: 1 | 2,
   referenceTimeUtc: number

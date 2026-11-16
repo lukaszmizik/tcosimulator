@@ -49,7 +49,6 @@ export type Translations = {
     applyTimeTitle: string
     selectedDateTimeLabel: string
     remoteDataDownloadActive: string
-    card1EndedByTargetCountry: string
     ignitionLabel: string
     stopIgnition: string
     drivingCannotStop: string
@@ -82,7 +81,6 @@ export type Translations = {
     crewModeInterruptedWarning: string
     duplicateDataWarning: string
     publishDataConsentInfo: string
-    card1EndedByTargetCountryInfo: string
     excessSpeedWarning: string
     /** Výstraha: nelze vytahovat kartu během jízdy (zobrazí se po pokusu o vyjmutí za jízdy) */
     ejectionBlockedWarning: string
@@ -192,6 +190,11 @@ export type Translations = {
     saveDataToFileTitle: string
     showCardData: string
     showCardDataTitle: string
+    loadCardFromDdd: string
+    loadCardFromDddTitle: string
+    loadVirtualCard: string
+    simulationControlsTitle: string
+    simulationControlsHint: string
   }
   printOverlay: {
     driver1Title: string

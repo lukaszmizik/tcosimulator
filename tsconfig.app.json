@@ -17,7 +17,15 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    "noUncheckedSideEffectImports": true,
+    "baseUrl": ".",
+    "paths": {
+      "tacho-viewer-ddd-parser": ["src/types/tachoViewerDddParser.d.ts"],
+      "tacho-viewer-ddd-mapper": ["src/types/tachoViewerDddMapper.d.ts"],
+      "tacho-viewer-graph": ["src/types/tachoViewerGraph.d.ts"],
+      "tacho-viewer-language": ["src/types/tachoViewerGraph.d.ts"],
+      "tacho-viewer-slot-graph": ["src/types/tachoViewerGraph.d.ts"]
+    }
   },
   "include": ["src"]
 }

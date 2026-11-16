@@ -690,11 +690,12 @@ body {
 
 /* Ovládací panel pod přístrojem */
 .control-panel {
-  margin-top: 24px;
-  padding: 20px;
-  background: #333;
+  margin-top: 36px;
+  padding: 16px 20px 20px;
+  background: #c3d3e2;
+  color: #1e293b;
   border-radius: 12px;
-  border: 2px solid #222;
+  border: 1px solid #7d95ab;
   display: flex;
   flex-wrap: wrap;
   gap: 24px;
@@ -702,6 +703,69 @@ body {
   width: 100%;
   max-width: 800px;
   box-sizing: border-box;
+}
+
+.control-panel-intro {
+  flex-basis: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.control-panel-heading {
+  margin: 0;
+  color: #0f2744;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.control-panel-subtitle {
+  margin: 0;
+  color: #334155;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.control-panel .control-panel-label,
+.control-panel .control-panel-checkbox-label,
+.control-panel .control-panel-apply-preview {
+  color: #1e293b;
+}
+
+.control-panel .control-btn {
+  background: #f8fafc;
+  color: #0f172a;
+  border-color: #64748b;
+}
+
+.control-panel .control-btn:hover {
+  background: #e2e8f0;
+}
+
+.control-panel .control-btn.control-btn-time {
+  background: #1e3a5f;
+  color: #f8fafc;
+  border-color: #1e3a5f;
+}
+
+.control-panel .control-btn.control-btn-time:hover:not(.control-btn-time-disabled):not(:disabled) {
+  background: #16304f;
+}
+
+.control-panel .control-btn-time:disabled,
+.control-panel .control-btn-time-disabled {
+  background: #cbd5e1;
+  color: #475569;
+  border-color: #94a3b8;
+}
+
+.control-panel .control-btn-apply,
+.control-panel .control-btn-apply:hover {
+  background: #15803d;
+  color: #fff;
+  border-color: #166534;
 }
 
 .control-panel-section {
@@ -1374,6 +1438,100 @@ body {
   font-weight: 700;
   color: #111;
   letter-spacing: 0.02em;
+}
+
+.ddd-card-holder {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111;
+}
+
+.card-prep {
+  position: relative;
+  width: 348px;
+  box-sizing: border-box;
+  border: 2px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 10px;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.card-prep-remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid #94a3b8;
+  border-radius: 6px;
+  background: #0f172a;
+  color: #f8fafc;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.card-prep-title {
+  margin: 0 0 8px;
+  color: #f8fafc;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.card-prep-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.card-prep-choice {
+  width: 100%;
+  padding: 10px 12px;
+  background: #1e293b;
+  color: #e2e8f0;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.card-prep-choice:hover {
+  border-color: #38bdf8;
+}
+
+.ddd-load-error,
+.ddd-insert-message {
+  margin: 8px 0 0;
+  color: #9b1c1c;
+  font-size: 14px;
+}
+
+.ddd-driver-card {
+  width: 180px;
+  padding: 10px 12px;
+  background: #f4f1e8;
+  border: 1px solid #222;
+  border-radius: 8px;
+  cursor: grab;
+}
+
+.ddd-driver-card-inserted {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.ddd-driver-card-name {
+  display: block;
+  font-weight: 700;
+}
+
+.ddd-driver-card-slot {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
 }
 
 .work-week-graph-nav {

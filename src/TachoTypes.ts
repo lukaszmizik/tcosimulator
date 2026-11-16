@@ -25,6 +25,9 @@ export type SecondActivitySnapshot = {
   driver1: ActivityKind
   driver2: ActivityKind
   speed: number
+  /** Karta ve šachtě v okamžiku vzorku. Podle ní zůstane činnost u karty i po prohození. */
+  driver1CardId?: string | typeof NO_CARD
+  driver2CardId?: string | typeof NO_CARD
 }
 
 /** Konstanta pro záznam ve VU, když v daném slotu není vložena karta */
@@ -32,6 +35,7 @@ export const NO_CARD = 'NO_CARD' as const
 
 export type ActivityHistoryEntry = {
   minuteStartUtc: number
+  isCrew?: boolean
   driver1: ActivityKind
   driver2: ActivityKind
   gpsLocation?: string
@@ -90,6 +94,10 @@ export type CardData = {
   /** Příjmení – pro zobrazení pouze příjmení ve fázích načítání průvodce (welcome, loading). */
   surname?: string
   lastWithdrawal: number | null
+  /** Odkud pochází lastWithdrawal, když nejde o uložené vyjmutí šablony. */
+  lastWithdrawalSource?: 'vehicle_last_use'
+  /** Identita karty načtené z DDD. Šablony zmizik a novak ji nemají. */
+  cardNumber?: string
   templateId?: 'zmizik' | 'novak'
   /** Po prvním úspěšném vložení se změní na false. */
   isFirstInsertion?: boolean

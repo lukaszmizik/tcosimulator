@@ -205,6 +205,10 @@ export type WorkWeekGraphViewProps = {
   symbolMap?: SymbolMap | null
   onResetLoadUnload?: () => void
   onClose: () => void
+  /** Jméno držitele v náhledu karty z DDD. */
+  holderName?: string
+  /** Týden, který se má otevřít. Bez něj graf zůstává na posledním týdnu dat. */
+  focusMs?: number | null
 }
 
 /**
@@ -483,7 +487,12 @@ function GraphBlock({ days, countryMarkers, manualEntryBuffer, lastWithdrawalUtc
                   const isDrivingInOut =
                     act.type === 'řízení' && drivingOverlapsOutPeriod(act.startMs, act.endMs, outModeRanges)
                   return (
-                    <g key={i}>
+                    <g
+                      key={i}
+                      data-activity-type={act.type}
+                      data-start-ms={act.startMs}
+                      data-end-ms={act.endMs}
+                    >
                       {isDrivingInOut ? (
                         <rect
                           x={x1}
@@ -520,7 +529,12 @@ function GraphBlock({ days, countryMarkers, manualEntryBuffer, lastWithdrawalUtc
                 const textAnchor = isStart ? 'start' : 'end'
                 const anchorBottom = yBase + ROW_HEIGHT / 2 + 7
                 return (
-                  <g key={`anchor-${dayStart}-${i}`}>
+                  <g
+                    key={`anchor-${dayStart}-${i}`}
+                    data-country-code={code}
+                    data-country-ms={ms}
+                    data-country-role={marker.activityId}
+                  >
                     <text x={x} y={yBase + 8} dx={dx} textAnchor={textAnchor} fill={ANCHOR_STROKE} fontSize={8} fontFamily="sans-serif" fontWeight={600}>{label}</text>
                     <line x1={x} y1={yBase + 3} x2={x} y2={anchorBottom} stroke={ANCHOR_STROKE} strokeWidth={1.5} strokeLinecap="round" />
                     <circle cx={x} cy={yBase + 3} r={2.5} fill={ANCHOR_COLOR} />
@@ -885,10 +899,11 @@ function deriveRecordedLocationsFromActivities(activities: ParsedActivity[]): Re
   return result
 }
 
-export function WorkWeekGraphView({ days, countryMarkers, manualEntryBuffer, lastWithdrawalUtc, card2Data, loadUnloadEvents = [], ferryTrainEvents = [], outModeEvents = [], recordedGpsLocations = [], faultsAndEvents = [], symbolMap, onResetLoadUnload, onClose }: WorkWeekGraphViewProps) {
+export function WorkWeekGraphView({ days, countryMarkers, manualEntryBuffer, lastWithdrawalUtc, card2Data, loadUnloadEvents = [], ferryTrainEvents = [], outModeEvents = [], recordedGpsLocations = [], faultsAndEvents = [], symbolMap, onResetLoadUnload, onClose, holderName, focusMs }: WorkWeekGraphViewProps) {
   const { t } = useLanguage()
   const dayNames = t.workWeek.dayNames
   const getInitialWeekStart = () => {
+    if (focusMs != null) return getWeekStartMsLocal(focusMs)
     if (days.length > 0) return getWeekStartMsLocal(days[days.length - 1]!.dateUtc)
     return getWeekStartMsLocal(Date.now())
   }
@@ -896,7 +911,7 @@ export function WorkWeekGraphView({ days, countryMarkers, manualEntryBuffer, las
 
   useEffect(() => {
     setDisplayWeekStartMs(getInitialWeekStart())
-  }, [days])
+  }, [days, focusMs])
 
   const goPrevWeek = () => setDisplayWeekStartMs((ms) => ms - 7 * DAY_MS)
   const goNextWeek = () => setDisplayWeekStartMs((ms) => ms + 7 * DAY_MS)
@@ -912,6 +927,7 @@ export function WorkWeekGraphView({ days, countryMarkers, manualEntryBuffer, las
             </button>
           )}
           <div className="work-week-graph-empty">{t.workWeek.noData}</div>
+          {holderName && <p className="ddd-card-holder">{holderName}</p>}
         </div>
       </div>
     )
@@ -927,6 +943,7 @@ export function WorkWeekGraphView({ days, countryMarkers, manualEntryBuffer, las
           </button>
         )}
         <div className="work-week-graph-header">
+          {holderName && <p className="ddd-card-holder">{holderName}</p>}
           <h2 className="work-week-graph-title">{t.workWeek.weekGraphTitle}</h2>
           <div className="work-week-graph-nav">
             <button

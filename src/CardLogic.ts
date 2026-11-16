@@ -173,6 +173,40 @@ export function localSegmentToUtcForBuffer<T extends { day: number; month: numbe
   }
 }
 
+function isConfirmedActivity(activityId: EditorActivityId | undefined): boolean {
+  return activityId === 'REST' || activityId === 'WORK' || activityId === 'AVAILABILITY'
+}
+
+/**
+ * Potvrzený úsek na stropu času vložení znamená „do teď“.
+ * Průvodce ten strop zachytí na začátku a potvrzení přijde později.
+ * Posune jen body ležící přesně na stropu, včetně razítka ve stejné minutě.
+ * Dřívější výslovný konec ani úsek bez konce se nemění.
+ */
+export function advanceConfirmedCapToMinute(
+  buffer: readonly ManualEntrySegment[],
+  capMinuteMs: number,
+  confirmMinuteMs: number,
+): ManualEntrySegment[] {
+  const cap = floorToMinute(capMinuteMs)
+  const confirm = floorToMinute(confirmMinuteMs)
+  if (confirm <= cap) return [...buffer]
+  const capIsConfirmedEnd = buffer.some((segment) => isConfirmedActivity(segment.activityId) && segmentToMsUtc(segment) === cap)
+  if (!capIsConfirmedEnd) return [...buffer]
+  return buffer.map((segment) => {
+    if (segmentToMsUtc(segment) !== cap) return segment
+    const moved = utcMsToSegment(confirm)
+    return {
+      ...segment,
+      day: moved.day,
+      month: moved.month,
+      year: moved.year,
+      hour: moved.hour,
+      minute: moved.minute,
+    }
+  })
+}
+
 export function cycleEditorActivity(id: EditorActivityId, direction: 1 | -1 = 1): EditorActivityId {
   const i = ACTIVITY_SYMBOLS.findIndex((a) => a.id === id)
   const len = ACTIVITY_SYMBOLS.length

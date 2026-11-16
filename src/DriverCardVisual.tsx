@@ -14,10 +14,20 @@ export type DriverCardVisualProps = {
   insertedSlot: 1 | 2 | null
   /** Lze kartu táhnout do slotu (zapalování musí být zapnuté). */
   draggable: boolean
-  /** Volá se při začátku tažení – předá se cardId ('zmizik' | 'novak') v rodiči. */
+  /** Volá se při začátku tažení. */
   onDragStart?: (e: React.DragEvent) => void
-  /** Identifikátor karty pro drag (zmizik = první řidič, novak = druhý). */
-  cardId: 'zmizik' | 'novak'
+  /** Virtuální šablona. Určuje ukázkové údaje a obsah přetažení. */
+  cardId?: 'zmizik' | 'novak'
+  /** Hodnota přetažení, pokud to není šablona zmizik/novak. */
+  dragValue?: string
+  /** Údaje z výpisu. Když jsou předané, nenahrazují se ukázkovými hodnotami šablony. */
+  birthDate?: string
+  validityFrom?: string
+  validityTo?: string
+  authority?: string
+  documentNumber?: string
+  cardNumber?: string
+  countryCode?: string
 }
 
 const DEFAULT_NAME = 'Jméno Příjmení'
@@ -43,17 +53,49 @@ function getValidityDatesForCard(cardId: 'zmizik' | 'novak'): { from: string; to
   return { from: '06.02.2026', to: '06.02.2031' }
 }
 
-export function DriverCardVisual({ data, insertedSlot, draggable, onDragStart, cardId }: DriverCardVisualProps) {
+function shown(value: string | undefined, fallback: string): string {
+  const text = value?.trim()
+  return text ? text : fallback
+}
+
+export function DriverCardVisual({
+  data,
+  insertedSlot,
+  draggable,
+  onDragStart,
+  cardId,
+  dragValue,
+  birthDate: birthDateProp,
+  validityFrom,
+  validityTo,
+  authority,
+  documentNumber,
+  cardNumber,
+  countryCode,
+}: DriverCardVisualProps) {
   const displayName = data?.name ?? DEFAULT_NAME
   const isInserted = insertedSlot !== null
+  const usesTemplateDefaults = cardId != null && birthDateProp == null && validityFrom == null && cardNumber == null
 
-  const birthDate = useMemo(() => getBirthDateForCard(cardId), [cardId])
-  const validity = useMemo(() => getValidityDatesForCard(cardId), [cardId])
+  const birthDate = useMemo(() => {
+    if (!usesTemplateDefaults) return shown(birthDateProp, '—')
+    return cardId ? getBirthDateForCard(cardId) : '—'
+  }, [usesTemplateDefaults, birthDateProp, cardId])
+  const validity = useMemo(() => {
+    if (!usesTemplateDefaults) return { from: shown(validityFrom, '—'), to: shown(validityTo, '—') }
+    return cardId ? getValidityDatesForCard(cardId) : { from: '—', to: '—' }
+  }, [usesTemplateDefaults, validityFrom, validityTo, cardId])
+  const country = shown(countryCode, 'CZ')
+  const authorityText = usesTemplateDefaults ? 'Ministerstvo dopravy' : shown(authority, '—')
+  const documentText = usesTemplateDefaults ? 'XX 000000' : shown(documentNumber, '—')
+  const cardNumberText = usesTemplateDefaults ? '0000000000000000' : shown(cardNumber, '—')
 
   const handleDragStart = (e: React.DragEvent) => {
     if (!draggable || isInserted) return
-    e.dataTransfer.setData('card', cardId)
-    e.dataTransfer.setData('text/plain', cardId)
+    const payload = dragValue ?? cardId
+    if (!payload) return
+    e.dataTransfer.setData('card', payload)
+    e.dataTransfer.setData('text/plain', payload)
     e.dataTransfer.effectAllowed = 'move'
     onDragStart?.(e)
   }
@@ -83,9 +125,9 @@ export function DriverCardVisual({ data, insertedSlot, draggable, onDragStart, c
               />
             ))}
           </div>
-          <span className="driver-card-visual__eu-cz">CZ</span>
+          <span className="driver-card-visual__eu-cz">{country}</span>
         </div>
-        <span className="driver-card-visual__cz-corner">CZ</span>
+        <span className="driver-card-visual__cz-corner">{country}</span>
         <h2 className="driver-card-visual__title">KARTA ŘIDIČE</h2>
         <div className="driver-card-visual__photo">
           <span className="driver-card-visual__person-icon" aria-hidden="true">
@@ -94,15 +136,15 @@ export function DriverCardVisual({ data, insertedSlot, draggable, onDragStart, c
           </span>
         </div>
         <div className="driver-card-visual__body">
-          <div className="driver-card-visual__field">{displayName}</div>
-          <div className="driver-card-visual__field">{birthDate}</div>
+          <div className="driver-card-visual__field" data-card-field="name">{displayName}</div>
+          <div className="driver-card-visual__field" data-card-field="birth">{birthDate}</div>
           <div className="driver-card-visual__field driver-card-visual__field--dates">
-            <span>{validity.from}</span>
-            <span>{validity.to}</span>
+            <span data-card-field="valid-from">{validity.from}</span>
+            <span data-card-field="valid-to">{validity.to}</span>
           </div>
-          <div className="driver-card-visual__field">Ministerstvo dopravy</div>
-          <div className="driver-card-visual__field driver-card-visual__field--mono">XX 000000</div>
-          <div className="driver-card-visual__field driver-card-visual__field--mono">0000000000000000</div>
+          <div className="driver-card-visual__field" data-card-field="authority">{authorityText}</div>
+          <div className="driver-card-visual__field driver-card-visual__field--mono" data-card-field="document">{documentText}</div>
+          <div className="driver-card-visual__field driver-card-visual__field--mono" data-card-field="number">{cardNumberText}</div>
         </div>
         <div className="driver-card-visual__decoration" aria-hidden="true" />
         <div className="driver-card-visual__signature">Podpis</div>

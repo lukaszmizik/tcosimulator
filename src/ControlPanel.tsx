@@ -24,8 +24,6 @@ export type ControlPanelProps = {
   onApplyTime: () => void
   remoteDataDownloadActive: boolean
   onRemoteDataDownloadActiveChange: (value: boolean) => void
-  card1EndedByTargetCountry: boolean
-  onCard1EndedByTargetCountryChange: (value: boolean) => void
   isDriving: boolean
   onStopIgnition: () => void
   onStopDisabledClick: () => void
@@ -60,8 +58,6 @@ export function ControlPanel({
   onApplyTime,
   remoteDataDownloadActive,
   onRemoteDataDownloadActiveChange,
-  card1EndedByTargetCountry,
-  onCard1EndedByTargetCountryChange,
   isDriving,
   onStopIgnition,
   onStopDisabledClick,
@@ -86,6 +82,10 @@ export function ControlPanel({
   }
   return (
     <div className="control-panel">
+      <header className="control-panel-intro">
+        <h2 className="control-panel-heading">{t.controls.simulationControlsTitle}</h2>
+        <p className="control-panel-subtitle">{t.controls.simulationControlsHint}</p>
+      </header>
       <div className="control-panel-row-main">
         <div className="control-panel-section">
           <div className="control-panel-label">{t.ui.speedLabel}: {Math.round(currentSpeed)} km/h</div>
@@ -164,16 +164,6 @@ export function ControlPanel({
             onChange={(e) => onRemoteDataDownloadActiveChange(e.target.checked)}
           />
           <span>{t.ui.remoteDataDownloadActive}</span>
-        </label>
-      </div>
-      <div className="control-panel-section">
-        <label className="control-panel-checkbox-label">
-          <input
-            type="checkbox"
-            checked={card1EndedByTargetCountry}
-            onChange={(e) => onCard1EndedByTargetCountryChange(e.target.checked)}
-          />
-          <span>{t.ui.card1EndedByTargetCountry}</span>
         </label>
       </div>
       <div className="control-panel-section ignition-section">

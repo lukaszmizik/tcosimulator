@@ -11,6 +11,20 @@ export default defineConfig({
     {
       name: 'serve-ttf',
       configureServer(server) {
+        server.middlewares.use((req, res, next) => {
+          const url = req.url?.split('?')[0]
+          if (url !== '/wasm_exec.js' && url !== '/dddparser.wasm') {
+            next()
+            return
+          }
+          const filePath = resolve(__dirname, '../tacho-viewer/public', url.slice(1))
+          if (!existsSync(filePath)) {
+            next()
+            return
+          }
+          res.setHeader('Content-Type', url.endsWith('.wasm') ? 'application/wasm' : 'text/javascript')
+          res.end(readFileSync(filePath))
+        })
         server.middlewares.use('/ttf', (req, res, next) => {
           const filePath = resolve(__dirname, 'ttf' + req.url)
           if (existsSync(filePath)) {
@@ -25,6 +39,11 @@ export default defineConfig({
         })
       },
       closeBundle() {
+        const parserPublic = resolve(__dirname, '../tacho-viewer/public')
+        for (const fileName of ['wasm_exec.js', 'dddparser.wasm']) {
+          const source = resolve(parserPublic, fileName)
+          if (existsSync(source)) copyFileSync(source, resolve(__dirname, 'dist', fileName))
+        }
         // PixeloidSans
         const sansSrc = resolve(__dirname, 'ttf/pixeloidsans')
         const sansDest = resolve(__dirname, 'dist/ttf/pixeloidsans')
@@ -50,6 +69,15 @@ export default defineConfig({
       },
     },
   ],
-  // Pro Electron file:// protokol – relativní cesty pro správné načtení assetů
+  resolve: {
+    alias: {
+      'tacho-viewer-ddd-parser': resolve(__dirname, '../tacho-viewer/src/utils/dddParser.ts'),
+      'tacho-viewer-ddd-mapper': resolve(__dirname, '../tacho-viewer/src/utils/dddMapper.ts'),
+      'tacho-viewer-graph': resolve(__dirname, '../tacho-viewer/src/WorkWeekGraphView.tsx'),
+      'tacho-viewer-language': resolve(__dirname, '../tacho-viewer/src/translations.ts'),
+      'tacho-viewer-slot-graph': resolve(__dirname, '../tacho-viewer/src/utils/simulatorSlotGraph.ts'),
+      'tacho-viewer-graph-days': resolve(__dirname, '../tacho-viewer/src/workWeekTxtParser.ts'),
+    },
+  },
   base: './',
 })

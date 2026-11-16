@@ -21,6 +21,8 @@ export type InfoItem = {
   id: string
   type: 'info' | 'warning'
   message: string
+  /** Automaticky zavřít, jakmile přestane platit podmínka hlášení. */
+  activeOnly?: boolean
   /** Volitelný React obsah – místo textu message se vykreslí content (pro výpis s symboly apod.) */
   content?: ReactNode
 }
@@ -70,14 +72,14 @@ export function InfoPanel({ items, resetTrigger, symbolMap, collapsed = false }:
     prevLanguageRef.current = language
 
     setOpenItems((prev) => {
-      const kept = prev.filter((p) => !dismissed.has(p.id))
+      const kept = prev.filter((p) => !dismissed.has(p.id) && (!p.activeOnly || currentIds.has(p.id)))
       const toAdd = items.filter((i) => !kept.some((p) => p.id === i.id) && !dismissed.has(i.id))
       const updated = kept.map((p) => itemsById.get(p.id) ?? p)
       const hasChanges =
         toAdd.length > 0 ||
         languageChanged ||
         kept.some((p, i) => updated[i]?.message !== p.message || (updated[i]?.content != null) !== (p.content != null))
-      if (!hasChanges && updated.length === kept.length) return prev
+      if (!hasChanges && kept.length === prev.length) return prev
       return [...toAdd, ...updated]
     })
   }, [items, language])
@@ -125,7 +127,8 @@ export function InfoPanel({ items, resetTrigger, symbolMap, collapsed = false }:
   )
 }
 
-const MANUAL_ENTRY_PHASES: CardInsertionState['phase'][] = ['decision1M', 'manualEditor', 'country', 'finalConfirm', 'itsQuestion', 'vdoQuestion']
+const SUPPLEMENT_ACTIVITIES_PHASES: CardInsertionState['phase'][] = ['decision1M', 'manualEditor', 'country', 'finalConfirm']
+const MANUAL_ENTRY_PHASES: CardInsertionState['phase'][] = [...SUPPLEMENT_ACTIVITIES_PHASES, 'itsQuestion', 'vdoQuestion']
 
 function formatSegmentDateTime(seg: { day: number; month: number; year: number; hour: number; minute: number }): string {
   const pad = (n: number) => String(n).padStart(2, '0')
@@ -260,10 +263,6 @@ export function useInfoPanelItems(props: {
   driver1ManualEntryBuffer?: ManualEntrySegment[]
   driver2ManualEntryBuffer?: ManualEntrySegment[]
   activityHistory?: ActivityHistoryEntry[]
-  /** Zaškrtnuto „Karta 1 ukončena cílovou zemí“ – zobrazí infobox */
-  card1EndedByTargetCountry?: boolean
-  /** Čas posledního vytažení karty 1 (pro infobox při card1EndedByTargetCountry) */
-  card1LastWithdrawalUtc?: number | null
   /** Zobrazit infobox „Tato položka zatím není aktivní. Coming soon“ – při OK na neimplementované menu položce */
   menuComingSoonInfo?: { id: string } | null
   /** Režim OUT aktivní – zobrazí infobox o průběhu jízdy jako jiné práce */
@@ -285,8 +284,6 @@ export function useInfoPanelItems(props: {
     driver1ManualEntryBuffer = [],
     driver2ManualEntryBuffer = [],
     activityHistory = [],
-    card1EndedByTargetCountry = false,
-    card1LastWithdrawalUtc = null,
     menuComingSoonInfo = null,
     outModeActive = false,
   } = props
@@ -298,6 +295,7 @@ export function useInfoPanelItems(props: {
       id: 'standby-mode',
       type: 'info',
       message: t.infoPanel.standbyModeInfo,
+      activeOnly: true,
     })
   }
 
@@ -405,14 +403,6 @@ export function useInfoPanelItems(props: {
     })
   }
 
-  if (card1EndedByTargetCountry && card1LastWithdrawalUtc != null) {
-    items.push({
-      id: 'card1-ended-by-target-country-info',
-      type: 'info',
-      message: t.infoPanel.card1EndedByTargetCountryInfo.replace('{dateTime}', formatLastWithdrawal(card1LastWithdrawalUtc)),
-    })
-  }
-
   if (menuComingSoonInfo) {
     items.push({
       id: menuComingSoonInfo.id,
@@ -439,13 +429,19 @@ export function useInfoPanelItems(props: {
     })
   }
 
-  if (cardInsertionState && MANUAL_ENTRY_PHASES.includes(cardInsertionState.phase)) {
+  const manualEntryPhase = cardInsertionState?.phase === 'idleWarning'
+    ? cardInsertionState.idleWarningReturnPhase
+    : cardInsertionState?.phase
+  if (manualEntryPhase && SUPPLEMENT_ACTIVITIES_PHASES.includes(manualEntryPhase)) {
     items.push({
       id: 'supplement-activities',
       type: 'info',
       message: t.infoPanel.supplementActivities,
+      activeOnly: true,
     })
+  }
 
+  if (cardInsertionState && MANUAL_ENTRY_PHASES.includes(cardInsertionState.phase)) {
     const lastWithdraw =
       cardInsertionState.lastWithdrawal ??
       (cardInsertionState.slot === 1 ? lastEjectionTimeBySlot[1] : lastEjectionTimeBySlot[2])

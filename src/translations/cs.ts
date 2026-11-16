@@ -47,7 +47,6 @@ export const cs: Translations = {
     applyTimeTitle: 'Přenést nastavený čas na displej tachografu',
     selectedDateTimeLabel: 'Zvolený datum a čas:',
     remoteDataDownloadActive: 'Vzdálené stahování dat aktivní',
-    card1EndedByTargetCountry: 'Karta 1 ukončena cílovou zemí',
     ignitionLabel: 'Zapalování',
     stopIgnition: 'Vypnout zapalování',
     drivingCannotStop: 'V režimu jízdy nelze vozidlo vypnout',
@@ -80,7 +79,6 @@ export const cs: Translations = {
     crewModeInterruptedWarning: 'Jelikož řidič č. 1 zahájil jízdu bez řidiče č. 2, došlo k přerušení režimu osádky a vaše zapsané aktivity překračují parametry pro délku směny jednoho řidiče. Toto je porušení bezpečnosti!',
     duplicateDataWarning: 'Pozor, na kartě jsou již uložená data. Nelze zapisovat data do obsazené paměti. Vymaž data tlačítkem Reset',
     publishDataConsentInfo: 'Při prvním použití karty se zobrazí výzva k udělení souhlasu se zpracováním osobních údajů, případně zvláštních kategorií osobních údajů. Udělený souhlas lze kdykoli následně odvolat prostřednictvím menu zařízení.',
-    card1EndedByTargetCountryInfo: 'Uložil jsem na kartu {dateTime} (41)(37) cílovou zemi. Výchozí záznam v simulátoru byl bez ukončené směny. Tuto volbu můžeš libovolně měnit. Slouží pro výukové účely.',
     excessSpeedWarning: 'Byla zaznamenána (39)(39) příliš vysoká rychlost. Došlo k překročení konstrukční rychlosti vozidla. Tato událost je automaticky zaznamenána do paměti tachografu!',
     ejectionBlockedWarning: 'Toto je chyba! Nemůžeš vytahovat kartu během jízdy!',
     menuComingSoon: 'Tato položka zatím není aktivní. Coming soon:)',
@@ -219,6 +217,11 @@ export const cs: Translations = {
     saveDataToFileTitle: 'Uložit obsah karty 1 do TXT souboru', // 85
     showCardData: 'Zobraz data z karty', // 86
     showCardDataTitle: 'Zobrazit graf s daty aktuálně v simulátoru', // 87
+    loadCardFromDdd: 'Načíst z DDD souboru',
+    loadCardFromDddTitle: 'Načíst výpis karty řidiče a zobrazit jeho historii v náhledu',
+    loadVirtualCard: 'Načíst virtuální kartu',
+    simulationControlsTitle: 'Ovládání simulace',
+    simulationControlsHint: 'Tímto panelem nastavuješ podmínky cvičení.',
   },
   printOverlay: {
     driver1Title: 'Výtisk řidič 1', // 88

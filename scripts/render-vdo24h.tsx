@@ -7,11 +7,14 @@ import { LanguageProvider } from '../src/translations/index.ts'
 import { TachoDisplay } from '../src/TachoDisplay.tsx'
 import { appendWorkingMinutes, assessDddInsertion, createDddCardRecord, replaceWorkingManual, type DddCardRecord } from '../src/dddCardSession.ts'
 import { advanceConfirmedCapToMinute, floorToMinute, localMsToSegment, localSegmentToUtcForBuffer, segmentToMsUtc, utcMsToSegment } from '../src/CardLogic.ts'
-import { drivingBreakDisplay } from '../src/drivingBreakDisplay.ts'
+import { drivingBreakDisplay, type DrivingBreakInterval } from '../src/drivingBreakDisplay.ts'
+import { evaluateRecordedOut } from '../src/outDrivingEvaluation.ts'
+import { ferryDailyRestRemaining, intervalsWithRecognizedFerryRest } from '../src/ferryRestEvaluation.ts'
 import { buildSlot1VirtualCounterIntervals } from '../src/slot1DrivingBreak.ts'
-import { buildSlot1DddDrivingBreak, buildSlot1DddDrivingBreakIntervals, describeSlot1WeekCoverage } from '../src/slot1DddDrivingBreak.ts'
+import { buildSlot1DddDrivingBreak, buildSlot1DddDrivingBreakIntervals, buildSlot1DddOutSources, describeSlot1WeekCoverage } from '../src/slot1DddDrivingBreak.ts'
 import { slot1DddCalendarRemaining, slot1DddDailyRemaining } from '../src/slot1DddDailyRemaining.ts'
 import { WEEKLY_DRIVING_LIMIT_MS } from '../src/VDOCounter.ts'
+import { workingTimeDisplay } from '../src/workingTimeDisplay.ts'
 import { MULTI_MANNING_ONE_HOUR_MS } from '../src/Constants.ts'
 import {
   slot1CounterLcdProps,
@@ -34,7 +37,7 @@ import type { DddParsedCard } from '../src/types/tachoViewerDddMapper.ts'
 const MINUTE = 60_000
 const HOUR = 3_600_000
 const NOW = Date.UTC(2026, 0, 6, 12, 0, 0)
-const symbolMap = { 2: 'S', 7: 'X', 8: 'Y', 9: 'Z', 10: '[', 17: 'b', 57: 't', 58: 'w' }
+const symbolMap = { 2: 'S', 7: 'X', 8: 'Y', 9: 'Z', 10: '[', 12: ']', 13: '^', 17: 'b', 41: 'z', 47: 'i', 57: 't', 58: 'w' }
 
 function card(activities: DddParsedCard['activities']): DddParsedCard {
   return {
@@ -72,12 +75,15 @@ function renderLcd(input: {
   card2Inserted?: boolean
   otherWorkMs?: number | null
   legacy?: boolean
-  leftActivityId?: 'WORK' | 'AVAILABILITY' | 'REST'
+  leftActivityId?: 'DRIVING' | 'WORK' | 'AVAILABILITY' | 'REST'
   rightActivityId?: 'WORK' | 'AVAILABILITY' | 'REST'
   ferry?: boolean
   outMode?: boolean
+  drivingKnown?: boolean
   noCard?: boolean
   drivingSinceLastBreakMs?: number
+  ferryRestMs?: number | null
+  ferryRestConditional?: boolean
 }) {
   const slot2 = input.slot === 2
   const crew = input.crew === true
@@ -147,6 +153,9 @@ function renderLcd(input: {
         slot1DebugFortnightSumMs={input.legacy ? undefined : input.fortnightSumMs}
         slot1DebugDailyExtensionsRemaining={input.legacy ? undefined : input.extensionsRemaining}
         slot1DebugOtherWorkMs={input.legacy ? undefined : input.otherWorkMs}
+        slot1DebugDrivingKnown={input.drivingKnown}
+        slot1DebugFerryRestMs={input.ferry ? input.ferryRestMs : undefined}
+        slot1DebugFerryRestConditional={input.ferryRestConditional === true}
       />
     </LanguageProvider>,
   )
@@ -155,10 +164,42 @@ function renderLcd(input: {
     screen: html.match(/data-vdo-screen="([^"]*)"/)?.[1] ?? (rows.length > 0 ? 'counter' : 'operating'),
     first: rows[0] ?? '',
     second: rows[1] ?? '',
+    ferryRest: html.match(/data-lcd-ferry-rest="([^"]*)"/)?.[1] ?? '',
+  }
+}
+
+function assertWorkingTime() {
+  const now = Date.UTC(2026, 0, 7, 12, 0, 0)
+  const restEnd = now - 3 * HOUR
+  const shown = workingTimeDisplay([
+    { kind: 'rest', startMs: restEnd - 11 * HOUR, endMs: restEnd },
+    { kind: 'driving', startMs: restEnd, endMs: restEnd + 2 * HOUR },
+    { kind: 'rest', startMs: restEnd + 2 * HOUR, endMs: restEnd + 2 * HOUR + 30 * MINUTE },
+    { kind: 'work', startMs: restEnd + 2 * HOUR + 30 * MINUTE, endMs: now },
+  ], now)
+  if (shown.currentWithoutRestMs !== 30 * MINUTE) throw new Error(`aktuální pracovní doba ${shown.currentWithoutRestMs}`)
+  if (shown.sinceDailyOrWeeklyRestMs !== 2 * HOUR + 30 * MINUTE) throw new Error(`od denního odpočinku ${shown.sinceDailyOrWeeklyRestMs}`)
+  if (shown.breaksInPeriodMs !== 30 * MINUTE) throw new Error(`přestávky ${shown.breaksInPeriodMs}`)
+  if (shown.calendarWeekMs !== null) throw new Error('týden bez pokrytí od pondělí nemá být číslo')
+  const gap = workingTimeDisplay([
+    { kind: 'rest', startMs: now - 20 * HOUR, endMs: now - 9 * HOUR },
+    { kind: 'driving', startMs: now - 2 * HOUR, endMs: now },
+  ], now)
+  if (gap.currentWithoutRestMs !== null || gap.sinceDailyOrWeeklyRestMs !== null || gap.breaksInPeriodMs !== null) {
+    throw new Error('mezera v pracovní době má zůstat nedoložená')
+  }
+  const resting = workingTimeDisplay([
+    { kind: 'rest', startMs: now - 12 * HOUR, endMs: now - HOUR },
+    { kind: 'driving', startMs: now - HOUR, endMs: now - 30 * MINUTE },
+    { kind: 'rest', startMs: now - 30 * MINUTE, endMs: now },
+  ], now)
+  if (resting.currentWithoutRestMs !== 0 || resting.sinceDailyOrWeeklyRestMs !== 30 * MINUTE || resting.breaksInPeriodMs !== 30 * MINUTE) {
+    throw new Error(`probíhající odpočinek ${resting.currentWithoutRestMs} / ${resting.sinceDailyOrWeeklyRestMs} / ${resting.breaksInPeriodMs}`)
   }
 }
 
 export function main() {
+  assertWorkingTime()
   const driveTailStart = NOW - (2 * HOUR + 30 * MINUTE)
   const breakEnd = driveTailStart
   const breakStart = breakEnd - 45 * MINUTE
@@ -229,7 +270,7 @@ export function main() {
       fortnightRemainingMs: lcdProps.slot1DebugFortnightRemainingMs ?? null,
       fortnightSumMs: lcdProps.slot1DebugFortnightSumMs ?? null,
     })
-    if (counter.first !== `VDO ${activity === 'WORK' ? 'Z' : 'X'} 02:00` || counter.second !== '[ 00:45') throw new Error(`${activity} Counter má „${counter.first}“ / „${counter.second}“`)
+    if (counter.first !== `VDO ${activity === 'WORK' ? 'Z' : 'X'} S z 02h00` || counter.second !== 'Y z 00h45') throw new Error(`${activity} Counter má „${counter.first}“ / „${counter.second}“`)
     const opened = renderLcd({ ...argumentsOf(counter, activity, 'vdo24h', breakDisplay, lcdProps) })
     if (opened.screen !== 'vdo24h' || !opened.first.includes('03:00') || opened.first.includes('02:00')) {
       throw new Error(`${activity} VDO24h má „${opened.first}“`)
@@ -270,7 +311,7 @@ export function main() {
     const weekly = renderLcd({ ...argumentsOf({ first: '' }, activity, 'vdoWeek', week.breakDisplay, week.lcdProps) })
     const returned = renderLcd({ ...argumentsOf({ first: '' }, activity, 'vdo24h', week.breakDisplay, week.lcdProps) })
     const home = renderLcd({ ...argumentsOf({ first: '' }, activity, null, week.breakDisplay, week.lcdProps) })
-    if (!counter.first.startsWith('VDO ') || !counter.first.endsWith('00:30') || counter.second !== '[ 00:45' || home.first !== counter.first) {
+    if (!counter.first.startsWith('VDO ') || !counter.first.endsWith('00h30') || counter.second !== 'Y z 00h45' || home.first !== counter.first) {
       throw new Error(`${activity} týdenní průchod Counter ${counter.first} / ${home.first}`)
     }
     if (!weekly.first.includes('11:30') || weekly.first.includes('00:30')) {
@@ -286,13 +327,15 @@ export function main() {
 
   const sameCard = sameHistoryLcd()
   const noLegacy = noLegacyFallbackLcd()
+  const outMode = outSequenceLcd()
+  const ferryRest = ferrySequenceLcd()
   const slot2 = slot2OnlyLcd()
   const crew = crewBeforeDepartureLcd()
   const moved = ejectAndSwapLcd()
   const crewOff = crewOffPairLcd()
   const manualWeek = manualRestWeek()
   const vdoi = vdoiLcd()
-  console.log(JSON.stringify({ diagnostics: false, shown, walked, gapWeek, manualWeek, vdoi, sameCard, slot2, crew, moved, crewOff, noLegacy }, null, 2))
+  console.log(JSON.stringify({ diagnostics: false, shown, walked, gapWeek, manualWeek, vdoi, sameCard, slot2, crew, moved, crewOff, noLegacy, outMode, ferryRest }, null, 2))
 }
 
 function weekLcd(currentGap: boolean) {
@@ -523,7 +566,7 @@ function slot2OnlyLcd() {
     extensionsRemaining: daily.extensionsRemaining,
     slot: 2,
   })
-  if (slot1Lcd.first !== slot2Lcd.first || !slot1Card.first.startsWith('1 ') || !slot2Card.first.startsWith('2 ') || slot1Card.first.slice(1) !== slot2Card.first.slice(1)) {
+  if (slot1Lcd.first !== slot2Lcd.first || !slot1Card.first.startsWith('] ') || !slot2Card.first.startsWith('^ ') || slot1Card.first.slice(1) !== slot2Card.first.slice(1)) {
     throw new Error(`označení šachet ${slot1Lcd.first} / ${slot2Lcd.first} / ${slot1Card.first} / ${slot2Card.first}`)
   }
   if (slot2Foreign.first !== slot2Lcd.first || slot2Foreign.second !== slot2Lcd.second) {
@@ -604,7 +647,7 @@ function slot2OnlyLcd() {
   const limitsSlot2 = limitsLcd(limits2, 2, null, 'DRIVING')
   const cardSlot1 = limitsLcd(limits1, 1, 'vdoCard', 'DRIVING')
   const cardSlot2 = limitsLcd(limits2, 2, 'vdoCard', 'DRIVING')
-  if (limitsSlot1.first !== 'VDO S 00:30' || limitsSlot2.first !== 'VDO S 00:30' || limitsSlot1.second !== '[ 00:45' || cardSlot1.first !== '1 S w 89:30' || cardSlot2.first !== '2 S w 89:30') {
+  if (limitsSlot1.first !== 'VDO S S z 00h30' || limitsSlot2.first !== 'VDO S S z 00h30' || limitsSlot1.second !== 'Y z 00h45' || !cardSlot1.second.includes('] S w 89h30') || !cardSlot2.second.includes('^ S w 89h30')) {
     throw new Error(`stejná historie ${limitsSlot1.first} ${limitsSlot1.second} / ${cardSlot1.first} / ${cardSlot2.first}`)
   }
   const slot2Minutes = activitiesToMinutes(tagged).map((entry) => ({ ...entry, driver1: 'rest' as const, driver2: entry.driver1 }))
@@ -656,7 +699,7 @@ function slot2OnlyLcd() {
     const slot1Week = limitsLcd(limits1, 1, 'vdoWeek', activity)
     const slot1Day = limitsLcd(limits1, 1, 'vdo24h', activity)
     const mark = activity === 'WORK' ? 'Z' : 'X'
-    if (counter.first !== `VDO ${mark} 00:30` || counter.second !== '[ 00:45' || vdo24h.first !== slot1Day.first || week.first !== 'VDO t S 11:30' || week.first !== slot1Week.first || !vdoi.second.includes('10h')) {
+    if (counter.first !== `VDO ${mark} S z 00h30` || counter.second !== 'Y z 00h45' || vdo24h.first !== slot1Day.first || week.first !== 'VDO t S 11:30' || week.first !== slot1Week.first || !vdoi.second.includes('10h')) {
       throw new Error(`${activity} obrazovky ${counter.first} / ${vdo24h.first} / ${week.first} / ${vdoi.second}`)
     }
     return { activity, counter: counter.first, vdo24h: vdo24h.first, week: week.first, vdoi: vdoi.second }
@@ -792,10 +835,10 @@ function crewBeforeDepartureLcd() {
   const firstB = paint(limitsB, 2, null, 'AVAILABILITY')
   const cardA = paint(limitsA, 1, 'vdoCard', 'WORK')
   const cardB = paint(limitsB, 2, 'vdoCard', 'AVAILABILITY')
-  if (firstA.first !== 'VDO Z 00:30' || firstA.second !== '[ 00:45' || cardA.first !== '1 S w 89:30' || !cardA.second.endsWith('----')) {
+  if (firstA.first !== 'VDO Z S z 00h30' || firstA.second !== 'Y z 00h45' || !cardA.second.includes('] S w 89h30') || !cardA.second.endsWith('--h--')) {
     throw new Error(`osádka šachta 1 ${firstA.first} / ${firstA.second} / ${cardA.first} ${cardA.second}`)
   }
-  if (firstB.first !== 'VDO X 03:30' || firstB.second !== '[ 00:45' || cardB.first !== '2 S w 01:00' || !cardB.second.endsWith('----')) {
+  if (firstB.first !== 'VDO X S z 03h30' || firstB.second !== 'Y z 00h45' || !cardB.second.includes('^ S w 01h00') || !cardB.second.endsWith('--h--')) {
     throw new Error(`osádka šachta 2 ${firstB.first} / ${firstB.second} / ${cardB.first} ${cardB.second}`)
   }
   const walked = ['WORK', 'AVAILABILITY'].map((activity) => {
@@ -968,12 +1011,12 @@ function ejectAndSwapLcd() {
   })
   const onlyB = [null, 'vdo24h', 'vdoWeek', 'vdoi'] as const
   const afterSlot1Gone = onlyB.map((named) => paint(limitsB, 2, named, { card1: false, card2: true }))
-  if (afterSlot1Gone[0]?.first !== 'VDO Z 03:30' || afterSlot1Gone[0]?.second !== '[ 00:45' || afterSlot1Gone[1]?.first !== 'VDO24h S 09:00' || afterSlot1Gone[2]?.first !== 'VDO t S 55:00' || afterSlot1Gone[3]?.second !== '---- S 10h 2') {
+  if (afterSlot1Gone[0]?.first !== 'VDO Z S z 03h30' || afterSlot1Gone[0]?.second !== 'Y z 00h45' || afterSlot1Gone[1]?.first !== 'VDO24h S 09:00' || afterSlot1Gone[2]?.first !== 'VDO t S 55:00' || afterSlot1Gone[3]?.second !== '---- S 10h 2') {
     throw new Error(`po vysunutí šachty 1 ${afterSlot1Gone.map((row) => `${row.first} / ${row.second}`).join(' | ')}`)
   }
   const onlyA = [null, 'vdo24h', 'vdoWeek', 'vdoi'] as const
   const afterSlot2Gone = onlyA.map((named) => paint(limitsA, 2, named, { card1: true, card2: false }))
-  if (afterSlot2Gone[0]?.first !== 'VDO Z 00:30' || afterSlot2Gone[0]?.second !== '[ 00:45' || afterSlot2Gone[1]?.first !== 'VDO24h S 09:30' || afterSlot2Gone[2]?.first !== 'VDO t S 11:30' || afterSlot2Gone[3]?.second !== '---- S 10h 1') {
+  if (afterSlot2Gone[0]?.first !== 'VDO Z S z 00h30' || afterSlot2Gone[0]?.second !== 'Y z 00h45' || afterSlot2Gone[1]?.first !== 'VDO24h S 09:30' || afterSlot2Gone[2]?.first !== 'VDO t S 11:30' || afterSlot2Gone[3]?.second !== '---- S 10h 1') {
     throw new Error(`po vysunutí šachty 2 ${afterSlot2Gone.map((row) => `${row.first} / ${row.second}`).join(' | ')}`)
   }
 
@@ -1061,7 +1104,7 @@ function ejectAndSwapLcd() {
     slot: 1,
     crew: true,
   })
-  if (swappedB.first !== 'VDO X 04:30' || swappedB.second !== '[ 00:45' || swappedA.first !== 'VDO Z 02:00' || swappedA.second !== '[ 00:45') {
+  if (swappedB.first !== 'VDO X S z 04h30' || swappedB.second !== 'Y z 00h45' || swappedA.first !== 'VDO Z S z 02h00' || swappedA.second !== 'Y z 00h45') {
     throw new Error(`LCD po prohození ${swappedB.first} / ${swappedA.first}`)
   }
   return {
@@ -1218,10 +1261,10 @@ function crewOffPairLcd() {
   const firstB = paint(limitsB, 2, null, 'WORK')
   const cardA = paint(limitsA, 1, 'vdoCard', 'WORK')
   const cardB = paint(limitsB, 2, 'vdoCard', 'WORK')
-  if (firstA.first !== 'VDO Z 00:30' || firstA.second !== '[ 00:45' || cardA.first !== '1 S w 89:30' || !cardA.second.includes('00:00')) {
+  if (firstA.first !== 'VDO Z S z 00h30' || firstA.second !== 'Y z 00h45' || !cardA.second.includes('] S w 89h30') || !cardA.second.includes('Z')) {
     throw new Error(`bez osádky šachta 1 ${firstA.first} / ${cardA.first} ${cardA.second}`)
   }
-  if (firstB.first !== 'VDO Z 03:30' || firstB.second !== '[ 00:45' || cardB.first !== '2 S w 01:00' || cardB.second.includes('----')) {
+  if (firstB.first !== 'VDO Z S z 03h30' || firstB.second !== 'Y z 00h45' || !cardB.second.includes('^ S w 01h00') || !cardB.second.includes('Z')) {
     throw new Error(`bez osádky šachta 2 ${firstB.first} / ${cardB.first} ${cardB.second}`)
   }
   const walked = ['WORK', 'AVAILABILITY'].map((activity) => {
@@ -1282,6 +1325,549 @@ function crewOffPairLcd() {
   }
 }
 
+function drivingTotal(intervals: readonly DrivingBreakInterval[]): number {
+  return intervals.reduce((sum, interval) => sum + (interval.kind === 'driving' ? interval.endMs - interval.startMs : 0), 0)
+}
+
+function outSequenceLcd() {
+  const now = Date.UTC(2026, 0, 7, 11, 30, 0)
+  const outEnd = now - 30 * MINUTE
+  const outStart = outEnd - HOUR
+  const driveStart = outStart - 2 * HOUR
+  const prevMonday = Date.UTC(2025, 11, 29)
+  const activities = [
+    span('rest', prevMonday, driveStart),
+    span('driving', driveStart, outStart),
+    span('driving', outStart, outEnd),
+    span('driving', outEnd, now),
+  ]
+  const storedActivities = JSON.stringify(activities)
+  const conditions = [
+    { kind: 'out', atUtc: outStart },
+    { kind: 'out_end', atUtc: outEnd },
+  ]
+  const record = createDddCardRecord({ ...card(activities), specificConditions: conditions, lastWithdrawalUtc: now })
+  const raw = buildSlot1DddDrivingBreakIntervals({
+    cards: { A: record },
+    cardNumber: 'A',
+    secondSamples: [],
+    nowMs: now,
+  }).intervals
+  const fromCard = (source: DddCardRecord, atMs: number, vehicleEvents: { minuteStartUtc: number; type: 'activation' | 'deactivation' }[] = []) => evaluateRecordedOut({
+    ...buildSlot1DddOutSources({ cards: { A: source }, cardNumber: 'A', secondSamples: [], nowMs: atMs }),
+    cardConditions: source.original.specificConditions,
+    vehicleEvents,
+    nowMs: atMs,
+  })
+  const evaluatedResult = fromCard(record, now)
+  const evaluated = evaluatedResult.intervals
+  if (evaluatedResult.undetermined.length !== 0) throw new Error('uzavřený OUT označil jízdu za nedoloženou')
+  if (JSON.stringify(record.original.activities) !== storedActivities || record.original.activities.filter((item) => item.kind === 'driving').length !== 3) {
+    throw new Error('vyhodnocení OUT změnilo původní jízdu na kartě')
+  }
+  const ignoredOtherCard = evaluateRecordedOut({ imported: raw, vehicle: [], nowMs: now }).intervals
+  if (drivingTotal(ignoredOtherCard) !== drivingTotal(raw)) {
+    throw new Error('hranice jiné karty se připočetly vybrané kartě')
+  }
+  const duringActivities = activities.slice(0, 3)
+  const duringRecord = createDddCardRecord({
+    ...card(duringActivities),
+    specificConditions: [{ kind: 'out', atUtc: outStart }],
+    lastWithdrawalUtc: outEnd,
+  })
+  const duringRaw = buildSlot1DddDrivingBreakIntervals({
+    cards: { A: duringRecord },
+    cardNumber: 'A',
+    secondSamples: [],
+    nowMs: outEnd,
+  }).intervals
+  const duringResult = fromCard(duringRecord, outEnd)
+  const during = duringResult.intervals
+  if (duringResult.undetermined.length !== 0) throw new Error('souvislý otevřený OUT bez mezery je nedoložený')
+  const outSlice = (intervals: readonly DrivingBreakInterval[]) => intervals.filter((interval) => interval.startMs < outEnd && interval.endMs > outStart)
+  if (outSlice(during).some((interval) => interval.kind !== 'work') || outSlice(evaluated).some((interval) => interval.kind !== 'work')) {
+    throw new Error('po vypnutí OUT se doložený úsek vyhodnotil jinak')
+  }
+  if (drivingTotal(during) !== 2 * HOUR || drivingTotal(evaluated) !== 2 * HOUR + 30 * MINUTE) {
+    throw new Error(`součet řízení ${drivingTotal(during)} / ${drivingTotal(evaluated)}`)
+  }
+  const plain = drivingBreakDisplay(raw, now)
+  const afterBreak = drivingBreakDisplay(evaluated, now)
+  const duringBreak = drivingBreakDisplay(during, outEnd)
+  if (!plain || plain.phase !== 'driving' || plain.remainingDrivingMs !== HOUR) throw new Error(`bez hranic ${JSON.stringify(plain)}`)
+  if (!duringBreak || duringBreak.phase !== 'driving' || duringBreak.remainingDrivingMs !== 2 * HOUR + 30 * MINUTE || duringBreak.requiredBreakMs !== 45 * MINUTE) {
+    throw new Error(`jízda v OUT ${JSON.stringify(duringBreak)}`)
+  }
+  if (!afterBreak || afterBreak.phase !== 'driving' || afterBreak.remainingDrivingMs !== 2 * HOUR || afterBreak.requiredBreakMs !== 45 * MINUTE) {
+    throw new Error(`po OUT ${JSON.stringify(afterBreak)}`)
+  }
+  const liveHistory = [
+    ...minutesBetween(driveStart, outStart, 'driving'),
+    ...minutesBetween(outStart, outEnd, 'driving'),
+    ...minutesBetween(outEnd, now, 'driving'),
+  ]
+  const storedLive = JSON.stringify(liveHistory)
+  const vehicleEvents = [
+    { minuteStartUtc: outStart, type: 'activation' as const },
+    { minuteStartUtc: outEnd, type: 'deactivation' as const },
+  ]
+  const live = evaluateRecordedOut({
+    imported: [],
+    vehicle: buildSlot1VirtualCounterIntervals({ cardHistory: liveHistory, manual: [], secondSamples: [], nowMs: now }),
+    vehicleEvents,
+    nowMs: now,
+  }).intervals
+  if (JSON.stringify(liveHistory) !== storedLive || liveHistory.some((entry) => entry.driver1 !== 'driving')) {
+    throw new Error('živý záznam jízdy se přepsal na jinou práci')
+  }
+  if (drivingTotal(live) !== drivingTotal(evaluated)) throw new Error(`živá simulace ${drivingTotal(live)} a DDD ${drivingTotal(evaluated)}`)
+  const before = drivingBreakDisplay(buildSlot1DddDrivingBreakIntervals({
+    cards: { A: createDddCardRecord({ ...card(activities.slice(0, 2)), lastWithdrawalUtc: outStart }) },
+    cardNumber: 'A',
+    secondSamples: [],
+    nowMs: outStart,
+  }).intervals, outStart)
+  const calendar = slot1DddCalendarRemaining(evaluated, now)
+  const plainCalendar = slot1DddCalendarRemaining(raw, now)
+  if (calendar.fortnightSumMs !== 2 * HOUR + 30 * MINUTE || plainCalendar.fortnightSumMs !== 3 * HOUR + 30 * MINUTE) {
+    throw new Error(`dvoutýdenní součet ${calendar.fortnightSumMs} / ${plainCalendar.fortnightSumMs}`)
+  }
+  const paintOut = (display: NonNullable<typeof afterBreak>, sum: number | null, atOut: boolean) => renderLcd({
+    activity: 'DRIVING',
+    named: null,
+    breakDisplay: display,
+    dailyRemainingMs: null,
+    weeklyRemainingMs: null,
+    fortnightRemainingMs: null,
+    fortnightSumMs: sum,
+    outMode: atOut,
+  })
+  const beforeLcd = paintOut(before!, null, false)
+  const duringLcd = paintOut(duringBreak, null, true)
+  const afterLcd = paintOut(afterBreak, null, false)
+  const cardLcd = renderLcd({
+    activity: 'DRIVING',
+    named: 'vdoCard',
+    breakDisplay: afterBreak,
+    dailyRemainingMs: null,
+    weeklyRemainingMs: null,
+    fortnightRemainingMs: calendar.fortnightRemainingMs,
+    fortnightSumMs: calendar.fortnightSumMs,
+    outMode: false,
+  })
+  const plainLcd = paintOut(plain, null, false)
+  if (beforeLcd.first !== 'VDO S S z 02h30' || beforeLcd.second !== 'Y z 00h45') throw new Error(`běžná jízda ${beforeLcd.first} / ${beforeLcd.second}`)
+  if (duringLcd.first !== 'VDO S S z 02h30' || duringLcd.second !== 'Y z 00h45' || duringLcd.first.includes('Z')) throw new Error(`jízda v OUT ${duringLcd.first} / ${duringLcd.second}`)
+  if (afterLcd.first !== 'VDO S S z 02h00' || afterLcd.second !== 'Y z 00h45' || afterLcd.first !== paintOut(afterBreak, null, true).first) {
+    throw new Error(`po vypnutí OUT ${afterLcd.first} / ${afterLcd.second}`)
+  }
+  if (plainLcd.first !== 'VDO S S z 01h00' || !cardLcd.second.includes('] S w 02h30')) {
+    throw new Error(`součet ${plainLcd.first} / ${cardLcd.first}`)
+  }
+  const olderImport = createDddCardRecord({
+    ...card([span('rest', prevMonday, driveStart), span('driving', driveStart, outStart)]),
+    lastWithdrawalUtc: now,
+  })
+  const withVehicleMinutes = appendWorkingMinutes(
+    { A: olderImport },
+    'A',
+    minutesBetween(outStart, outEnd, 'driving'),
+  )
+  const vehicleOnImported = evaluateRecordedOut({
+    ...buildSlot1DddOutSources({ cards: withVehicleMinutes, cardNumber: 'A', secondSamples: [], nowMs: now }),
+    vehicleEvents,
+    nowMs: now,
+  })
+  const importedSlice = vehicleOnImported.intervals.filter((interval) => interval.startMs < outStart && interval.endMs > driveStart)
+  const vehicleSlice = vehicleOnImported.intervals.filter((interval) => interval.startMs < outEnd && interval.endMs > outStart)
+  if (importedSlice.some((interval) => interval.kind !== 'driving') || vehicleSlice.some((interval) => interval.kind !== 'work')) {
+    throw new Error(`hranice vozidla změnila import ${importedSlice.map((interval) => interval.kind).join(',')} / vozidlo ${vehicleSlice.map((interval) => interval.kind).join(',')}`)
+  }
+  const gapStart = outEnd
+  const gapEnd = gapStart + HOUR
+  const afterGapEnd = gapEnd + HOUR
+  const openRecord = createDddCardRecord({
+    ...card([
+      span('rest', prevMonday, driveStart),
+      span('driving', driveStart, outStart),
+      span('driving', outStart, gapStart),
+      span('driving', gapEnd, afterGapEnd),
+    ]),
+    specificConditions: [{ kind: 'out', atUtc: outStart }],
+    lastWithdrawalUtc: afterGapEnd,
+  })
+  const openGap = fromCard(openRecord, afterGapEnd)
+  const continuousOut = openGap.intervals.filter((interval) => interval.startMs < gapStart && interval.endMs > outStart)
+  const afterGap = openGap.intervals.filter((interval) => interval.startMs < afterGapEnd && interval.endMs > gapEnd)
+  if (continuousOut.some((interval) => interval.kind !== 'work') || afterGap.some((interval) => interval.kind === 'work')) {
+    throw new Error(`otevřený OUT přešel mezeru ${continuousOut.map((interval) => interval.kind).join(',')} / ${afterGap.map((interval) => interval.kind).join(',')}`)
+  }
+  if (openGap.undetermined.length !== 1 || openGap.undetermined[0]?.startMs !== gapEnd || openGap.undetermined[0]?.endMs !== afterGapEnd) {
+    throw new Error(`nedoložený úsek ${JSON.stringify(openGap.undetermined)}`)
+  }
+  const gapBreak = drivingBreakDisplay(openGap.intervals, afterGapEnd)
+  const gapLcd = renderLcd({
+    activity: 'DRIVING',
+    named: null,
+    breakDisplay: gapBreak,
+    dailyRemainingMs: null,
+    weeklyRemainingMs: null,
+    fortnightRemainingMs: null,
+    fortnightSumMs: null,
+    drivingKnown: false,
+  })
+  const gapCard = renderLcd({
+    activity: 'DRIVING',
+    named: 'vdoCard',
+    breakDisplay: gapBreak,
+    dailyRemainingMs: null,
+    weeklyRemainingMs: null,
+    fortnightRemainingMs: null,
+    fortnightSumMs: null,
+    drivingKnown: false,
+  })
+  if (gapLcd.first !== 'VDO S S z ----' || gapLcd.second !== 'Y z 00h45' || !gapCard.second.includes('S w --h--')) {
+    throw new Error(`nedoložený rozsah ${gapLcd.first} / ${gapLcd.second} / ${gapCard.first}`)
+  }
+  const overlapped = evaluateRecordedOut({
+    imported: [{ kind: 'driving', startMs: outStart, endMs: outEnd }],
+    vehicle: [{ kind: 'driving', startMs: outStart, endMs: outEnd }],
+    vehicleEvents,
+    nowMs: now,
+  })
+  if (overlapped.intervals.some((interval) => interval.kind !== 'driving')) {
+    throw new Error(`hranice vozidla přepsaly import ${overlapped.intervals.map((interval) => interval.kind).join(',')}`)
+  }
+  const liveNotEntered = evaluateRecordedOut({
+    imported: buildSlot1DddOutSources({ cards: { A: openRecord }, cardNumber: 'A', secondSamples: [], nowMs: afterGapEnd + 30 * MINUTE }).imported,
+    vehicle: [{ kind: 'driving', startMs: afterGapEnd, endMs: afterGapEnd + 30 * MINUTE }],
+    cardConditions: openRecord.original.specificConditions,
+    nowMs: afterGapEnd + 30 * MINUTE,
+  })
+  if (liveNotEntered.intervals.some((interval) => interval.startMs >= afterGapEnd && interval.kind !== 'driving')) {
+    throw new Error('otevřený OUT z DDD přešel do živé simulace')
+  }
+  if (!normalInsertedCardCounter({
+    vdoCounterActive: true,
+    operatingScreenIndex: 0,
+    card1Inserted: true,
+    isMultiManning: false,
+    ferryTrainModeActive: false,
+    outModeActive: true,
+    cardNumber: 'A',
+  })) {
+    throw new Error('OUT nezůstal na novém Counteru')
+  }
+  return {
+    before: beforeLcd.first,
+    beforeSecond: beforeLcd.second,
+    during: duringLcd.first,
+    duringSecond: duringLcd.second,
+    after: afterLcd.first,
+    afterSecond: afterLcd.second,
+    card: cardLcd.first,
+    plain: plainLcd.first,
+    liveDrivingMs: drivingTotal(live),
+    dddDrivingMs: drivingTotal(evaluated),
+    vehicleOwn: vehicleSlice.map((interval) => interval.kind).join(','),
+    importedUntouched: overlapped.intervals.every((interval) => interval.kind === 'driving'),
+    gap: gapLcd.first,
+    gapSecond: gapLcd.second,
+    gapCard: gapCard.first,
+  }
+}
+
+function ferrySequenceLcd() {
+  const now = Date.UTC(2026, 0, 8, 12, 0, 0)
+  const restStart = now - 3 * HOUR
+  const continuous: DrivingBreakInterval[] = [
+    { kind: 'driving', startMs: restStart - 2 * HOUR, endMs: restStart },
+    { kind: 'rest', startMs: restStart, endMs: now },
+  ]
+  const uninterrupted = ferryDailyRestRemaining({
+    imported: continuous,
+    vehicle: [],
+    cardConditions: [{ kind: 'ferry', atUtc: restStart }],
+    nowMs: now,
+  })
+  if (uninterrupted.accumulatedMs !== 3 * HOUR || uninterrupted.remainingMs !== 8 * HOUR || uninterrupted.conditional) {
+    throw new Error(`nepřerušený odpočinek ${uninterrupted.accumulatedMs} / ${uninterrupted.remainingMs}`)
+  }
+  const show = (
+    intervals: DrivingBreakInterval[],
+    atMs: number,
+    ferry: boolean,
+    ferryRestMs: number | null,
+    activity: 'DRIVING' | 'REST' | 'WORK',
+    ferryRestConditional = false,
+  ) => renderLcd({
+    activity: 'WORK',
+    leftActivityId: activity,
+    named: null,
+    breakDisplay: drivingBreakDisplay(intervals, atMs),
+    dailyRemainingMs: null,
+    weeklyRemainingMs: null,
+    fortnightRemainingMs: null,
+    fortnightSumMs: null,
+    ferry,
+    ferryRestMs,
+    ferryRestConditional,
+  })
+  const calm = show(continuous, now, true, uninterrupted.remainingMs, 'REST', false)
+  if (calm.first !== 'VDO Y S z 04h30' || calm.second !== 'Y z 08h00' || calm.ferryRest !== 'recorded') {
+    throw new Error(`nepřerušený displej ${calm.first} / ${calm.second} / ${calm.ferryRest}`)
+  }
+
+  const workStart = now - 2 * HOUR
+  const workEnd = workStart + 20 * MINUTE
+  const firstRest = workStart - 2 * HOUR
+  const interrupted: DrivingBreakInterval[] = [
+    { kind: 'driving', startMs: firstRest - 2 * HOUR, endMs: firstRest },
+    { kind: 'rest', startMs: firstRest, endMs: workStart },
+    { kind: 'work', startMs: workStart, endMs: workEnd },
+    { kind: 'rest', startMs: workEnd, endMs: now },
+  ]
+  const joined = ferryDailyRestRemaining({
+    imported: interrupted,
+    vehicle: [],
+    cardConditions: [
+      { kind: 'ferry', atUtc: firstRest },
+      { kind: 'ferry_end', atUtc: now },
+    ],
+    nowMs: now,
+  })
+  const joinedRest = 2 * HOUR + (now - workEnd)
+  if (joined.accumulatedMs !== joinedRest || joined.remainingMs !== 11 * HOUR - joinedRest || !joined.conditional) {
+    throw new Error(`přerušení ${joined.accumulatedMs} / ${joined.remainingMs} / ${joined.conditional}`)
+  }
+  const joinedLcd = show(interrupted, now, true, joined.remainingMs, 'REST', true)
+  if (joinedLcd.first !== 'VDO Y S z 04h30' || joinedLcd.second !== 'Y z 07h20' || joinedLcd.ferryRest !== 'conditional') {
+    throw new Error(`přerušení displej ${joinedLcd.first} / ${joinedLcd.second} / ${joinedLcd.ferryRest}`)
+  }
+  const duringIntervals = interrupted
+    .filter((item) => item.startMs < workEnd)
+    .map((item) => (item.endMs > workEnd ? { ...item, endMs: workEnd } : item))
+  const during = ferryDailyRestRemaining({
+    imported: duringIntervals,
+    vehicle: [],
+    cardConditions: [
+      { kind: 'ferry', atUtc: firstRest },
+      { kind: 'ferry_end', atUtc: now },
+    ],
+    nowMs: workEnd,
+  })
+  if (during.accumulatedMs !== 2 * HOUR || during.remainingMs !== 9 * HOUR) {
+    throw new Error(`nalodění ${during.accumulatedMs} / ${during.remainingMs}`)
+  }
+  const vehicleDoesNotJoin = ferryDailyRestRemaining({
+    imported: interrupted,
+    vehicle: [],
+    vehicleEvents: [
+      { minuteStartUtc: firstRest, type: 'activation' },
+      { minuteStartUtc: now, type: 'deactivation' },
+    ],
+    nowMs: now,
+  })
+  if (vehicleDoesNotJoin.accumulatedMs !== now - workEnd) {
+    throw new Error(`hranice vozidla přepsaly DDD ${vehicleDoesNotJoin.accumulatedMs}`)
+  }
+
+  const twoAt = Date.UTC(2026, 0, 8, 19, 0, 0)
+  const twoFirst = twoAt - 11 * HOUR
+  const twoWorkA = twoFirst + 4 * HOUR
+  const twoRestB = twoWorkA + 30 * MINUTE
+  const twoWorkB = twoRestB + 4 * HOUR
+  const twoRestC = twoWorkB + 30 * MINUTE
+  const twoIntervals: DrivingBreakInterval[] = [
+    { kind: 'driving', startMs: twoFirst - 2 * HOUR, endMs: twoFirst },
+    { kind: 'rest', startMs: twoFirst, endMs: twoWorkA },
+    { kind: 'work', startMs: twoWorkA, endMs: twoRestB },
+    { kind: 'rest', startMs: twoRestB, endMs: twoWorkB },
+    { kind: 'work', startMs: twoWorkB, endMs: twoRestC },
+    { kind: 'rest', startMs: twoRestC, endMs: twoAt },
+  ]
+  const two = ferryDailyRestRemaining({
+    imported: twoIntervals,
+    vehicle: [],
+    cardConditions: [
+      { kind: 'ferry', atUtc: twoFirst },
+      { kind: 'ferry_end', atUtc: twoAt },
+    ],
+    nowMs: twoAt,
+  })
+  if (two.accumulatedMs !== 10 * HOUR || two.remainingMs !== HOUR || !two.conditional) {
+    throw new Error(`dvě přerušení po 30 min ${two.accumulatedMs} / ${two.remainingMs}`)
+  }
+  const twoLcd = show(twoIntervals, twoAt, true, two.remainingMs, 'REST', true)
+  if (twoLcd.first !== 'VDO Y S z 04h30' || twoLcd.second !== 'Y z 01h00' || twoLcd.ferryRest !== 'conditional') {
+    throw new Error(`dvě přerušení displej ${twoLcd.first} / ${twoLcd.second} / ${twoLcd.ferryRest}`)
+  }
+
+  const longWorkEnd = twoWorkB + 31 * MINUTE
+  const longNow = longWorkEnd + 2 * HOUR
+  const longIntervals: DrivingBreakInterval[] = [
+    { kind: 'driving', startMs: twoFirst - 2 * HOUR, endMs: twoFirst },
+    { kind: 'rest', startMs: twoFirst, endMs: twoWorkA },
+    { kind: 'work', startMs: twoWorkA, endMs: twoRestB },
+    { kind: 'rest', startMs: twoRestB, endMs: twoWorkB },
+    { kind: 'work', startMs: twoWorkB, endMs: longWorkEnd },
+    { kind: 'rest', startMs: longWorkEnd, endMs: longNow },
+  ]
+  const tooLong = ferryDailyRestRemaining({
+    imported: longIntervals,
+    vehicle: [],
+    cardConditions: [
+      { kind: 'ferry', atUtc: twoFirst },
+      { kind: 'ferry_end', atUtc: longNow },
+    ],
+    nowMs: longNow,
+  })
+  if (tooLong.accumulatedMs !== 2 * HOUR || tooLong.remainingMs !== 9 * HOUR || tooLong.conditional || tooLong.completed.length !== 0) {
+    throw new Error(`61 minut ${tooLong.accumulatedMs} / ${tooLong.remainingMs} / ${tooLong.completed.length}`)
+  }
+  const tooLongLcd = show(longIntervals, longNow, true, tooLong.remainingMs, 'REST', false)
+  if (tooLongLcd.first !== 'VDO Y S z 04h30' || tooLongLcd.second !== 'Y z 09h00' || tooLongLcd.ferryRest !== 'recorded') {
+    throw new Error(`61 minut displej ${tooLongLcd.first} / ${tooLongLcd.second} / ${tooLongLcd.ferryRest}`)
+  }
+
+  const thirdAt = Date.UTC(2026, 0, 8, 16, 30, 0)
+  const thirdStart = thirdAt - (8 * HOUR + 30 * MINUTE)
+  const thirdPieces: DrivingBreakInterval[] = [
+    { kind: 'driving', startMs: thirdStart - 2 * HOUR, endMs: thirdStart },
+  ]
+  let thirdCursor = thirdStart
+  for (let index = 0; index < 4; index += 1) {
+    const restEnd = thirdCursor + 2 * HOUR
+    thirdPieces.push({ kind: 'rest', startMs: thirdCursor, endMs: restEnd })
+    thirdCursor = restEnd
+    if (index < 3) {
+      thirdPieces.push({ kind: 'work', startMs: thirdCursor, endMs: thirdCursor + 10 * MINUTE })
+      thirdCursor += 10 * MINUTE
+    }
+  }
+  if (thirdCursor !== thirdAt) throw new Error(`tři přerušení čas ${thirdCursor - thirdAt}`)
+  const three = ferryDailyRestRemaining({
+    imported: thirdPieces,
+    vehicle: [],
+    cardConditions: [
+      { kind: 'ferry', atUtc: thirdStart },
+      { kind: 'ferry_end', atUtc: thirdAt },
+    ],
+    nowMs: thirdAt,
+  })
+  if (three.accumulatedMs !== 2 * HOUR || three.remainingMs !== 9 * HOUR || three.conditional) {
+    throw new Error(`tři přerušení ${three.accumulatedMs} / ${three.remainingMs}`)
+  }
+  const threeLcd = show(thirdPieces, thirdAt, true, three.remainingMs, 'REST', false)
+  if (threeLcd.first !== 'VDO Y S z 04h30' || threeLcd.second !== 'Y z 09h00') {
+    throw new Error(`tři přerušení displej ${threeLcd.first} / ${threeLcd.second}`)
+  }
+
+  const gapStart = now - 2 * HOUR
+  const gapEnd = now - HOUR
+  const ambiguousIntervals: DrivingBreakInterval[] = [
+    { kind: 'driving', startMs: gapStart - 4 * HOUR, endMs: gapStart - 2 * HOUR },
+    { kind: 'rest', startMs: gapStart - 2 * HOUR, endMs: gapStart },
+    { kind: 'rest', startMs: gapEnd, endMs: now },
+  ]
+  const ambiguous = ferryDailyRestRemaining({
+    imported: ambiguousIntervals,
+    vehicle: [],
+    cardConditions: [{ kind: 'ferry', atUtc: gapStart - 2 * HOUR }],
+    nowMs: now,
+  })
+  if (ambiguous.remainingMs !== null) throw new Error('otevřený trajekt přešel mezeru')
+  const ambiguousLcd = show(ambiguousIntervals, now, true, ambiguous.remainingMs, 'REST')
+  if (ambiguousLcd.first !== 'VDO Y S z 04h30' || ambiguousLcd.second !== 'Y z ----') {
+    throw new Error(`nejednoznačný displej ${ambiguousLcd.first} / ${ambiguousLcd.second}`)
+  }
+  const empty = ferryDailyRestRemaining({
+    imported: [],
+    vehicle: [],
+    cardConditions: [{ kind: 'ferry', atUtc: now - HOUR }],
+    nowMs: now,
+  })
+  if (empty.remainingMs !== null || empty.conditional) throw new Error('symbol trajektu založil odpočinek')
+
+  const ferryEnd = now - 30 * MINUTE
+  const afterIntervals: DrivingBreakInterval[] = [
+    { kind: 'driving', startMs: ferryEnd - 5 * HOUR, endMs: ferryEnd - 3 * HOUR },
+    { kind: 'rest', startMs: ferryEnd - 3 * HOUR, endMs: ferryEnd },
+    { kind: 'driving', startMs: ferryEnd, endMs: now },
+  ]
+  const afterRest = ferryDailyRestRemaining({
+    imported: afterIntervals,
+    vehicle: [],
+    cardConditions: [
+      { kind: 'ferry', atUtc: ferryEnd - 3 * HOUR },
+      { kind: 'ferry_end', atUtc: ferryEnd },
+    ],
+    nowMs: now,
+  })
+  if (afterRest.remainingMs !== null) throw new Error('uzavřený odpočinek zůstal na běžné jízdě')
+  const returned = show(afterIntervals, now, false, null, 'DRIVING')
+  if (returned.first !== 'VDO S S z 04h00' || returned.second !== 'Y z 00h45' || returned.ferryRest !== '') {
+    throw new Error(`návrat ${returned.first} / ${returned.second} / ${returned.ferryRest}`)
+  }
+
+  const doneEnd = Date.UTC(2026, 0, 8, 18, 0, 0)
+  const doneNow = doneEnd + 30 * MINUTE
+  const doneWorkEnd = doneEnd - 6 * HOUR
+  const doneWorkStart = doneWorkEnd - 30 * MINUTE
+  const doneRestStart = doneWorkStart - 5 * HOUR
+  const doneIntervals: DrivingBreakInterval[] = [
+    { kind: 'driving', startMs: doneRestStart - 2 * HOUR, endMs: doneRestStart },
+    { kind: 'rest', startMs: doneRestStart, endMs: doneWorkStart },
+    { kind: 'work', startMs: doneWorkStart, endMs: doneWorkEnd },
+    { kind: 'rest', startMs: doneWorkEnd, endMs: doneEnd },
+    { kind: 'driving', startMs: doneEnd, endMs: doneNow },
+  ]
+  const done = ferryDailyRestRemaining({
+    imported: doneIntervals,
+    vehicle: [],
+    cardConditions: [
+      { kind: 'ferry', atUtc: doneRestStart },
+      { kind: 'ferry_end', atUtc: doneEnd },
+    ],
+    nowMs: doneNow,
+  })
+  if (done.remainingMs !== null || done.completed.length !== 1 || done.completed[0]?.endMs !== doneEnd || done.completed[0]?.conditional !== true) {
+    throw new Error(`dokončený odpočinek ${JSON.stringify(done.completed)}`)
+  }
+  const unrecognized = slot1DddDailyRemaining(doneIntervals, doneNow)
+  if (unrecognized.remainingMs !== null) throw new Error('samotné úseky pod 9 h ukončily denní období')
+  const recognizedDaily = slot1DddDailyRemaining(intervalsWithRecognizedFerryRest(doneIntervals, done.completed), doneNow)
+  if (recognizedDaily.remainingMs !== 9 * HOUR - 30 * MINUTE) {
+    throw new Error(`uznaný odpočinek ${recognizedDaily.remainingMs}`)
+  }
+  const doneCounter = show(doneIntervals, doneNow, false, null, 'DRIVING', true)
+  const doneDay = renderLcd({
+    activity: 'DRIVING',
+    leftActivityId: 'DRIVING',
+    named: 'vdo24h',
+    breakDisplay: drivingBreakDisplay(doneIntervals, doneNow),
+    dailyRemainingMs: recognizedDaily.remainingMs,
+    weeklyRemainingMs: null,
+    fortnightRemainingMs: null,
+    fortnightSumMs: null,
+  })
+  if (doneCounter.first !== 'VDO S S z 04h00' || doneCounter.second !== 'Y z 00h45' || doneCounter.ferryRest !== 'conditional' || doneDay.first !== 'VDO24h S 08:30') {
+    throw new Error(`návrat po 11 h ${doneCounter.first} / ${doneCounter.second} / ${doneCounter.ferryRest} / ${doneDay.first}`)
+  }
+  return {
+    uninterrupted: `${calm.first} / ${calm.second}`,
+    interrupted: `${joinedLcd.first} / ${joinedLcd.second} / ${joinedLcd.ferryRest}`,
+    twoInterruptions: `${twoLcd.first} / ${twoLcd.second} / ${twoLcd.ferryRest}`,
+    sixtyOne: `${tooLongLcd.first} / ${tooLongLcd.second}`,
+    three: `${threeLcd.first} / ${threeLcd.second}`,
+    ambiguous: `${ambiguousLcd.first} / ${ambiguousLcd.second}`,
+    returned: `${returned.first} / ${returned.second}`,
+    recognized: `${doneCounter.first} / ${doneCounter.second}`,
+    recognizedDay: doneDay.first,
+    recognizedBunk: 'conditional',
+  }
+}
+
 function noLegacyFallbackLcd() {
   const previous = driveChunks(Date.UTC(2026, 0, 5), 45 * HOUR)
   const current = withShortTail(Date.UTC(2026, 0, 12), 44 * HOUR, 30 * MINUTE)
@@ -1306,7 +1892,7 @@ function noLegacyFallbackLcd() {
     fortnightSumMs: limits.calendar.fortnightSumMs,
     extensionsRemaining: limits.daily.extensionsRemaining,
   })
-  if (complete.first !== 'VDO Z 00:30' || complete.second !== '[ 00:45' || completeCard.first !== '1 S w 89:30' || completeCard.second !== 'Z 00:00') {
+  if (complete.first !== 'VDO Z S z 00h30' || complete.second !== 'Y z 00h45' || !completeCard.second.includes('] S w 89h30') || !completeCard.second.includes('Z --h--')) {
     throw new Error(`úplná historie ${complete.first} / ${complete.second} / ${completeCard.first} ${completeCard.second}`)
   }
   const zero = renderLcd({
@@ -1319,7 +1905,7 @@ function noLegacyFallbackLcd() {
     fortnightSumMs: 0,
     extensionsRemaining: 0,
   })
-  if (zero.first !== 'VDO Z 00:00' || zero.second !== '[ 00:00') {
+  if (zero.first !== 'VDO Z S z 00h00' || zero.second !== 'Y z 00h00') {
     throw new Error(`skutečná nula ${zero.first} / ${zero.second}`)
   }
   const partialCounter = renderLcd({
@@ -1340,7 +1926,7 @@ function noLegacyFallbackLcd() {
     fortnightRemainingMs: limits.calendar.fortnightRemainingMs,
     fortnightSumMs: null,
   })
-  if (partialCounter.first !== complete.first || partialCounter.second !== complete.second || partial.first !== '1 S w ----' || partial.second !== 'Z 00:00') {
+  if (partialCounter.first !== complete.first || partialCounter.second !== complete.second || !partial.second.includes('S w --h--') || !partial.second.includes('Z --h--')) {
     throw new Error(`platný blok a neznámý součet ${partialCounter.first} / ${partial.first} ${partial.second}`)
   }
   const missing = renderLcd({
@@ -1389,10 +1975,10 @@ function noLegacyFallbackLcd() {
     card1Inserted: false,
     card2TemplateId: 'zmizik',
   })
-  if (missing.first !== 'VDO Z ----' || missing.second !== '[ ----' || missingCard.first !== '1 S w ----' || missingCard.second !== 'Z 00:00') {
+  if (missing.first !== 'VDO Z S z ----' || missing.second !== 'Y z ----' || !missingCard.second.includes('] S w --h--') || !missingCard.second.includes('Z --h--')) {
     throw new Error(`chybějící blok ${missing.first} / ${missing.second} / ${missingCard.first} ${missingCard.second}`)
   }
-  if (missingSlot2.first !== 'VDO Z ----' || missingSlot2Card.first !== '2 S w ----') {
+  if (missingSlot2.first !== 'VDO Z S z ----' || !missingSlot2Card.second.includes('^ S w --h--')) {
     throw new Error(`chybějící blok šachty 2 ${missingSlot2.first} / ${missingSlot2Card.first}`)
   }
   if (missing.first.includes('02:00') || missing.first.includes('00:15') || missing.first.includes('04:30')) {
@@ -1422,13 +2008,16 @@ function noLegacyFallbackLcd() {
     outMode: true,
     drivingSinceLastBreakMs: 150 * MINUTE,
   })
-  if (ferry.first !== '1 S 02:00 [ 00:15' || outMode.first !== ferry.first) {
-    throw new Error(`trajekt nebo OUT ${ferry.first} / ${outMode.first}`)
+  if (ferry.first !== 'VDO S S z ----' || ferry.second !== 'Y z ----' || ferry.first.includes('00:15')) {
+    throw new Error(`trajekt bez doloženého odpočinku ${ferry.first} / ${ferry.second}`)
+  }
+  if (outMode.first !== 'VDO S S z ----' || outMode.second !== 'Y z ----' || outMode.first.includes('00:15')) {
+    throw new Error(`OUT bez doložené historie ${outMode.first} / ${outMode.second}`)
   }
   if (!vdoCounterClosesWithoutCard(false, false) || vdoCounterClosesWithoutCard(true, false) || vdoCounterClosesWithoutCard(false, true)) {
     throw new Error('zavření Counteru neodpovídá poslední kartě')
   }
-  if (normalInsertedCardCounter({
+  if (!normalInsertedCardCounter({
     vdoCounterActive: true,
     operatingScreenIndex: 0,
     card1Inserted: true,
@@ -1437,7 +2026,7 @@ function noLegacyFallbackLcd() {
     outModeActive: false,
     cardNumber: 'A',
   })) {
-    throw new Error('trajekt přešel na nový Counter')
+    throw new Error('trajekt zůstal na původní větvi')
   }
   const ejected = renderLcd({
     activity: 'WORK',
@@ -1462,6 +2051,7 @@ function noLegacyFallbackLcd() {
     missingSecond: missing.second,
     missingSlot2: missingSlot2.first,
     ferry: ferry.first,
+    ferrySecond: ferry.second,
     ejected: ejected.screen,
   }
 }
@@ -1470,10 +2060,10 @@ function sameHistoryLcd() {
   const nowMs = Date.UTC(2026, 0, 7, 12, 0, 0)
   const start = nowMs - 150 * MINUTE
   const block = paired(nowMs, [span('driving', start, nowMs)], minutesBetween(start, nowMs, 'driving'), [])
-  if (block.ddd.first !== 'VDO S 02:00' || block.ddd.second !== '[ 00:45' || block.virtual.first !== block.ddd.first || block.virtual.second !== block.ddd.second) {
+  if (block.ddd.first !== 'VDO S S z 02h00' || block.ddd.second !== 'Y z 00h45' || block.virtual.first !== block.ddd.first || block.virtual.second !== block.ddd.second) {
     throw new Error(`2:30 ${block.ddd.first} / ${block.virtual.first} | ${block.ddd.second} / ${block.virtual.second}`)
   }
-  if (!block.ddd.card.first.includes('----') || block.ddd.card.first !== block.virtual.card.first) throw new Error(`chybějící historie ${block.ddd.card.first}`)
+  if (!block.ddd.card.second.includes('--h--') || block.ddd.card.second !== block.virtual.card.second) throw new Error(`chybějící historie ${block.ddd.card.second}`)
   const overlapped = virtualFrom(minutesBetween(start, nowMs, 'driving'), [
     { ...utcMsToSegment(start), activityId: 'REST' as const, isManualEntry: true as const },
     { ...utcMsToSegment(nowMs), activityId: 'REST' as const, isManualEntry: true as const },
@@ -1490,7 +2080,7 @@ function sameHistoryLcd() {
     span('rest', start + 165 * MINUTE + 2 * HOUR, splitNow),
   ]
   const split = paired(splitNow, splitActivities, activitiesToMinutes(splitActivities), [])
-  if (split.ddd.first !== 'VDO S 00:00' || split.ddd.second !== '[ 00:20 S 04:30' || split.virtual.first !== split.ddd.first || split.virtual.second !== split.ddd.second) {
+  if (split.ddd.first !== 'VDO S S z 00h00' || split.ddd.second !== 'Y z 00h20' || split.virtual.first !== split.ddd.first || split.virtual.second !== split.ddd.second) {
     throw new Error(`dělená přestávka ${split.ddd.first} / ${split.virtual.first}`)
   }
 
@@ -1498,10 +2088,10 @@ function sameHistoryLcd() {
   const current = withShortTail(Date.UTC(2026, 0, 12), 44 * HOUR, 30 * MINUTE)
   const filled = fillGaps([...previous.activities, ...current.activities], Date.UTC(2026, 0, 5), current.nowMs)
   const limits = paired(current.nowMs, filled, activitiesToMinutes(filled), [])
-  if (limits.ddd.first !== 'VDO S 00:30' || limits.ddd.second !== '[ 00:45' || limits.virtual.first !== limits.ddd.first || limits.virtual.second !== limits.ddd.second) {
+  if (limits.ddd.first !== 'VDO S S z 00h30' || limits.ddd.second !== 'Y z 00h45' || limits.virtual.first !== limits.ddd.first || limits.virtual.second !== limits.ddd.second) {
     throw new Error(`56/90 ${limits.ddd.first} ${limits.ddd.second} / ${limits.virtual.first} ${limits.virtual.second}`)
   }
-  if (!limits.ddd.card.first.includes('89:30') || limits.ddd.card.first !== limits.virtual.card.first) throw new Error(`součet 90 h ${limits.ddd.card.first}`)
+  if (!limits.ddd.card.second.includes('89h30') || limits.ddd.card.second !== limits.virtual.card.second) throw new Error(`součet 90 h ${limits.ddd.card.second}`)
   const dddWeek = renderWeekExtensions({ ...limits.dddSource, extensions: limits.dddSource.daily.extensionsRemaining }, 'WORK', 'vdoWeek')
   const virtualWeek = renderWeekExtensions({ ...limits.virtualSource, extensions: limits.virtualSource.daily.extensionsRemaining }, 'WORK', 'vdoWeek')
   if (dddWeek.first !== 'VDO t S 11:30' || virtualWeek.first !== dddWeek.first) {
@@ -1556,7 +2146,7 @@ function sameHistoryLcd() {
     split: { ddd: split.ddd.first, virtual: split.virtual.first },
     limits: { ddd: limits.ddd, virtual: limits.virtual, week: dddWeek.first },
     walked,
-    originalModes: ['trajekt', 'OUT', 'součet jiné práce na obrazovce časů karty při vypnuté osádce'],
+    originalModes: ['trajekt', 'součet jiné práce na obrazovce časů karty při vypnuté osádce'],
   }
 }
 

@@ -12,7 +12,7 @@ import {
   type SimulatorGraphKind,
   type SimulatorSlotGraphInput,
 } from 'tacho-viewer-slot-graph'
-import '../../tacho-viewer/src/index.css'
+import '../vendor/cardviewer/src/index.css'
 import './insertedCardGraphs.css'
 
 const WEEK_MS = 7 * 24 * 3600 * 1000

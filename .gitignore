@@ -2,4 +2,9 @@ node_modules/
 dist/
 release/
 *.exe
+/vendor/cardviewer/
+/public/dddparser.wasm
+/public/wasm_exec.js
+/public/ttf/
+.vercel-verify-*/
 node_modules

@@ -4,6 +4,7 @@
  */
 
 import type { PrintWizardState } from '../TachoTypes'
+import { utcDaysIntersectingCardActivities } from './prepareDriver1Print24h'
 
 export type PrintWizardKeyAction = 'up' | 'down' | 'ok' | 'back'
 
@@ -73,6 +74,8 @@ export type PrintMenuActionInput = {
   secondHistory: Array<{ timestampUtc: number }>
   simulatedUtcTime: number
   currentMenuPath: string[]
+  /** Doložené činnosti karty ve šachtě 1. Den přidají jen u výtisku 24h řidiče 1. */
+  cardActivities?: readonly { startUtc: number; endUtc: number; isManualEntry?: boolean }[]
 }
 
 export type PrintMenuActionResult =
@@ -89,6 +92,11 @@ export function resolvePrintMenuAction(input: PrintMenuActionInput): PrintMenuAc
     for (const s of secondHistory) {
       const d = new Date(s.timestampUtc)
       dayStarts.add(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
+    }
+    if (action === 'PRINT_24H_D1') {
+      for (const day of utcDaysIntersectingCardActivities(input.cardActivities ?? [])) {
+        dayStarts.add(day)
+      }
     }
     let availableDatesUtc = Array.from(dayStarts).sort((a, b) => b - a)
     if (availableDatesUtc.length === 0) {

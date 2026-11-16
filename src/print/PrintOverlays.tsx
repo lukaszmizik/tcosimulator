@@ -13,6 +13,7 @@ import { PrintDriver1Overlay } from '../components/overlays/PrintDriver1Overlay'
 import { PrintVehicle24hOverlay } from '../components/overlays/PrintVehicle24hOverlay'
 import { PrintVDiagramOverlay } from '../components/overlays/PrintVDiagramOverlay'
 import { PrintSpeedVehicleOverlay } from '../components/overlays/PrintSpeedVehicleOverlay'
+import type { Driver1PrintCardActivity } from './prepareDriver1Print24h'
 
 export type PrintOverlaysProps = {
   printState: UsePrintStateReturn
@@ -23,6 +24,7 @@ export type PrintOverlaysProps = {
   card1Inserted: boolean
   card1Data: CardData | null
   driver1ManualEntryBuffer: ManualEntrySegment[]
+  slot1CardActivities?: readonly Driver1PrintCardActivity[]
   eventLog: EventLogEntry[]
   odometerKm: number
 }
@@ -36,6 +38,7 @@ export function PrintOverlays({
   card1Inserted,
   card1Data,
   driver1ManualEntryBuffer,
+  slot1CardActivities = [],
   eventLog,
   odometerKm,
 }: PrintOverlaysProps) {
@@ -76,6 +79,7 @@ export function PrintOverlays({
         simulatedUtcTime={simulatedUtcTime}
         card1Data={card1Data}
         driver1ManualEntryBuffer={driver1ManualEntryBuffer}
+        slot1CardActivities={slot1CardActivities}
         eventLog={eventLog}
       />
 

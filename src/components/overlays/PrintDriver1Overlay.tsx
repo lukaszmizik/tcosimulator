@@ -6,6 +6,7 @@ import type { CardData, EventLogEntry, ManualEntrySegment } from '../../TachoTyp
 import type { Translations } from '../../translations/types'
 import { ACTIVITY_SYMBOLS } from '../../TachoTypes'
 import { segmentToMsUtc } from '../../CardLogic'
+import { prepareDriver1Print24hUtc, type Driver1PrintCardActivity } from '../../print/prepareDriver1Print24h'
 
 export type PrintDriver1OverlayProps = {
   open: boolean
@@ -15,7 +16,28 @@ export type PrintDriver1OverlayProps = {
   simulatedUtcTime: number
   card1Data: CardData | null
   driver1ManualEntryBuffer: ManualEntrySegment[]
+  slot1CardActivities?: readonly Driver1PrintCardActivity[]
   eventLog: EventLogEntry[]
+}
+
+function pad2(n: number): string {
+  return String(n).padStart(2, '0')
+}
+
+function formatPrintSum(ms: number): string {
+  const totalMin = Math.floor(ms / 60000)
+  const h = Math.floor(totalMin / 60)
+  const m = totalMin % 60
+  return `${pad2(h)}:${pad2(m)}`
+}
+
+function formatUtcPoint(ms: number, dayEndMs: number): string {
+  if (ms === dayEndMs) {
+    const day = new Date(dayEndMs - 24 * 60 * 60 * 1000)
+    return `${pad2(day.getUTCDate())}.${pad2(day.getUTCMonth() + 1)}. 24:00`
+  }
+  const d = new Date(ms)
+  return `${pad2(d.getUTCDate())}.${pad2(d.getUTCMonth() + 1)}. ${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())}`
 }
 
 export function PrintDriver1Overlay({
@@ -26,9 +48,14 @@ export function PrintDriver1Overlay({
   simulatedUtcTime,
   card1Data,
   driver1ManualEntryBuffer,
+  slot1CardActivities = [],
   eventLog,
 }: PrintDriver1OverlayProps) {
   if (!open) return null
+
+  const utcDay = printDriver1SelectedDate != null
+    ? prepareDriver1Print24hUtc(printDriver1SelectedDate, driver1ManualEntryBuffer, slot1CardActivities)
+    : null
 
   return (
     <div className="print-driver1-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label={t.printOverlay.driver1Title}>
@@ -49,28 +76,54 @@ export function PrintDriver1Overlay({
 
           <div className="print-driver1-section">
             <strong>{t.printOverlay.manualEntries}</strong>
-            {driver1ManualEntryBuffer
-              .map((seg, i) => {
-                if (seg.activityId === 'START_COUNTRY' || seg.activityId === 'END_COUNTRY') return null
-                const next = driver1ManualEntryBuffer[i + 1]
-                if (next && segmentToMsUtc(seg) === segmentToMsUtc(next)) return null
-                if (next && (next.activityId === 'START_COUNTRY' || next.activityId === 'END_COUNTRY')) return null
-                const a = ACTIVITY_SYMBOLS.find((x) => x.id === seg.activityId)
-                const label = t.workWeek.activityLabels[seg.activityId] ?? a?.label ?? seg.activityId
-                const code = a?.code ?? '?'
-                const pad = (n: number) => String(n).padStart(2, '0')
-                const fmt = (s: ManualEntrySegment) => `${pad(s.day)}.${pad(s.month)}. ${pad(s.hour)}:${pad(s.minute)}`
-                const od = fmt(seg)
-                const dob = next ? fmt(next) : '—'
-                return (
-                  <div key={i}>
-                    {od} - {dob} | {label} ({code})
-                  </div>
-                )
-              })
-              .filter(Boolean)}
-            {driver1ManualEntryBuffer.filter((s) => s.activityId !== 'START_COUNTRY' && s.activityId !== 'END_COUNTRY').length === 0 && (
-              <div className="print-driver1-empty">{t.printOverlay.none}</div>
+            {utcDay ? (
+              <>
+                {utcDay.activities.map((item, i) => {
+                  const driving = item.activityId === 'DRIVING'
+                  const a = driving ? undefined : ACTIVITY_SYMBOLS.find((x) => x.id === item.activityId)
+                  const label = driving
+                    ? t.workWeek.activityTypes['řízení']
+                    : t.workWeek.activityLabels[item.activityId] ?? a?.label ?? item.activityId
+                  const code = driving ? '\u0053' : a?.code ?? '?'
+                  return (
+                    <div key={i}>
+                      {formatUtcPoint(item.startMs, utcDay.dayEndMs)} - {formatUtcPoint(item.endMs, utcDay.dayEndMs)} | {label} ({code})
+                    </div>
+                  )
+                })}
+                {utcDay.activities.length === 0 && (
+                  <div className="print-driver1-empty">{t.printOverlay.none}</div>
+                )}
+                <div>{t.workWeek.activityTypes['řízení']}: {formatPrintSum(utcDay.sums.drivingMs)}</div>
+                <div>{t.workWeek.activityTypes['práce']}: {formatPrintSum(utcDay.sums.workMs)}</div>
+                <div>{t.workWeek.activityTypes['pohotovost']}: {formatPrintSum(utcDay.sums.availabilityMs)}</div>
+                <div>{t.workWeek.activityTypes['odpočinek']}: {formatPrintSum(utcDay.sums.restMs)}</div>
+              </>
+            ) : (
+              <>
+                {driver1ManualEntryBuffer
+                  .map((seg, i) => {
+                    if (seg.activityId === 'START_COUNTRY' || seg.activityId === 'END_COUNTRY') return null
+                    const next = driver1ManualEntryBuffer[i + 1]
+                    if (next && segmentToMsUtc(seg) === segmentToMsUtc(next)) return null
+                    if (next && (next.activityId === 'START_COUNTRY' || next.activityId === 'END_COUNTRY')) return null
+                    const a = ACTIVITY_SYMBOLS.find((x) => x.id === seg.activityId)
+                    const label = t.workWeek.activityLabels[seg.activityId] ?? a?.label ?? seg.activityId
+                    const code = a?.code ?? '?'
+                    const fmt = (s: ManualEntrySegment) => `${pad2(s.day)}.${pad2(s.month)}. ${pad2(s.hour)}:${pad2(s.minute)}`
+                    const od = fmt(seg)
+                    const dob = next ? fmt(next) : '—'
+                    return (
+                      <div key={i}>
+                        {od} - {dob} | {label} ({code})
+                      </div>
+                    )
+                  })
+                  .filter(Boolean)}
+                {driver1ManualEntryBuffer.filter((s) => s.activityId !== 'START_COUNTRY' && s.activityId !== 'END_COUNTRY').length === 0 && (
+                  <div className="print-driver1-empty">{t.printOverlay.none}</div>
+                )}
+              </>
             )}
           </div>
 

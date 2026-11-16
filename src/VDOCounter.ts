@@ -53,7 +53,6 @@ export const MAX_WORK_SHIFT_13H_MS = 13 * 3600 * 1000 // 13h
 /** 14) Souvislá postýlka (rest) ve směně min. 3h → denní odpočinek na konci směny může být 9h.
  * V režimu osádky se toto pravidlo neuplatňuje – 9h je standard. */
 export const REST_IN_SHIFT_FOR_9H_DAILY_MS = 3 * 3600 * 1000 // 3h
-export const DAILY_REST_SPLIT_9H_MS = 9 * 3600 * 1000 // 9h
 
 /** 15) Zkrácený týdenní odpočinek vyhovuje 9h */
 export const REDUCED_WEEKLY_REST_SATISFIES_MS = 9 * 3600 * 1000
@@ -135,6 +134,17 @@ export function formatDurationHhMm(ms: number, roundUp?: boolean): string {
   const h = Math.floor(totalMin / 60)
   const m = totalMin % 60
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+}
+
+/**
+ * Přehledy DTCO 4.1b ve tvaru 01h21.
+ * Uplynulý čas se zaokrouhluje dolů. Zbývající čas na Counteru se zaokrouhluje nahoru.
+ */
+export function formatDurationHm(ms: number, roundUp?: boolean): string {
+  const totalMin = roundUp ? Math.ceil(ms / MINUTE_MS) : Math.floor(Math.max(0, ms) / MINUTE_MS)
+  const h = Math.floor(totalMin / 60)
+  const m = totalMin % 60
+  return `${String(h).padStart(2, '0')}h${String(m).padStart(2, '0')}`
 }
 
 /**
@@ -248,62 +258,6 @@ export function aggregateDrivingTwoWeeks(
     sum += dur.driving
   }
   return sum
-}
-
-/**
- * Součet řízení v probíhající pracovní směně (od výchozí země do nowMinuteUtc).
- */
-export function aggregateDrivingInWorkShift(
-  history: ActivityHistoryEntry[],
-  slotIndex: 1 | 2,
-  shiftStartMinuteUtc: number,
-  nowMinuteUtc: number
-): number {
-  const filtered = history.filter(
-    (e) => e.minuteStartUtc >= shiftStartMinuteUtc && e.minuteStartUtc < nowMinuteUtc
-  )
-  let sum = 0
-  for (const e of filtered) {
-    const slot = slotIndex === 1 ? e.driver1 : e.driver2
-    if (slot === 'driving') sum += MINUTE_MS
-  }
-  return sum
-}
-
-/**
- * Počet dní v aktuálním kalendářním týdnu, kdy řidič řídil ≥9h01m (prodloužená směna).
- * Max 2× za týden lze použít 10h místo 9h.
- */
-export function countExtendedDrivingDaysThisWeek(
-  history: ActivityHistoryEntry[],
-  slotIndex: 1 | 2,
-  referenceTimeUtc: number
-): number {
-  const d = new Date(referenceTimeUtc)
-  const dayOfWeek = d.getUTCDay()
-  const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
-  const mondayThisWeek = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + mondayOffset))
-  const weekStart = mondayThisWeek.getTime()
-  let count = 0
-  for (let i = 0; i < 7; i++) {
-    const dayStart = weekStart + i * 24 * 3600 * 1000
-    const dayEnd = dayStart + 24 * 3600 * 1000
-    const dur = aggregateDurationsForDay(history, slotIndex, dayStart, dayEnd)
-    if (dur.driving >= EXTENDED_DRIVING_THRESHOLD_MS) count++
-  }
-  return count
-}
-
-/**
- * Minimální denní odpočinek v ms po skončení směny (9h režim osádky, 9h po 3h postýlce ve směně, jinak 11h).
- */
-export function getRequiredDailyRestMs(
-  isCrewMode: boolean,
-  hasRest3hInShift: boolean
-): number {
-  if (isCrewMode) return DAILY_REST_CREW_MODE_MS
-  if (hasRest3hInShift) return DAILY_REST_SPLIT_9H_MS
-  return DAILY_REST_MIN_11H_MS
 }
 
 /**
@@ -477,13 +431,6 @@ export function countReducedDailyRestsInFloatingWeek(
 // ─── Limity a varování ───────────────────────────────────────────────────────
 
 /**
- * 19) Vrátí zbývající dobu řízení v bloku do limitu 4h30.
- */
-export function remainingDrivingToLimit430(drivingSinceBreakMs: number): number {
-  return Math.max(0, DRIVING_LIMIT_430_MS - drivingSinceBreakMs)
-}
-
-/**
  * 5) Zjistí, zda byl překročen denní limit řízení v pracovní směně (9h).
  */
 export function isDailyDrivingLimitExceeded(drivingMs: number): boolean {
@@ -516,28 +463,6 @@ export function isSplitRestSecondSatisfied(restMs: number): boolean {
  */
 export function isRestResetSatisfied(restMs: number): boolean {
   return restMs >= REST_RESET_MS
-}
-
-/**
- * Minimální odpočinek v ms, který musí být proveden po skončení aktuálního bloku řízení.
- *
- * Pravidla EU – dělená pauza:
- * - První část: 15m (SPLIT_REST_FIRST_MS)
- * - Po provedení 15m: druhá část 30m (SPLIT_REST_SECOND_MS)
- * - Plná pauza: 45m (REST_RESET_MS) = alternativa k 15+30
- *
- * @param restSinceLastBreakMs Už proběhlý odpočinek od poslední pauzy/resetu (ms)
- * @param isSplitSecondPart true = už proběhla první část (15m), nyní je potřeba druhá část (30m)
- * @returns Zbývající minimální odpočinek v ms (15m nebo 30m minus proběhlý)
- */
-export function getMinimumRestAfterDrivingBlockMs(
-  restSinceLastBreakMs: number,
-  isSplitSecondPart?: boolean
-): number {
-  if (isSplitSecondPart) {
-    return Math.max(0, SPLIT_REST_SECOND_MS - restSinceLastBreakMs)
-  }
-  return Math.max(0, SPLIT_REST_FIRST_MS - restSinceLastBreakMs)
 }
 
 /**

@@ -48,6 +48,7 @@ import {
   NO_CARD,
 } from './TachoTypes'
 import { DRIVING_SYMBOL, segmentToMsUtc } from './CardLogic'
+import { activitiesForApplyTime, clockAfterApplyTime, insertedCardId, planApplyTimeJump } from './applyTimeJump'
 import { useCardWizard2 } from './CardWizard2'
 import { useActionLog } from './ActionLogContext'
 import * as WorkShift from './WorkShift'
@@ -638,6 +639,7 @@ export default function App() {
     isMultiManning,
     onEjectRequested: onEjectRequestedForWizard,
     currentSpeed,
+    timeOffsetMs,
     getCurrentLocationCountryCode: () => currentLocationCountryCodeRefForWizard.current ?? null,
   })
 
@@ -847,8 +849,8 @@ export default function App() {
       driver1: driver1Winner,
       driver2: driver2Winner,
       gpsLocation: virtualLocationRef.current?.name,
-      driver1CardId: c1Inserted && (number1 || tid1) ? (number1 ?? tid1) : NO_CARD,
-      driver2CardId: c2Inserted && (number2 || tid2) ? (number2 ?? tid2) : NO_CARD,
+      driver1CardId: insertedCardId(c1Inserted, number1, tid1),
+      driver2CardId: insertedCardId(c2Inserted, number2, tid2),
     }
     setActivityHistory((prev) => [...prev, entry])
     if (c1Inserted && tid1) {
@@ -1711,7 +1713,7 @@ export default function App() {
       const other = slot === 1 ? card2Data : card1Data
       const decision = assessDddInsertion({
         record,
-        simulatedNowMs: simulatedUtcTimeRef.current + timeOffsetMs,
+        simulatedNowMs: simulatedUtcTimeRef.current,
         otherSlotCardNumber: other?.cardNumber ?? null,
       })
       if (!decision.ok) {
@@ -1730,13 +1732,13 @@ export default function App() {
         setCard1Data(cardData)
         setCard1Inserted(true)
         setDrivingWithoutCardWarningActive(false)
-        setCardInsertionState(createInitialCardInsertionState(1, cardData, simulatedUtcTimeRef.current + timeOffsetMs, countries, wizardOptions))
+        setCardInsertionState(createInitialCardInsertionState(1, cardData, simulatedUtcTimeRef.current, countries, wizardOptions))
       }
       if (slot === 2) {
         setCard2Data(cardData)
         setCard2Inserted(true)
         setCard2InsertedAt(Date.now())
-        setCardInsertionState(createInitialCardInsertionState(2, cardData, simulatedUtcTimeRef.current + timeOffsetMs, countries, wizardOptions))
+        setCardInsertionState(createInitialCardInsertionState(2, cardData, simulatedUtcTimeRef.current, countries, wizardOptions))
       }
       setDragOverSlot(null)
       return
@@ -1801,84 +1803,76 @@ export default function App() {
 
   const handleApplyTime = useCallback(() => {
     // Časové údaje v UTC ms (panel zobrazuje místní čas, getTime() vrací UTC)
-    const currentMsUtc = simulatedUtcTime + timeOffsetMs
     const targetMsUtc = panelDateTime.getTime()
-    const deltaMs = targetMsUtc - currentMsUtc
+    const shift = clockAfterApplyTime(simulatedUtcTime, timeOffsetMs, targetMsUtc)
+    const { deltaMs } = shift
 
     // Skok zpět – jen přenastavíme offset, nic negenerujeme
     if (deltaMs <= 0) {
       lastPanelAdjustmentMsRef.current = 0
-      setTimeOffsetMs(panelDateTime.getTime() - simulatedUtcTime)
+      setTimeOffsetMs(shift.nextTimeOffsetMs)
       return
     }
 
-    /* Posunout simulatedUtcTime dopředu, aby VDO counter a všechny komponenty reagovaly na čas i když je zobrazen main dashboard */
-    setSimulatedUtcTime((prev) => prev + deltaMs)
+    /* Posunout simulatedUtcTime dopředu, aby VDO counter a všechny komponenty reagovaly na čas i když je zobrazen main dashboard.
+       Ref se nastaví hned, aby sekundový krok neuzavřel ještě starou minutu. */
+    minuteAccumulatorRef.current = null
+    simulatedUtcTimeRef.current = shift.nextSimulatedUtcMs
+    setSimulatedUtcTime(shift.nextSimulatedUtcMs)
 
-    // Počet minut k vygenerování; ceil zajišťuje pokrytí částečné minuty (např. 65 s = 2 min)
     const deltaMinutes = Math.ceil(deltaMs / 60000)
-    const targetMinuteUtc = Math.floor(targetMsUtc / 60000) * 60000
 
     if (deltaMinutes > 0) {
       const speedNow = currentSpeedRef.current
       const isDrivingNow = speedNow > 0
+      const { driver1: driver1Activity, driver2: driver2Activity } = activitiesForApplyTime(
+        speedNow,
+        leftActivityIdRef.current,
+        rightActivityIdRef.current,
+      )
       const leftCharNow = isDrivingNow ? DRIVING_SYMBOL : getActivityCode(leftActivityIdRef.current)
       const rightCharNow = isDrivingNow ? getActivityCode('AVAILABILITY') : getActivityCode(rightActivityIdRef.current)
 
-      const driver1Activity = activityFromChar(leftCharNow)
-      const driver2Activity = activityFromChar(rightCharNow)
-
-      // startMinuteUtc vždy v UTC; navazujeme na poslední záznam nebo na aktuální simulatedUtcTime
-      let startMinuteUtc: number
-      if (activityHistory.length > 0) {
-        startMinuteUtc = activityHistory[activityHistory.length - 1].minuteStartUtc + 60000
-      } else {
-        startMinuteUtc = Math.floor(simulatedUtcTime / 60000) * 60000
-      }
-
       const c1Inserted = card1InsertedRef.current
       const c2Inserted = card2InsertedRef.current
-      const tid1 = card1DataRef.current?.templateId
-      const tid2 = card2DataRef.current?.templateId
-      const gpsName = virtualLocationRef.current?.name
-
-      const generated: ActivityHistoryEntry[] = []
-      for (let i = 0; i < deltaMinutes; i += 1) {
-        const minuteUtc = startMinuteUtc + i * 60000
-        // Nepřekračovat cílovou minutu – ochrana proti překryvu s intervalovým efektem
-        if (minuteUtc > targetMinuteUtc) break
-        generated.push({
-          minuteStartUtc: minuteUtc,
-          driver1: driver1Activity,
-          driver2: driver2Activity,
-          gpsLocation: gpsName,
-          driver1CardId: c1Inserted && tid1 ? tid1 : NO_CARD,
-          driver2CardId: c2Inserted && tid2 ? tid2 : NO_CARD,
-        })
-      }
+      const card1 = card1DataRef.current
+      const card2 = card2DataRef.current
+      const plan = planApplyTimeJump({
+        simulatedUtcMs: simulatedUtcTime,
+        deltaMs,
+        existingMinuteStarts: activityHistory.map((entry) => entry.minuteStartUtc),
+        driver1: driver1Activity,
+        driver2: driver2Activity,
+        slot1: { inserted: c1Inserted, cardNumber: card1?.cardNumber, templateId: card1?.templateId },
+        slot2: { inserted: c2Inserted, cardNumber: card2?.cardNumber, templateId: card2?.templateId },
+        isCrew: isMultiManningRef.current,
+        gpsLocation: virtualLocationRef.current?.name,
+      })
+      const generated = plan.entries
 
       if (generated.length > 0) {
-        // Sloučení bez duplicit – ochrana proti překryvu (minuteStartUtc musí být unikátní)
-        const existingMinutes = new Set(activityHistory.map((e) => e.minuteStartUtc))
-        const toAdd = generated.filter((e) => !existingMinutes.has(e.minuteStartUtc))
-        if (toAdd.length > 0) {
-          setActivityHistory((prev) => {
-            const prevSet = new Set(prev.map((e) => e.minuteStartUtc))
-            const filtered = toAdd.filter((e) => !prevSet.has(e.minuteStartUtc))
-            return filtered.length > 0 ? [...prev, ...filtered] : prev
+        setActivityHistory((prev) => {
+          const prevSet = new Set(prev.map((e) => e.minuteStartUtc))
+          const filtered = generated.filter((e) => !prevSet.has(e.minuteStartUtc))
+          return filtered.length > 0 ? [...prev, ...filtered] : prev
+        })
+        for (const templateId of plan.templateIds) {
+          setCardActivityHistoryByTemplateId((prev) => {
+            const arr = prev[templateId] ?? []
+            const seen = new Set(arr.map((entry) => entry.minuteStartUtc))
+            const added = generated.filter((entry) => !seen.has(entry.minuteStartUtc))
+            if (added.length === 0) return prev
+            const newArr = [...arr, ...added]
+            if (templateId === CARD1_TEMPLATE_ID) saveCard1ActivityHistory(newArr)
+            else if (templateId === CARD2_TEMPLATE_ID) saveCard2ActivityHistory(newArr)
+            return { ...prev, [templateId]: newArr }
           })
-          if (c1Inserted && tid1) {
-            setCardActivityHistoryByTemplateId((prev) => ({
-              ...prev,
-              [tid1]: [...(prev[tid1] ?? []), ...toAdd],
-            }))
-          }
-          if (c2Inserted && tid2) {
-            setCardActivityHistoryByTemplateId((prev) => ({
-              ...prev,
-              [tid2]: [...(prev[tid2] ?? []), ...toAdd],
-            }))
-          }
+        }
+        if (plan.dddCardNumbers.length > 0) {
+          setDddCards((prev) => plan.dddCardNumbers.reduce(
+            (cards, cardNumber) => appendWorkingMinutes(cards, cardNumber, generated),
+            prev,
+          ))
         }
       }
 
@@ -1956,7 +1950,7 @@ export default function App() {
 
     /* Offset: simulatedUtcTime jsme posunuli o deltaMs, proto odečteme deltaMs, aby localTime = simulatedUtcTime + timeOffsetMs = cílový čas */
     lastPanelAdjustmentMsRef.current = 0
-    setTimeOffsetMs(panelDateTime.getTime() - simulatedUtcTime - deltaMs)
+    setTimeOffsetMs(shift.nextTimeOffsetMs)
   }, [panelDateTime, simulatedUtcTime, timeOffsetMs, activityHistory, setActivityHistory])
 
   const handleStopIgnition = useCallback(() => {
@@ -2555,6 +2549,7 @@ export default function App() {
     spanishRegions,
     lastEjectionTimeBySlot,
     localTime,
+    timeOffsetMs,
     currentMenu,
     selectedItem,
     currentMenuId,

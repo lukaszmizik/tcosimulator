@@ -4,11 +4,11 @@
  */
 
 import { useEffect, type Dispatch, type MutableRefObject, type SetStateAction } from 'react'
+import { insertedCardId } from './applyTimeJump'
 import { DRIVING_SYMBOL, activityFromChar, getActivityCode } from './CardLogic'
 import { CARD1_TEMPLATE_ID, saveCard1ActivityHistory } from './data/card1_write_data'
 import { CARD2_TEMPLATE_ID, saveCard2ActivityHistory } from './data/card2_write_data'
 import {
-  NO_CARD,
   type ActivityHistoryEntry,
   type ActivityKind,
   type CardData,
@@ -99,8 +99,8 @@ export function useSimulationSecondClock(params: UseSimulationSecondClockParams)
 
       const c1InsertedNow = card1InsertedRef.current
       const c2InsertedNow = card2InsertedRef.current
-      const card1Id = c1InsertedNow ? (card1DataRef.current?.cardNumber ?? card1DataRef.current?.templateId ?? NO_CARD) : NO_CARD
-      const card2Id = c2InsertedNow ? (card2DataRef.current?.cardNumber ?? card2DataRef.current?.templateId ?? NO_CARD) : NO_CARD
+      const card1Id = insertedCardId(c1InsertedNow, card1DataRef.current?.cardNumber, card1DataRef.current?.templateId)
+      const card2Id = insertedCardId(c2InsertedNow, card2DataRef.current?.cardNumber, card2DataRef.current?.templateId)
       setSecondHistory((prev) => {
         const nextArr = [...prev, {
           timestampUtc: timestamp,
@@ -157,8 +157,8 @@ export function useSimulationSecondClock(params: UseSimulationSecondClockParams)
           driver1: driver1Winner,
           driver2: driver2Winner,
           gpsLocation: virtualLocationRef.current?.name,
-          driver1CardId: c1Inserted && (number1 || tid1) ? (number1 ?? tid1) : NO_CARD,
-          driver2CardId: c2Inserted && (number2 || tid2) ? (number2 ?? tid2) : NO_CARD,
+          driver1CardId: insertedCardId(c1Inserted, number1, tid1),
+          driver2CardId: insertedCardId(c2Inserted, number2, tid2),
         }
         setActivityHistory((prev) => {
           const exists = prev.some((e) => e.minuteStartUtc === entry.minuteStartUtc)

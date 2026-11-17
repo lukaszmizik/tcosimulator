@@ -103,9 +103,7 @@ export function segmentToMs(
 }
 
 export function floorToMinute(ms: number): number {
-  const d = new Date(ms)
-  d.setSeconds(0, 0)
-  return d.getTime()
+  return Math.floor(ms / 60000) * 60000
 }
 
 export function clampSegmentToMaxMs(seg: ManualEntrySegment, maxMs: number): ManualEntrySegment {
@@ -157,8 +155,8 @@ export function segmentToMsUtc(s: ManualEntrySegment): number {
 }
 
 /**
- * Převede segment s MÍSTNÍMI složkami (z editoru) na segment s UTC složkami pro zápis do manualEntryBuffer.
- * Doplňování probíhá v místním čase, zápis na kartu se provádí v UTC.
+ * Starší převod, který editorová čísla čte jako čas prohlížeče.
+ * Průvodce vložení ho už nepoužívá.
  */
 export function localSegmentToUtcForBuffer<T extends { day: number; month: number; year: number; hour: number; minute: number; activityId?: EditorActivityId; countryCode?: string }>(
   s: T,
@@ -171,6 +169,49 @@ export function localSegmentToUtcForBuffer<T extends { day: number; month: numbe
     countryCode: s.countryCode,
     isManualEntry: true,
   }
+}
+
+type TachographClockFields = { day: number; month: number; year: number; hour: number; minute: number }
+
+/**
+ * Editor ukazuje hodiny tachografu. Offset se přičte k uloženému UTC právě jednou
+ * a kalendář se čte v UTC, ne v pásmu prohlížeče.
+ */
+export function utcMsToTachographSegment(utcMs: number, timeOffsetMs: number) {
+  return utcMsToSegment(utcMs + timeOffsetMs)
+}
+
+/** Editorová pole jsou hodiny tachografu. Uložené UTC vznikne jejich čtením jako UTC a jedním odečtením offsetu. */
+export function tachographSegmentToUtcMs(s: TachographClockFields, timeOffsetMs: number): number {
+  return Date.UTC(s.year, s.month - 1, s.day, s.hour, s.minute) - timeOffsetMs
+}
+
+export function tachographSegmentToUtcForBuffer<T extends TachographClockFields & { activityId?: EditorActivityId; countryCode?: string }>(
+  s: T,
+  timeOffsetMs: number,
+): ManualEntrySegment {
+  const ms = floorToMinute(tachographSegmentToUtcMs(s, timeOffsetMs))
+  const base = utcMsToSegment(ms)
+  return {
+    ...base,
+    activityId: s.activityId ?? 'REST',
+    countryCode: s.countryCode,
+    isManualEntry: true,
+  }
+}
+
+/** Udrž editor v hodinách tachografu a mezích uloženého UTC. */
+export function clampTachographSegment<T extends ManualEntrySegment>(
+  seg: T,
+  minUtcMs: number | null,
+  maxUtcMs: number,
+  timeOffsetMs: number,
+): T {
+  let utc = tachographSegmentToUtcMs(seg, timeOffsetMs)
+  if (minUtcMs != null && utc < minUtcMs) utc = minUtcMs
+  if (utc > maxUtcMs) utc = maxUtcMs
+  const fields = utcMsToTachographSegment(utc, timeOffsetMs)
+  return { ...seg, day: fields.day, month: fields.month, year: fields.year, hour: fields.hour, minute: fields.minute }
 }
 
 function isConfirmedActivity(activityId: EditorActivityId | undefined): boolean {

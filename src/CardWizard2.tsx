@@ -4,12 +4,12 @@
  * - Po zadání jednoho segmentu: další krok přebere L2 na L1 (+ 1 minuta), na L2 se zobrazí maximální čas (čas vložení karty)
  * - Výchozí/cílová země: časové razítko přimknuté ke stejnému HH:MM jako na L1
  *
- * Časová zóna: segmentStart a currentSegment jsou v MÍSTNÍM čase (pro zobrazení a editaci).
- * Zápis do manualEntryBuffer probíhá vždy v UTC (přes localSegmentToUtcForBuffer).
+ * Časová zóna: segmentStart a currentSegment jsou hodiny tachografu.
+ * Zápis do manualEntryBuffer je UTC: offset tachografu se odečte právě jednou.
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { advanceConfirmedCapToMinute, floorToMinute, utcMsToSegment, localMsToSegment, segmentToMs, segmentToMsUtc, localSegmentToUtcForBuffer, clampSegmentToMaxMsLocal, clampSegmentToMinMsLocal, cycleEditorActivity, EDITOR_FIELD_ORDER } from './CardLogic'
+import { advanceConfirmedCapToMinute, floorToMinute, utcMsToSegment, segmentToMsUtc, utcMsToTachographSegment, tachographSegmentToUtcMs, tachographSegmentToUtcForBuffer, clampTachographSegment, cycleEditorActivity, EDITOR_FIELD_ORDER } from './CardLogic'
 import { IDLE_WARNING_MS, IDLE_CRITICAL_MS } from './Constants'
 import type { CardInsertionState, CardData, CardInsertionPhase, ManualEntrySegment } from './TachoTypes'
 import type { CountryEntry } from './data/countriesLoader'
@@ -18,6 +18,13 @@ import { createInitialCardInsertionState } from './CardLogic'
 const INPUT_WAITING_PHASES: CardInsertionState['phase'][] = ['decision1M', 'manualEditor', 'country', 'finalConfirm', 'itsQuestion', 'vdoQuestion']
 
 const MANUAL_ENTRY_PHASES_FOR_SPEED: CardInsertionState['phase'][] = ['welcome', 'loading', 'lastRemoval', 'decision1M', 'manualEditor', 'country', 'finalConfirm', 'itsQuestion', 'vdoQuestion', 'idleWarning']
+
+function shiftTachographDay(seg: { day: number; month: number; year: number }, deltaDays: number) {
+  const shifted = new Date(Date.UTC(seg.year, seg.month - 1, seg.day + deltaDays))
+  seg.day = shifted.getUTCDate()
+  seg.month = shifted.getUTCMonth() + 1
+  seg.year = shifted.getUTCFullYear()
+}
 
 /** Výměna řidičů: karta vytažena a vložena do 1 minuty, L1 a L2 by byly stejné → přeskočit doplňování časů a jít rovnou na výběr výchozí země. */
 function shouldSkipToCountryStep(prev: CardInsertionState): boolean {
@@ -51,6 +58,8 @@ export type UseCardWizard2Params = {
   isMultiManning: boolean
   onEjectRequested?: (slot: 1 | 2, options?: { idleTimeout?: boolean }) => void
   currentSpeed?: number
+  /** Offset tachografu. Editor ho přičítá k UTC a při uložení ho jednou odečte. */
+  timeOffsetMs: number
   /** Vrátí kód země dle aktuální GPS lokace (např. CZ, AT, DE) – pro výchozí výběr v nabídce zemí */
   getCurrentLocationCountryCode?: () => string | null
 }
@@ -72,6 +81,7 @@ export function useCardWizard2(params: UseCardWizard2Params) {
     setDriver2ManualEntryBuffer,
     onEjectRequested,
     currentSpeed = 0,
+    timeOffsetMs,
     getCurrentLocationCountryCode,
   } = params
 
@@ -85,6 +95,7 @@ export function useCardWizard2(params: UseCardWizard2Params) {
   const countriesRef = useRef(countries)
   const spanishRegionsRef = useRef(spanishRegions)
   const simulatedUtcTimeRef = useRef(simulatedUtcTime)
+  const timeOffsetMsRef = useRef(timeOffsetMs)
   const card1DataRef = useRef(card1Data)
   const card2DataRef = useRef(card2Data)
   const getCurrentLocationCountryCodeRef = useRef(getCurrentLocationCountryCode)
@@ -94,6 +105,7 @@ export function useCardWizard2(params: UseCardWizard2Params) {
   countriesRef.current = countries
   spanishRegionsRef.current = spanishRegions
   simulatedUtcTimeRef.current = simulatedUtcTime
+  timeOffsetMsRef.current = timeOffsetMs
   card1DataRef.current = card1Data
   card2DataRef.current = card2Data
 
@@ -313,15 +325,19 @@ export function useCardWizard2(params: UseCardWizard2Params) {
           if (!prev.decisionSupplement) {
             return { ...prev, phase: 'finalizeStep1', phaseStartTime: Date.now(), showItsVdoQuestions: false }
           }
+          const offset = timeOffsetMsRef.current
           const insertionTimeFixed = floorToMinute(prev.cardInsertionTime)
-          const l1FromLastWithdrawal =
-            prev.lastWithdrawal != null
-              ? localMsToSegment(floorToMinute(prev.lastWithdrawal))
-              : localMsToSegment(segmentToMsUtc({ ...prev.segmentStart, activityId: 'REST' }))
+          const l1Utc = prev.lastWithdrawal != null
+            ? floorToMinute(prev.lastWithdrawal)
+            : segmentToMsUtc({ ...prev.segmentStart, activityId: 'REST' })
+          const l1FromLastWithdrawal = utcMsToTachographSegment(l1Utc, offset)
           const segmentStartFixed = { day: l1FromLastWithdrawal.day, month: l1FromLastWithdrawal.month, year: l1FromLastWithdrawal.year, hour: l1FromLastWithdrawal.hour, minute: l1FromLastWithdrawal.minute }
-          const minL2Ms = segmentToMs({ ...segmentStartFixed, activityId: 'REST' }) + 60000
-          const l2Base = clampSegmentToMinMsLocal(localMsToSegment(insertionTimeFixed), minL2Ms)
-          const l2Clamped = clampSegmentToMaxMsLocal({ ...prev.currentSegment, ...l2Base }, insertionTimeFixed)
+          const l2Clamped = clampTachographSegment(
+            { ...prev.currentSegment, ...utcMsToTachographSegment(insertionTimeFixed, offset) },
+            l1Utc + 60000,
+            insertionTimeFixed,
+            offset,
+          )
           return {
             ...prev,
             phase: 'manualEditor',
@@ -334,8 +350,9 @@ export function useCardWizard2(params: UseCardWizard2Params) {
       }
       // Zbytek handlerů – manualEditor, country, finalConfirm, atd. – zjednodušeně bez ukládání
       if (prev.phase === 'manualEditor') {
+        const offset = timeOffsetMsRef.current
         const insertionTimeFixed = prev.insertionTimeFixed ?? floorToMinute(prev.cardInsertionTime)
-        const minL2Ms = segmentToMs(prev.segmentStart) + 60000
+        const minL2Utc = tachographSegmentToUtcMs(prev.segmentStart, offset) + 60000
         const countriesList = countriesRef.current
         const regionsList = spanishRegionsRef.current
         const minAllowedTime = prev.lastWithdrawal != null ? floorToMinute(prev.lastWithdrawal) : null
@@ -358,9 +375,9 @@ export function useCardWizard2(params: UseCardWizard2Params) {
             // Razítko výchozí/cílové země: přimknuté ke stejnému HH:MM jako na L1, v rozlišení minut
             const stampL1 = prev.stampL1Segment ?? prev.segmentStart
             const stampLocal = { ...stampL1, activityId: prev.stampActivityId, countryCode: prev.selectingSpanishRegion ? (regionsList[prev.spanishRegionIndex]?.code ?? '') : (countriesList[prev.countryIndex]?.code ?? 'CZ') }
-            const stamp = localSegmentToUtcForBuffer(stampLocal)
-            const segmentStartLocal = localMsToSegment(segmentToMsUtc(stamp))
-            const l2Max = localMsToSegment(insertionTimeFixed)
+            const stamp = tachographSegmentToUtcForBuffer(stampLocal, offset)
+            const segmentStartLocal = utcMsToTachographSegment(segmentToMsUtc(stamp), offset)
+            const l2Max = utcMsToTachographSegment(insertionTimeFixed, offset)
             const nextDefaultActivity = prev.stampActivityId === 'START_COUNTRY' ? 'AVAILABILITY' : 'REST'
             return {
               ...prev,
@@ -401,28 +418,21 @@ export function useCardWizard2(params: UseCardWizard2Params) {
           if (field === 'hour') {
             if (seg.hour === 0 && delta === -1) {
               seg.hour = 23
-              const d = new Date(seg.year, seg.month - 1, seg.day)
-              d.setDate(d.getDate() - 1)
-              Object.assign(seg, { day: d.getDate(), month: d.getMonth() + 1, year: d.getFullYear() })
+              shiftTachographDay(seg, -1)
             } else if (seg.hour === 23 && delta === 1) {
               seg.hour = 0
-              const d = new Date(seg.year, seg.month - 1, seg.day)
-              d.setDate(d.getDate() + 1)
-              Object.assign(seg, { day: d.getDate(), month: d.getMonth() + 1, year: d.getFullYear() })
+              shiftTachographDay(seg, 1)
             } else {
               seg.hour = (seg.hour + delta + 24) % 24
             }
           }
           if (field === 'minute') seg.minute = (seg.minute + delta + 60) % 60
           let adjusted = seg
-          if (action === 'down' && minAllowedTime != null) {
-            const ms = segmentToMs(adjusted)
-            if (ms < minAllowedTime) {
-              const minSeg = localMsToSegment(minAllowedTime)
-              adjusted = { ...adjusted, day: minSeg.day, month: minSeg.month, year: minSeg.year, hour: minSeg.hour, minute: minSeg.minute }
-            }
+          if (action === 'down' && minAllowedTime != null && tachographSegmentToUtcMs(adjusted, offset) < minAllowedTime) {
+            const minSeg = utcMsToTachographSegment(minAllowedTime, offset)
+            adjusted = { ...adjusted, day: minSeg.day, month: minSeg.month, year: minSeg.year, hour: minSeg.hour, minute: minSeg.minute }
           }
-          const clamped = clampSegmentToMinMsLocal(clampSegmentToMaxMsLocal(adjusted, insertionTimeFixed), minL2Ms)
+          const clamped = clampTachographSegment(adjusted, minL2Utc, insertionTimeFixed, offset)
           return { ...prev, currentSegment: clamped }
         }
         if (action === 'ok') {
@@ -442,26 +452,27 @@ export function useCardWizard2(params: UseCardWizard2Params) {
           }
           if (prev.awaitingMaxTimeConfirm) {
             const segForTime = prev.pendingMaxTimeSegment ?? seg
-            const segMs = segmentToMs(segForTime)
+            const segUtc = floorToMinute(tachographSegmentToUtcMs(segForTime, offset))
             const hasStartCountry = prev.manualEntryBuffer.some((s) => s.activityId === 'START_COUNTRY')
             const nextPhase = hasStartCountry ? ('finalConfirm' as CardInsertionPhase) : ('country' as CardInsertionPhase)
-            if (segMs >= insertionTimeFixed) {
+            const store = (fields: typeof prev.segmentStart, activityId: typeof seg.activityId) =>
+              tachographSegmentToUtcForBuffer({ ...fields, activityId }, offset)
+            if (segUtc >= insertionTimeFixed) {
               const newBuffer = [
                 ...prev.manualEntryBuffer,
-                localSegmentToUtcForBuffer({ ...prev.segmentStart, activityId: seg.activityId }),
-                localSegmentToUtcForBuffer({ ...segForTime, activityId: seg.activityId }),
+                store(prev.segmentStart, seg.activityId),
+                store(segForTime, seg.activityId),
               ]
               return { ...prev, manualEntryBuffer: newBuffer, phase: nextPhase, phaseStartTime: Date.now(), awaitingMaxTimeConfirm: false, pendingMaxTimeSegment: undefined }
             }
             const segValid = { ...segForTime, activityId: seg.activityId }
-            const newBuffer = [...prev.manualEntryBuffer, localSegmentToUtcForBuffer({ ...prev.segmentStart, activityId: seg.activityId }), localSegmentToUtcForBuffer(segValid)]
-            const l2Ms = floorToMinute(segMs)
-            const l1NextMs = l2Ms + 60000
-            if (l1NextMs > insertionTimeFixed) {
+            const newBuffer = [...prev.manualEntryBuffer, store(prev.segmentStart, seg.activityId), store(segValid, seg.activityId)]
+            const l1NextUtc = segUtc + 60000
+            if (l1NextUtc > insertionTimeFixed) {
               return { ...prev, manualEntryBuffer: newBuffer, phase: nextPhase, phaseStartTime: Date.now(), awaitingMaxTimeConfirm: false, pendingMaxTimeSegment: undefined }
             }
-            const l1FromL2PlusMinute = localMsToSegment(l1NextMs)
-            const l2MaxTime = localMsToSegment(insertionTimeFixed)
+            const l1FromL2PlusMinute = utcMsToTachographSegment(l1NextUtc, offset)
+            const l2MaxTime = utcMsToTachographSegment(insertionTimeFixed, offset)
             return {
               ...prev,
               manualEntryBuffer: newBuffer,
@@ -477,9 +488,9 @@ export function useCardWizard2(params: UseCardWizard2Params) {
           if (nextField) {
             return { ...prev, editorBlinkField: nextField, selectingCountryForStamp: false, stampActivityId: null, stampL1Segment: undefined }
           }
-          const startMs = segmentToMs(prev.segmentStart)
-          const segMs = segmentToMs(seg)
-          const segValid = segMs > startMs ? seg : { ...localMsToSegment(startMs + 60000), activityId: seg.activityId }
+          const startUtc = tachographSegmentToUtcMs(prev.segmentStart, offset)
+          const segUtc = tachographSegmentToUtcMs(seg, offset)
+          const segValid = segUtc > startUtc ? seg : { ...utcMsToTachographSegment(startUtc + 60000, offset), activityId: seg.activityId }
           if (seg.activityId === 'START_COUNTRY' || seg.activityId === 'END_COUNTRY') {
             const routeToTachograph: Record<string, string> = { CZ: 'CZ', AT: 'A', DE: 'D', CH: 'CH', FR: 'F', ES: 'E' }
             const gpsCode = getCurrentLocationCountryCodeRef.current?.() ?? 'CZ'
@@ -494,19 +505,23 @@ export function useCardWizard2(params: UseCardWizard2Params) {
               selectingSpanishRegion: false,
             }
           }
-          const newBuffer = [...prev.manualEntryBuffer, localSegmentToUtcForBuffer({ ...prev.segmentStart, activityId: seg.activityId }), localSegmentToUtcForBuffer({ ...segValid, activityId: seg.activityId })]
+          const newBuffer = [
+            ...prev.manualEntryBuffer,
+            tachographSegmentToUtcForBuffer({ ...prev.segmentStart, activityId: seg.activityId }, offset),
+            tachographSegmentToUtcForBuffer({ ...segValid, activityId: seg.activityId }, offset),
+          ]
           const hasStartCountry = newBuffer.some((s) => s.activityId === 'START_COUNTRY')
           const nextPhase = hasStartCountry ? ('finalConfirm' as CardInsertionPhase) : ('country' as CardInsertionPhase)
-          const l2Ms = floorToMinute(segmentToMs(segValid))
-          if (l2Ms >= insertionTimeFixed) {
+          const l2Utc = floorToMinute(tachographSegmentToUtcMs(segValid, offset))
+          if (l2Utc >= insertionTimeFixed) {
             return { ...prev, manualEntryBuffer: newBuffer, phase: nextPhase, phaseStartTime: Date.now() }
           }
-          const l1NextMs = l2Ms + 60000
-          if (l1NextMs > insertionTimeFixed) {
+          const l1NextUtc = l2Utc + 60000
+          if (l1NextUtc > insertionTimeFixed) {
             return { ...prev, manualEntryBuffer: newBuffer, phase: nextPhase, phaseStartTime: Date.now() }
           }
-          const l1FromL2PlusMinute = localMsToSegment(l1NextMs)
-          const l2MaxTime = localMsToSegment(insertionTimeFixed)
+          const l1FromL2PlusMinute = utcMsToTachographSegment(l1NextUtc, offset)
+          const l2MaxTime = utcMsToTachographSegment(insertionTimeFixed, offset)
           return {
             ...prev,
             manualEntryBuffer: newBuffer,

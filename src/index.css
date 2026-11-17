@@ -350,9 +350,6 @@ body {
 .lcd-l2-space-big {
   width: 1.2rem;
 }
-.lcd-blink-hide {
-  visibility: hidden;
-}
 
 /* Znak "?" (neznámá činnost) v průvodci – stejný font jako displej */
 .lcd-display-font {
@@ -622,18 +619,18 @@ body {
   justify-content: space-between;
 }
 
-/* Jednotné blikání na displeji – položky menu, výběr země, upozornění, ano/ne */
+/* Jednotné blikání položek menu, výstrah a vybraných polí displeje. */
 .lcd-menu-item-selected,
 .lcd-country-code-blink,
 .lcd-card-warning-blink,
-.lcd-decision-1m-blink {
-  animation: lcd-blink 1s step-start infinite;
+.lcd-decision-1m-blink,
+.lcd-field-blink {
+  animation: lcd-blink 1s step-end infinite;
 }
 
 /* Blikání – 0,5 s zapnuto / 0,5 s vypnuto */
 @keyframes lcd-blink {
-  0%,
-  49% {
+  0% {
     opacity: 1;
   }
   50%,

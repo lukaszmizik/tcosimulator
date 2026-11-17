@@ -351,7 +351,7 @@ function PrintWizardDisplay(props: TachoDisplayProps) {
         <div className="lcd-row lcd-row-left"><span className="lcd-inline-symbols">{l1}</span></div>
         <div className="lcd-row lcd-decision-1m-row">
           <span>{t.tachoDisplay.printUtc}</span>
-          <span className={`lcd-decision-1m-blink ${isBlinking ? 'lcd-blink-hide' : ''}`}>{pw.utcYes ? t.cardWizard.yes : t.cardWizard.no}</span>
+          <span className="lcd-decision-1m-blink">{pw.utcYes ? t.cardWizard.yes : t.cardWizard.no}</span>
         </div>
       </div>
     )

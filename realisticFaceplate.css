@@ -1,0 +1,111 @@
+/* Coordinates refer to the full 2206 × 713 faceplate image, including alpha margin.
+   Keep the existing 848px outer width and LCD's logical 420 × 100 layout:
+   all display screens and their timing/behaviour remain unchanged. */
+.vdo-realistic-panel {
+  width: 848px;
+  height: 274.08px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: url('/images/vdo-faceplate.png') center / 100% 100% no-repeat;
+  box-shadow: none;
+  display: block;
+}
+
+.vdo-realistic-panel .vdo-top-section,
+.vdo-realistic-panel .display-area,
+.vdo-realistic-panel .vdo-bottom-section,
+.vdo-realistic-panel .card-slot-row,
+.vdo-realistic-panel .eject-buttons {
+  display: contents;
+  position: static !important;
+}
+
+.vdo-realistic-panel .printer-bay { display: none; }
+
+.vdo-realistic-panel #main-display {
+  position: absolute;
+  left: 7.93%;
+  top: 21.88%;
+  width: 420px;
+  height: 100px;
+  transform: scale(.79);
+  transform-origin: top left;
+  border: 0;
+  border-radius: 1px;
+}
+
+.vdo-realistic-panel .display-controls {
+  position: absolute;
+  left: 7.93%;
+  top: 62.27%;
+  width: 39.25%;
+  height: 7.57%;
+  margin: 0;
+  gap: 0;
+}
+
+/* The photograph supplies labels. Real buttons retain accessible names,
+   keyboard focus, hover/press feedback and all original event handlers. */
+.vdo-realistic-panel .btn-nav,
+.vdo-realistic-panel .btn-eject {
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  color: transparent;
+  font-size: 0;
+  border-radius: 3px;
+  touch-action: manipulation;
+}
+
+.vdo-realistic-panel .btn-nav {
+  width: 23.4%;
+  height: 100%;
+}
+
+.vdo-realistic-panel .btn-eject {
+  position: absolute;
+  top: 74.75%;
+  width: 6.8%;
+  height: 10.1%;
+}
+.vdo-realistic-panel .btn-eject:first-child { left: 42.88%; }
+.vdo-realistic-panel .btn-eject:last-child { left: 50.54%; }
+.vdo-realistic-panel .btn-eject > span { visibility: hidden; }
+
+.vdo-realistic-panel .btn-nav:hover,
+.vdo-realistic-panel .btn-eject:hover { background: rgb(255 255 255 / 10%); }
+.vdo-realistic-panel .btn-nav:active,
+.vdo-realistic-panel .btn-eject:active {
+  background: rgb(0 0 0 / 35%);
+  transform: none;
+  box-shadow: inset 0 1px 3px #000;
+}
+.vdo-realistic-panel button:focus-visible {
+  outline: 2px solid #70c8ff;
+  outline-offset: 2px;
+}
+
+.vdo-realistic-panel .slot-shaft-line {
+  position: absolute;
+  top: 74.75%;
+  width: 31.1%;
+  height: 10.1%;
+  box-sizing: border-box;
+  background: transparent;
+  box-shadow: none;
+}
+.vdo-realistic-panel .slot-shaft-line:first-child { left: 9.97%; }
+.vdo-realistic-panel .slot-shaft-line:last-child { left: 59.02%; }
+.vdo-realistic-panel .slot-drop-zone-highlight {
+  background: rgb(80 200 80 / 30%);
+  box-shadow: inset 0 0 0 2px #6dd78a, 0 0 8px rgb(80 200 80 / 45%);
+}
+
+.vdo-realistic-panel [data-vdo-debug] {
+  position: absolute;
+  left: 0;
+  bottom: 100%;
+  z-index: 10;
+}

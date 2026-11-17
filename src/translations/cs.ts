@@ -56,7 +56,7 @@ export const cs: Translations = {
   },
   infoPanel: {
     standbyModeInfo: 'Zařízení je v režimu Stand-by. Zapni zapalování tlačítkem Start.\nVše je ve vývoji, případné chyby mi nahlaš na lukas@zmizik.com',
-    insertCardToSlot1: 'Pokud chceš zahájit řízení, vlož kteroukoli kartu přetáhnutím do slotu č. 1.', // 1
+    insertCardToSlot1: 'Pro zahájení řízení klepni na slot 1 a vyber kartu, nebo ji do slotu přetáhni.', // 1
     drivingWithoutCard: 'Jízda bez karty – vlož kartu řidiče do slotu 1. Tato výstraha se zapisuje do paměti tachografu.', // 2
     break415: 'Výstraha 4:15 – proveď pauzu 15 minut nebo 30 minut (pokud jsi už měl 15m).', // 3
     break430: 'Výstraha 4:30 – Překročil jsi dobu řízení! Neprodleně udělej přestávku 45 minut. Tato událost se zapíše do paměti jako (27)(38) Porušení bezpečnosti.', // 4

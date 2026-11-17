@@ -1,10 +1,5 @@
-import { useId, useState, type CSSProperties } from 'react'
 import type { SupportedLanguage, Translations } from './translations/types'
-import './ControlPanel.css'
-
-const MAX_SPEED = 125
-const DIAL_TICKS = Array.from({ length: 13 }, (_, index) => -120 + index * 20)
-
+import { Speedometer } from './Speedometer'
 export type ControlPanelProps = {
   t: Translations
   language: SupportedLanguage
@@ -39,220 +34,45 @@ export type ControlPanelProps = {
   onShowCardData: () => void
 }
 
-export function ControlPanel({
-  t,
-  language,
-  ignitionOn,
-  onIgnitionStart,
-  targetSpeed,
-  onTargetSpeedChange,
-  currentSpeed,
-  panelDateTime,
-  canDecrementHours,
-  canDecrementMinutes,
-  onAdjustHours,
-  onAdjustMinutes,
-  onApplyTime,
-  remoteDataDownloadActive,
-  onRemoteDataDownloadActiveChange,
-  isDriving,
-  onStopIgnition,
-  onStopDisabledClick,
-  stopDisabledMessage,
-  onReset,
-  onSimulate4h10m,
-  cardInserted,
-  isMultiManning,
-  onGenerateWorkWeek,
-  workWeekFileInputRef,
-  onWorkWeekFileChange,
-  onOpenWorkWeekData,
-  onSaveCard1ToFile,
-  onShowCardData,
-}: ControlPanelProps) {
-  const speedId = useId()
-  const displayedSpeed = Math.round(currentSpeed)
-  const speedZone = displayedSpeed > 90 ? 'red' : displayedSpeed > 80 ? 'orange' : 'normal'
-  const needleAngle = -120 + (240 * displayedSpeed) / MAX_SPEED
-  const [generateWorkWeekFlash, setGenerateWorkWeekFlash] = useState(false)
-  const handleGenerateWorkWeekClick = () => {
-    if (isMultiManning || ignitionOn) return
-    onGenerateWorkWeek()
-    setGenerateWorkWeekFlash(true)
-    setTimeout(() => setGenerateWorkWeekFlash(false), 400)
-  }
 
-  return (
-    <section className="dash" data-running={ignitionOn} aria-label={t.controls.simulationControlsTitle}>
-      <div className="dash-grid">
-        <section className="dash-module speed-group">
-          <h2 className="dash-label"><label htmlFor={speedId}>{t.ui.speedLabel}</label></h2>
-          <div className="dial" data-speed-zone={speedZone} style={{ '--needle': `${needleAngle}deg` } as CSSProperties}>
-            <div aria-hidden="true">
-              {DIAL_TICKS.map((angle, index) => (
-                <i
-                  key={angle}
-                  className={index % 3 === 0 ? 'tick major' : 'tick'}
-                  style={{ '--a': `${angle}deg` } as CSSProperties}
-                />
-              ))}
-              <i className="needle" />
-            </div>
-            <div className="dial-readout">
-              <b>{displayedSpeed}</b>
-              <small>km/h</small>
-            </div>
-          </div>
-          <input
-            id={speedId}
-            className="dash-speed-input"
-            type="range"
-            min={0}
-            max={MAX_SPEED}
-            value={targetSpeed}
-            data-overspeed={currentSpeed > 90}
-            disabled={!ignitionOn}
-            onChange={(e) => onTargetSpeedChange(Number(e.target.value))}
-          />
-          <div className="speed-scale" aria-hidden="true"><span>0</span><span>{MAX_SPEED} km/h</span></div>
-        </section>
-
-        <section className="dash-module ignition-group">
-          <h2 className="dash-label">{t.ui.ignitionLabel}</h2>
-          <div className="ignition-status" role="status">
-            {ignitionOn ? t.controls.ignitionOn : t.controls.ignitionOff}
-          </div>
-          <div className="dash-buttons">
-            <button
-              type="button"
-              className="start-key"
-              aria-pressed={ignitionOn}
-              onClick={onIgnitionStart}
-            >
-              START
-            </button>
-            <button
-              type="button"
-              className="stop-key"
-              aria-pressed={!ignitionOn}
-              aria-disabled={isDriving}
-              onClick={isDriving ? onStopDisabledClick : onStopIgnition}
-              title={isDriving ? t.ui.drivingCannotStop : t.ui.stopIgnition}
-            >
-              STOP
-            </button>
-          </div>
-          <p className="dash-stop-message" role="status">{stopDisabledMessage ? t.ui.drivingCannotStop : null}</p>
-          <button type="button" className="reset-key" onClick={onReset} title={t.ui.resetTitle}>
-            {t.ui.reset}
-          </button>
-          <label className="dash-check">
-            <input
-              type="checkbox"
-              checked={remoteDataDownloadActive}
-              onChange={(e) => onRemoteDataDownloadActiveChange(e.target.checked)}
-            />
-            <span>{t.ui.remoteDataDownloadActive}</span>
-          </label>
-        </section>
-
-        <section className="dash-module">
-          <h2 className="dash-label">{t.controls.simulationTime}</h2>
-          <time className="clock-face" dateTime={panelDateTime.toISOString()}>
-            <b>{panelDateTime.toLocaleTimeString(language, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })}</b>
-            <span>{panelDateTime.toLocaleDateString(language, { day: 'numeric', month: 'numeric', year: 'numeric' })}</span>
-          </time>
-          <div className="clock-adjust">
-            <button
-              type="button"
-              aria-label={t.ui.decrementHours}
-              disabled={!canDecrementHours}
-              onClick={() => onAdjustHours(-1)}
-              title={!canDecrementHours ? t.ui.cannotDecrementTime : t.ui.decrementHours}
-            >
-              −1 {t.controls.hourUnit}
-            </button>
-            <button type="button" aria-label={t.controls.incrementHours} onClick={() => onAdjustHours(1)}>
-              +1 {t.controls.hourUnit}
-            </button>
-            <button
-              type="button"
-              aria-label={t.ui.decrementMinutes}
-              disabled={!canDecrementMinutes}
-              onClick={() => onAdjustMinutes(-1)}
-              title={!canDecrementMinutes ? t.ui.cannotDecrementTime : t.ui.decrementMinutes}
-            >
-              −1 {t.controls.minuteUnit}
-            </button>
-            <button type="button" aria-label={t.controls.incrementMinutes} onClick={() => onAdjustMinutes(1)}>
-              +1 {t.controls.minuteUnit}
-            </button>
-          </div>
-          <div className="clock-adjust clock-presets">
-            {[15, 30, 45].map((minutes) => (
-              <button
-                type="button"
-                key={minutes}
-                aria-label={`+${minutes} ${t.controls.minuteUnit}`}
-                onClick={() => onAdjustMinutes(minutes)}
-              >
-                +{minutes}m
-              </button>
-            ))}
-          </div>
-          <button type="button" className="apply-key" onClick={onApplyTime} title={t.ui.applyTimeTitle}>
-            {t.controls.applyTime}
-          </button>
-        </section>
+export function ControlPanel(p: ControlPanelProps) {
+  const { t } = p
+  return <section className="dashboard" data-running={p.ignitionOn} aria-label={t.controls.simulationControlsTitle}>
+    <div className="dashboard-grid">
+      <section className="dash-module mode-module">
+        <h2>Simulační režim</h2>
+        <p className="mode-status"><i />{p.ignitionOn ? t.controls.ignitionOn : t.controls.ignitionOff}</p>
+        <div className="mode-keys">
+          <button className="start-key" aria-pressed={p.ignitionOn} onClick={p.onIgnitionStart}>▶︎ START</button>
+          <button className="stop-key" aria-pressed={!p.ignitionOn} aria-disabled={p.isDriving} title={p.isDriving ? t.ui.drivingCannotStop : t.ui.stopIgnition} onClick={p.isDriving ? p.onStopDisabledClick : p.onStopIgnition}>■ STOP</button>
+        </div>
+        {p.stopDisabledMessage && <p role="status" className="dash-warning">{t.ui.drivingCannotStop}</p>}
+      </section>
+      <section className="dash-module clock-module">
+        <h2>{t.controls.simulationTime}</h2>
+        <div className="dash-clock"><b>{p.panelDateTime.toLocaleTimeString(p.language, {hour:'2-digit', minute:'2-digit', second:'2-digit'})}</b><time>{p.panelDateTime.toLocaleDateString(p.language)}</time></div>
+        <div className="clock-adjust"><button disabled={!p.canDecrementHours} onClick={()=>p.onAdjustHours(-1)}>−1 h</button><button onClick={()=>p.onAdjustHours(1)}>+1 h</button><button disabled={!p.canDecrementMinutes} onClick={()=>p.onAdjustMinutes(-1)}>−1 min</button><button onClick={()=>p.onAdjustMinutes(1)}>+1 min</button></div>
+        <div className="clock-presets">{[15,30,45].map(m=><button key={m} onClick={()=>p.onAdjustMinutes(m)}>+{m}m</button>)}</div>
+        <button className="apply-time" onClick={p.onApplyTime} title={t.ui.applyTimeTitle}>✓ {t.controls.applyTime}</button>
+      </section>
+      <section className="dash-module speed-module">
+        <h2>{t.ui.speedLabel}</h2>
+        <Speedometer speed={p.currentSpeed}/>
+        <div className="speed-keys"><button aria-label="Snížit rychlost o 5 km/h" disabled={!p.ignitionOn || p.targetSpeed <= 0} onClick={()=>p.onTargetSpeedChange(Math.max(0,p.targetSpeed-5))}>−</button><span>Cíl {p.targetSpeed} km/h</span><button aria-label="Zvýšit rychlost o 5 km/h" disabled={!p.ignitionOn || p.targetSpeed >= 125} onClick={()=>p.onTargetSpeedChange(Math.min(125,p.targetSpeed+5))}>+</button></div>
+        <input aria-label="Cílová rychlost" type="range" min="0" max="125" value={p.targetSpeed} disabled={!p.ignitionOn} onChange={e=>p.onTargetSpeedChange(Number(e.target.value))}/>
+      </section>
+      <section className="dash-module reset-module"><button className="reset-key" onClick={p.onReset} title={t.ui.resetTitle}><span>⟲</span>{t.ui.reset}</button></section>
+    </div>
+    <details className="dash-extras"><summary>Data, scénáře a další nastavení</summary>
+      <label className="dash-check"><input type="checkbox" checked={p.remoteDataDownloadActive} onChange={e=>p.onRemoteDataDownloadActiveChange(e.target.checked)}/>{t.ui.remoteDataDownloadActive}</label>
+      <div className="dash-tool-buttons">
+        <button onClick={p.onSimulate4h10m} disabled={!p.ignitionOn || !p.cardInserted}>{t.ui.generate4h10mDriving}</button>
+        <button onClick={p.onGenerateWorkWeek} disabled={p.isMultiManning || p.ignitionOn}>{t.controls.generateWorkWeek}</button>
+        <button onClick={p.onOpenWorkWeekData}>{t.controls.openFromFile}</button>
+        <button onClick={p.onSaveCard1ToFile}>{t.controls.saveDataToFile}</button>
+        <button onClick={p.onShowCardData}>{t.controls.showCardData}</button>
       </div>
-
-      <div className="dash-tools">
-        <section className="dash-module">
-          <h2 className="dash-label">{t.controls.practiceScenarios}</h2>
-          <div className="dash-buttons">
-            <button
-              type="button"
-              onClick={onSimulate4h10m}
-              disabled={!ignitionOn || !cardInserted}
-              title={!cardInserted ? t.ui.simulate4h10mDisabledNoCardTitle : t.ui.simulate4h10mTitle}
-            >
-              {t.ui.generate4h10mDriving}
-            </button>
-            <button
-              type="button"
-              className={generateWorkWeekFlash ? 'dash-work-week-flash' : undefined}
-              onClick={handleGenerateWorkWeekClick}
-              disabled={isMultiManning || ignitionOn}
-              title={ignitionOn ? t.controls.generateWorkWeekDisabledIgnitionTitle : isMultiManning ? t.controls.generateWorkWeekDisabledTitle : t.controls.generateWorkWeekTitle}
-            >
-              {t.controls.generateWorkWeek}
-            </button>
-          </div>
-        </section>
-
-        <section className="dash-module">
-          <h2 className="dash-label">{t.controls.dataAndRecords}</h2>
-          <div className="dash-buttons">
-            <input
-              ref={workWeekFileInputRef}
-              type="file"
-              accept=".txt"
-              className="work-week-file-input-hidden"
-              onChange={onWorkWeekFileChange}
-              aria-hidden="true"
-            />
-            <button type="button" onClick={onOpenWorkWeekData} title={t.controls.openFromFileTitle}>
-              {t.controls.openFromFile}
-            </button>
-            <button type="button" onClick={onSaveCard1ToFile} title={t.controls.saveDataToFileTitle}>
-              {t.controls.saveDataToFile}
-            </button>
-            <button type="button" onClick={onShowCardData} title={t.controls.showCardDataTitle}>
-              {t.controls.showCardData}
-            </button>
-          </div>
-        </section>
-      </div>
-    </section>
-  )
+      <input ref={p.workWeekFileInputRef} type="file" accept=".txt" hidden onChange={p.onWorkWeekFileChange}/>
+    </details>
+  </section>
 }

@@ -7,6 +7,7 @@ import { clampMenuIndex, enterMenuRoot, enterSubmenu, leaveSubmenu, stepMenuInde
 import { createInitialCardInsertionState, activityFromChar, getNextActivity, getActivityCode, utcMsToSegment } from './CardLogic'
 import { EDITOR_FIELD_ORDER } from './CardLogic'
 import { getVirtualLocationForDistance } from './VirtualRoute'
+import { FaceplateFrame } from './FaceplateFrame'
 import { TachoDisplay } from './TachoDisplay'
 import type { SymbolMap } from './TachoTypes'
 import type {
@@ -161,7 +162,7 @@ export default function App() {
   const lastPanelAdjustmentMsRef = useRef<number>(0)
   const [nr165Dismissed, setNr165Dismissed] = useState(false)
   /** Sbalený stav infoboxů – úzký proužek s ikonami */
-  const [infoPanelsCollapsed, setInfoPanelsCollapsed] = useState(false)
+  const infoPanelsCollapsed = false
   /** Výstraha při pokusu o generování pracovního týdne, když na kartě již jsou data (překryv). */
   const [generateWorkWeekBlockedWarning, setGenerateWorkWeekBlockedWarning] = useState(false)
   /** Modal: pokus o zápis duplicitních dat na kartu */
@@ -289,6 +290,9 @@ export default function App() {
   /** Čas posledního vyjmutí karty (pro „Posled. vyjmutí“ v sekvenci vložení). */
   const [lastEjectionTimeBySlot, setLastEjectionTimeBySlot] = useState<{ 1: number | null; 2: number | null }>({ 1: null, 2: null })
   /** Která testovací karta je ve slotu 1/2 (null = prázdný). */
+  const [cardsOpen, setCardsOpen] = useState(false)
+  const [cardPickerSlot, setCardPickerSlot] = useState<1 | 2 | null>(null)
+  const [cardDragging, setCardDragging] = useState(false)
   const [card1Data, setCard1Data] = useState<CardData | null>(null)
   const [card2Data, setCard2Data] = useState<CardData | null>(null)
   /** Sekvence vložení karty (1M) – řízena useCardWizard */
@@ -1700,12 +1704,10 @@ export default function App() {
     setDragOverSlot(null)
   }, [])
 
-  const handleSlotDrop = useCallback((e: React.DragEvent, slot: 1 | 2) => {
-    e.preventDefault()
+  const insertCardIntoSlot = useCallback((cardId: string, slot: 1 | 2) => {
     if (!ignitionOn && !displayAwakeFromStandby) return
     if (slot === 1 && card1Data) return
     if (slot === 2 && card2Data) return
-    const cardId = (e.dataTransfer.getData('card') || e.dataTransfer.getData('text/plain'))
     if (cardId.startsWith('ddd:')) {
       const cardNumber = cardId.slice(4)
       const record = dddCardsRef.current[cardNumber]
@@ -1741,6 +1743,8 @@ export default function App() {
         setCardInsertionState(createInitialCardInsertionState(2, cardData, simulatedUtcTimeRef.current, countries, wizardOptions))
       }
       setDragOverSlot(null)
+      setCardsOpen(false)
+      setCardPickerSlot(null)
       return
     }
     const templateIdRaw = cardId as keyof typeof TEST_CARDS | ''
@@ -1748,6 +1752,7 @@ export default function App() {
     if (!template) return
 
     const templateId = templateIdRaw === 'zmizik' || templateIdRaw === 'novak' ? templateIdRaw : undefined
+    if ((slot === 1 ? card2Data : card1Data)?.templateId === templateId) return
     addEntry(`${t.actions.vlozeniKarty} ${template.surname ?? template.name} do slotu ${slot}`)
     const cardData = buildDroppedCardData({
       cardId: templateId === 'novak' ? 'novak' : 'zmizik',
@@ -1777,7 +1782,20 @@ export default function App() {
       setCardInsertionState(createInitialCardInsertionState(2, cardData, simulatedUtcTime, countries, { skipReadyToDriveScreen: skipReadyToDrive, initialCountryCode: gpsCountry, existingManualEntryBuffer: driver2ManualEntryBuffer }))
     }
     setDragOverSlot(null)
+    setCardsOpen(false)
+    setCardPickerSlot(null)
   }, [ignitionOn, displayAwakeFromStandby, simulatedUtcTime, timeOffsetMs, countries, card1Data, card2Data, driverCardStateByTemplateId, driver1ManualEntryBuffer, driver2ManualEntryBuffer, addEntry, setCardInsertionState, virtualLocation])
+
+  const handleSlotDrop = (e: React.DragEvent, slot: 1 | 2) => {
+    e.preventDefault()
+    setCardDragging(false)
+    insertCardIntoSlot(e.dataTransfer.getData('card') || e.dataTransfer.getData('text/plain'), slot)
+  }
+  const openCardPicker = (slot: 1 | 2) => {
+    if (slot === 1 ? card1Data : card2Data) return
+    setCardPickerSlot(slot)
+    setCardsOpen(true)
+  }
 
   const adjustHours = useCallback((delta: number) => {
     lastPanelAdjustmentMsRef.current = Date.now()
@@ -2481,6 +2499,8 @@ export default function App() {
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
+      // Native controls own their keys; do not navigate the tacho while editing speed.
+      if (e.target instanceof HTMLElement && e.target.closest('input, select, textarea, button, [role="button"], summary, [contenteditable="true"]')) return
       switch (e.key) {
         case 'ArrowUp':
           e.preventDefault()
@@ -2844,6 +2864,14 @@ export default function App() {
   return (
     <div>
     <div className="app-root" data-lang={language} style={{ minHeight: '100vh', background: '#444', display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-start', margin: 0, padding: 24, gap: 24 }}>
+      {cardsOpen && <button className="cards-dismiss" aria-label="Zavřít nabídku karet" onClick={() => {setCardsOpen(false);setCardPickerSlot(null)}}/>}
+      <aside className={`cards-drawer ${cardsOpen ? 'is-open' : ''} ${cardDragging ? 'is-dragging' : ''}`} aria-label="Karty řidičů"
+        onKeyDown={e => {if(e.key === 'Escape'){setCardsOpen(false);setCardPickerSlot(null)}}}
+        onDragStartCapture={() => setCardDragging(true)} onDragEndCapture={() => {setCardDragging(false);setCardsOpen(false)}}>
+        <div className="card-edge-tabs" onPointerEnter={e => {if(e.pointerType === 'mouse') setCardsOpen(true)}}>{([1,2] as const).map(n => <button key={n} aria-label={`Otevřít nabídku karty ${n}`} aria-expanded={cardsOpen} onClick={() => {setCardsOpen(true);setCardPickerSlot(null)}}><span>▥</span><b>{n}</b><small>KARTA</small></button>)}</div>
+        <div className="cards-drawer-content" hidden={!cardsOpen}>
+        <div className="cards-drawer-heading"><strong>{cardPickerSlot ? `Vložit kartu do slotu ${cardPickerSlot}` : 'Karty řidičů'}</strong><button onClick={() => {setCardsOpen(false);setCardPickerSlot(null)}} aria-label="Zavřít karty">×</button></div>
+        {!(ignitionOn || displayAwakeFromStandby) && <p className="cards-hint">Nejprve zapni zapalování tlačítkem START.</p>}
       <div className="control-panel-lang-left" style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
         <label htmlFor="lang-select" className="control-panel-label">{t.ui.language}</label>
         <select
@@ -2924,12 +2952,17 @@ export default function App() {
                     />
                   </div>
                 )}
+                {prepared && <div className="card-insert-actions">
+                  {insertedSlot ? <span>Vložena ve slotu {insertedSlot}</span> : (cardPickerSlot ? [cardPickerSlot] : [1,2] as const).map(slot => <button key={slot} disabled={!(ignitionOn || displayAwakeFromStandby) || !!(slot === 1 ? card1Data : card2Data)} onClick={() => insertCardIntoSlot(prepared.kind === 'virtual' ? prepared.templateId : `ddd:${prepared.cardNumber}`, slot as 1 | 2)}>Vložit do slotu {slot}</button>)}
+                </div>}
               </CardPrepMenu>
             )
           })}
           {dddInsertMessage && <p className="ddd-insert-message" role="alert">{dddInsertMessage}</p>}
         </div>
       </div>
+        </div>
+      </aside>
       <div className="device-column">
       <div className="vdo-with-toggle">
       <div
@@ -2951,7 +2984,7 @@ export default function App() {
         data-debug-driving-without-card-warning={String(drivingWithoutCardWarningActive)}
         data-debug-display-mode={displayMode}
       >
-        <div className="vdo-main-panel">
+        <FaceplateFrame><div className="vdo-main-panel vdo-realistic-panel">
           <div className="vdo-top-section">
             <div className="display-area" style={{ position: 'relative' }}>
               {showDebugPanel && (
@@ -3085,6 +3118,7 @@ export default function App() {
                   className="btn-nav"
                   onClick={handleBack}
                   title={t.ui.back}
+                  aria-label={t.ui.back}
                 >
                   {'\u21A9'}
                 </button>
@@ -3093,6 +3127,7 @@ export default function App() {
                   className="btn-nav"
                   onClick={() => { addEntry(t.actions.stiskNahoru); handleUp() }}
                   title={t.ui.up}
+                  aria-label={t.ui.up}
                 >
                   ▲
                 </button>
@@ -3101,6 +3136,7 @@ export default function App() {
                   className="btn-nav"
                   onClick={() => { addEntry(t.actions.stiskDolu); handleDown() }}
                   title={t.ui.down}
+                  aria-label={t.ui.down}
                 >
                   ▼
                 </button>
@@ -3109,6 +3145,7 @@ export default function App() {
                   className="btn-nav"
                   onClick={handleOK}
                   title={t.ui.confirm}
+                  aria-label={t.ui.confirm}
                 >
                   OK
                 </button>
@@ -3124,6 +3161,9 @@ export default function App() {
             <div className="card-slot-row">
               <div
                 ref={slot1Ref}
+                role="button" tabIndex={0} aria-label="Vybrat kartu pro slot 1"
+                onClick={() => openCardPicker(1)}
+                onKeyDown={e => {if(e.key === 'Enter' || e.key === ' '){e.preventDefault();openCardPicker(1)}}}
                 className={`slot-shaft-line slot-drop-zone ${!ignitionOn && !displayAwakeFromStandby ? 'slot-shaft-line-ignition-off' : ''} ${card1Data ? 'slot-drop-zone-occupied' : ''} ${dragOverSlot === 1 ? 'slot-drop-zone-highlight' : ''}`}
                 onDragOver={(e) => handleSlotDragOver(e, 1)}
                 onDragLeave={handleSlotDragLeave}
@@ -3137,6 +3177,7 @@ export default function App() {
                   onPointerDown={handleButton1PointerDown}
                   onPointerUp={handleButton1PointerUp}
                   title={t.ui.ejectBtn1Title}
+                  aria-label={t.ui.ejectBtn1Title}
                 >
                   <span className="btn-eject-icon">{'\u{1F464}'}</span>
                   <span className="btn-eject-num">1</span>
@@ -3147,6 +3188,7 @@ export default function App() {
                   onPointerDown={handleButton2PointerDown}
                   onPointerUp={handleButton2PointerUp}
                   title={t.ui.ejectBtn2Title}
+                  aria-label={t.ui.ejectBtn2Title}
                 >
                   <span className="btn-eject-icon">{'\u{1F464}'}</span>
                   <span className="btn-eject-num">2</span>
@@ -3154,6 +3196,9 @@ export default function App() {
               </div>
               <div
                 ref={slot2Ref}
+                role="button" tabIndex={0} aria-label="Vybrat kartu pro slot 2"
+                onClick={() => openCardPicker(2)}
+                onKeyDown={e => {if(e.key === 'Enter' || e.key === ' '){e.preventDefault();openCardPicker(2)}}}
                 className={`slot-shaft-line slot-drop-zone ${!ignitionOn && !displayAwakeFromStandby ? 'slot-shaft-line-ignition-off' : ''} ${card2Data ? 'slot-drop-zone-occupied' : ''} ${dragOverSlot === 2 ? 'slot-drop-zone-highlight' : ''}`}
                 onDragOver={(e) => handleSlotDragOver(e, 2)}
                 onDragLeave={handleSlotDragLeave}
@@ -3163,7 +3208,26 @@ export default function App() {
             </div>
           </div>
         </div>
-        <div className="vdo-labels">Continental VDO DTCO 4.1 G2V2 · lukas@zmizik.com</div>
+        </FaceplateFrame>
+        <div className="slot-tap-controls">{([1,2] as const).map(slot => {const card=slot === 1 ? card1Data : card2Data;return <button key={slot} disabled={!!card} onClick={() => openCardPicker(slot)}>Slot {slot} · {card ? card.surname || card.name : 'Vložit kartu'}</button>})}</div>
+
+      <div className={`info-panels-wrapper info-panels-wrapper--attached ${infoPanelsCollapsed ? 'info-panels-wrapper--collapsed' : ''}`}>
+          {infoPanelsCollapsed ? (
+            <div className="info-panels-strip">
+              <InfoPanel items={panelItems} resetTrigger={infoPanelResetTrigger} symbolMap={symbolMap} collapsed />
+              {showNr165Warning && !nr165Dismissed && (
+                <Nr165WarningBox onClose={() => setNr165Dismissed(true)} symbolMap={symbolMap} collapsed />
+              )}
+            </div>
+          ) : (
+            <div className="info-panels-stack">
+              <InfoPanel items={panelItems} resetTrigger={infoPanelResetTrigger} symbolMap={symbolMap} />
+              {showNr165Warning && !nr165Dismissed && (
+                <Nr165WarningBox onClose={() => setNr165Dismissed(true)} symbolMap={symbolMap} />
+              )}
+            </div>
+          )}
+        </div>
 
         <ControlPanel
           t={t}
@@ -3197,38 +3261,8 @@ export default function App() {
           onShowCardData={handleShowCardData}
         />
       </div>
-        <button
-          type="button"
-          className="info-panels-toggle info-panels-toggle--at-tacho"
-          onClick={() => setInfoPanelsCollapsed((c) => !c)}
-          aria-label={infoPanelsCollapsed ? t.ui.expandInfoboxes : t.ui.collapseInfoboxes}
-          aria-expanded={!infoPanelsCollapsed}
-        >
-          <span className="info-panels-toggle-arrow" data-collapsed={infoPanelsCollapsed}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M15 18l-6-6 6-6" />
-            </svg>
-          </span>
-        </button>
       </div>
-
-      <div className={`info-panels-wrapper info-panels-wrapper--attached ${infoPanelsCollapsed ? 'info-panels-wrapper--collapsed' : ''}`}>
-          {infoPanelsCollapsed ? (
-            <div className="info-panels-strip">
-              <InfoPanel items={panelItems} resetTrigger={infoPanelResetTrigger} symbolMap={symbolMap} collapsed />
-              {showNr165Warning && !nr165Dismissed && (
-                <Nr165WarningBox onClose={() => setNr165Dismissed(true)} symbolMap={symbolMap} collapsed />
-              )}
-            </div>
-          ) : (
-            <div className="info-panels-stack">
-              <InfoPanel items={panelItems} resetTrigger={infoPanelResetTrigger} symbolMap={symbolMap} />
-              {showNr165Warning && !nr165Dismissed && (
-                <Nr165WarningBox onClose={() => setNr165Dismissed(true)} symbolMap={symbolMap} />
-              )}
-            </div>
-          )}
-        </div>
+      <footer className="vdo-labels">Continental VDO DTCO 4.1 G2V2 · lukas@zmizik.com</footer>
       </div>
 
       {duplicateDataWarningOpen && (

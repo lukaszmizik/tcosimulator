@@ -1,6 +1,8 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
+import './realisticFaceplate.css'
+import './dashboard.css'
 import { ActionLogProvider } from './ActionLogContext'
 import { LanguageProvider } from './translations'
 import App from './App.tsx'

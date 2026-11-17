@@ -17,7 +17,6 @@ const INPUT_WAITING_PHASES: CardInsertionState['phase'][] = ['decision1M', 'manu
 export type CardInsertionDisplayProps = {
   symbolMap: SymbolMap | null
   cardInsertionState: CardInsertionState
-  isBlinking: boolean
   isMultiManning: boolean
   countries: CountryEntry[]
   spanishRegions: CountryEntry[]
@@ -33,7 +32,7 @@ export type CardInsertionDisplayProps = {
 }
 
 export function CardInsertionDisplay(props: CardInsertionDisplayProps) {
-  const { symbolMap, cardInsertionState: cs, isBlinking, isMultiManning, countries, spanishRegions, lastEjectionTimeBySlot, localTime, timeStr, currentSpeed, odometerKm, card1Inserted, card2Inserted, leftActivityId, rightActivityId } = props
+  const { symbolMap, cardInsertionState: cs, isMultiManning, countries, spanishRegions, lastEjectionTimeBySlot, localTime, timeStr, currentSpeed, odometerKm, card1Inserted, card2Inserted, leftActivityId, rightActivityId } = props
   const cardName = cs.cardName
 
   if (cs.phase === 'welcome') {
@@ -143,7 +142,7 @@ export function CardInsertionDisplay(props: CardInsertionDisplayProps) {
     const seg = cs.currentSegment
     const start = cs.segmentStart
     const actSym = ACTIVITY_SYMBOLS.find((a) => a.id === seg.activityId)
-    const blinkHide = (field: typeof cs.editorBlinkField) => (field === cs.editorBlinkField && isBlinking ? ' lcd-blink-hide' : '')
+    const blinkField = (field: typeof cs.editorBlinkField) => field === cs.editorBlinkField ? ' lcd-field-blink' : ''
     const isStandardActivity = ['REST', 'WORK', 'AVAILABILITY', 'UNKNOWN'].includes(seg.activityId)
     return (
       <div className="lcd-two-rows lcd-card-insertion">
@@ -169,7 +168,7 @@ export function CardInsertionDisplay(props: CardInsertionDisplayProps) {
         <div className="lcd-row lcd-row-left">
           {isStandardActivity ? (
             <span className="lcd-l2-editor-content">
-              <span className={`lcd-l2-symbol ${blinkHide('activity')}`}>
+              <span className={`lcd-l2-symbol${blinkField('activity')}`}>
                 {seg.activityId === 'UNKNOWN' ? (
                   <span className="lcd-display-font">?</span>
                 ) : (
@@ -177,22 +176,22 @@ export function CardInsertionDisplay(props: CardInsertionDisplayProps) {
                 )}
               </span>
               <span className="lcd-l2-space" />
-              <span className={`lcd-l2-num ${blinkHide('day')}`}>{String(seg.day).padStart(2, '0')}</span>
+              <span className={`lcd-l2-num${blinkField('day')}`}>{String(seg.day).padStart(2, '0')}</span>
               <span className="lcd-l2-sep">.</span>
-              <span className={`lcd-l2-num ${blinkHide('month')}`}>{String(seg.month).padStart(2, '0')}</span>
+              <span className={`lcd-l2-num${blinkField('month')}`}>{String(seg.month).padStart(2, '0')}</span>
               <span className="lcd-l2-sep">.</span>
-              <span className={`lcd-l2-num lcd-l2-year ${blinkHide('year')}`}>{seg.year}</span>
+              <span className={`lcd-l2-num lcd-l2-year${blinkField('year')}`}>{seg.year}</span>
               <span className="lcd-l2-space lcd-l2-space-big" />
-              <span className={`lcd-l2-num ${blinkHide('hour')}`}>{String(seg.hour).padStart(2, '0')}</span>
+              <span className={`lcd-l2-num${blinkField('hour')}`}>{String(seg.hour).padStart(2, '0')}</span>
               <span className="lcd-l2-sep">:</span>
-              <span className={`lcd-l2-num ${blinkHide('minute')}`}>{String(seg.minute).padStart(2, '0')}</span>
+              <span className={`lcd-l2-num${blinkField('minute')}`}>{String(seg.minute).padStart(2, '0')}</span>
             </span>
           ) : seg.activityId === 'START_COUNTRY' ? (
-            <span className={`lcd-l2-country-text${blinkHide('activity')}`}>
+            <span className={`lcd-l2-country-text${blinkField('activity')}`}>
               {parseSymbols('(37)(36)?\u00A0výchozí země', symbolMap)}
             </span>
           ) : seg.activityId === 'END_COUNTRY' ? (
-            <span className={`lcd-l2-country-text${blinkHide('activity')}`}>
+            <span className={`lcd-l2-country-text${blinkField('activity')}`}>
               {parseSymbols('(41)(37)? cílová země', symbolMap)}
             </span>
           ) : null}
@@ -230,7 +229,7 @@ export function CardInsertionDisplay(props: CardInsertionDisplayProps) {
         <div className="lcd-row lcd-row-left">{slotNum} Publikovat</div>
         <div className="lcd-row lcd-decision-1m-row">
           <span>ITS data?</span>
-          <span className={`lcd-decision-1m-blink ${isBlinking ? 'lcd-blink-hide' : ''}`}>{cs.itsYes ? 'ano' : 'ne'}</span>
+          <span className="lcd-decision-1m-blink">{cs.itsYes ? 'ano' : 'ne'}</span>
         </div>
       </div>
     )
@@ -243,7 +242,7 @@ export function CardInsertionDisplay(props: CardInsertionDisplayProps) {
         <div className="lcd-row lcd-row-left">{slotNum} Publikovat</div>
         <div className="lcd-row lcd-decision-1m-row">
           <span>VDO data?</span>
-          <span className={`lcd-decision-1m-blink ${isBlinking ? 'lcd-blink-hide' : ''}`}>{cs.vdoYes ? 'ano' : 'ne'}</span>
+          <span className="lcd-decision-1m-blink">{cs.vdoYes ? 'ano' : 'ne'}</span>
         </div>
       </div>
     )

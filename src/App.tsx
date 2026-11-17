@@ -333,8 +333,6 @@ export default function App() {
   const [dddCards, setDddCards] = useState<Record<string, DddCardRecord>>({})
   const dddCardsRef = useRef(dddCards)
   dddCardsRef.current = dddCards
-  /** Blikání v manuálním editoru – přepíná každých 500 ms. */
-  const [isBlinking, setIsBlinking] = useState(false)
   /** Seznam zemí z countries.txt (nebo fallback). */
   const [countries, setCountries] = useState<CountryEntry[]>(FALLBACK_COUNTRY_LIST)
   /** Regiony Španělska (pod „regions:“ v countries.txt). */
@@ -528,11 +526,6 @@ export default function App() {
   useEffect(() => {
     if (currentSpeed === 0) setEjectionBlockedWarningActive(false)
   }, [currentSpeed])
-
-  useEffect(() => {
-    const id = setInterval(() => setIsBlinking((b) => !b), 500)
-    return () => clearInterval(id)
-  }, [])
 
   useEffect(() => {
     loadCountries().then(({ countries: c, spanishRegions: r }) => {
@@ -2555,7 +2548,6 @@ export default function App() {
     printWizardState,
     printStartedToastUntil: printState.printStartedToastUntil,
     displayMode,
-    isBlinking,
     isMultiManning,
     timeStr,
     currentSpeed,

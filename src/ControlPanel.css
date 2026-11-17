@@ -173,6 +173,7 @@
 .clock-face span { font-size: .76rem; color: var(--muted); }
 .clock-adjust { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; margin: 7px 0; }
 .clock-adjust button { padding: 4px; }
+.clock-presets { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .dash .apply-key { width: 100%; color: #11212c; background: var(--blue); border-color: var(--blue); }
 .dash .apply-key:hover:not(:disabled):not([aria-disabled="true"]) { background: #bbebff; }
 .dash-tools { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 10px; margin-top: 10px; }

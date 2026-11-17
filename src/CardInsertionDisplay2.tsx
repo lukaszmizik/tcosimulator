@@ -9,7 +9,7 @@ import type { CountryEntry } from './data/countriesLoader'
 import type { SymbolMap, TachoState } from './TachoTypes'
 import { ACTIVITY_SYMBOLS, SPECIAL_SYMBOLS } from './TachoTypes'
 import { parseSymbols, getIconChar, TachoIcon, TACHO_FONT } from './Symbols'
-import { getActivityCode } from './CardLogic'
+import { getActivityCode, utcMsToSegment } from './CardLogic'
 
 export type CardInsertionDisplay2Props = {
   symbolMap: SymbolMap | null
@@ -20,6 +20,7 @@ export type CardInsertionDisplay2Props = {
   spanishRegions: CountryEntry[]
   lastEjectionTimeBySlot: { 1: number | null; 2: number | null }
   localTime: Date
+  timeOffsetMs?: number
   timeStr: string
   currentSpeed: number
   odometerKm: number
@@ -31,7 +32,7 @@ export type CardInsertionDisplay2Props = {
 
 /** Zobrazení – shodné s CardWizard (L1, L2, symboly, kurzor) */
 export function CardInsertionDisplay2(props: CardInsertionDisplay2Props) {
-  const { symbolMap, cardInsertionState: cs, isBlinking, isMultiManning, countries, spanishRegions, lastEjectionTimeBySlot, localTime, timeStr, currentSpeed, odometerKm, card1Inserted, card2Inserted, leftActivityId, rightActivityId } = props
+  const { symbolMap, cardInsertionState: cs, isBlinking, isMultiManning, countries, spanishRegions, lastEjectionTimeBySlot, localTime, timeOffsetMs = 0, timeStr, currentSpeed, odometerKm, card1Inserted, card2Inserted, leftActivityId, rightActivityId } = props
   const { t } = useLanguage()
   /** Ve fázích načítání (welcome, loading) se zobrazuje pouze příjmení. */
   const displayName = cs.phase === 'welcome' || cs.phase === 'loading' ? (cs.cardSurname ?? cs.cardName) : cs.cardName
@@ -102,9 +103,9 @@ export function CardInsertionDisplay2(props: CardInsertionDisplay2Props) {
 
   if (cs.phase === 'lastRemoval') {
     const last = cs.lastWithdrawal ?? (cs.slot === 1 ? lastEjectionTimeBySlot[1] : lastEjectionTimeBySlot[2])
-    const d = last != null ? new Date(last) : localTime
-    const dateStr = d.toLocaleDateString('cs-CZ', { day: '2-digit', month: '2-digit', year: 'numeric' })
-    const timeStrLast = d.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })
+    const shown = utcMsToSegment(last != null ? last + timeOffsetMs : localTime.getTime())
+    const dateStr = `${String(shown.day).padStart(2, '0')}.${String(shown.month).padStart(2, '0')}.${shown.year}`
+    const timeStrLast = `${String(shown.hour).padStart(2, '0')}:${String(shown.minute).padStart(2, '0')}`
     return (
       <div className="lcd-two-rows lcd-card-insertion">
         <div className="lcd-row lcd-row-left">{t.cardWizard.lastRemoval}</div>

@@ -63,6 +63,7 @@ export type TachoDisplayProps = {
   spanishRegions: CountryEntry[]
   lastEjectionTimeBySlot: { 1: number | null; 2: number | null }
   localTime: Date
+  timeOffsetMs?: number
   currentMenu: MenuNode | null
   selectedItem: MenuItem | null
   currentMenuId: string
@@ -210,6 +211,7 @@ export function TachoDisplay(props: TachoDisplayProps) {
         spanishRegions={props.spanishRegions}
         lastEjectionTimeBySlot={props.lastEjectionTimeBySlot}
         localTime={props.localTime}
+        timeOffsetMs={props.timeOffsetMs ?? 0}
         timeStr={props.timeStr}
         currentSpeed={props.currentSpeed}
         odometerKm={props.odometerKm}

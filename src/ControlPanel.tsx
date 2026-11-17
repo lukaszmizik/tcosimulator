@@ -188,6 +188,18 @@ export function ControlPanel({
               +1 {t.controls.minuteUnit}
             </button>
           </div>
+          <div className="clock-adjust clock-presets">
+            {[15, 30, 45].map((minutes) => (
+              <button
+                type="button"
+                key={minutes}
+                aria-label={`+${minutes} ${t.controls.minuteUnit}`}
+                onClick={() => onAdjustMinutes(minutes)}
+              >
+                +{minutes}m
+              </button>
+            ))}
+          </div>
           <button type="button" className="apply-key" onClick={onApplyTime} title={t.ui.applyTimeTitle}>
             {t.controls.applyTime}
           </button>

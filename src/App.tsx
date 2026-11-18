@@ -3211,8 +3211,8 @@ export default function App() {
           onOpenWorkWeekData={handleOpenWorkWeekData}
           onSaveCard1ToFile={handleSaveCard1ToFile}
           onShowCardData={handleShowCardData}
+          printVehicleSettings={<PrintVehicleSettings profile={printVehicleProfile} onSave={setPrintVehicleProfile} />}
         />
-        <PrintVehicleSettings profile={printVehicleProfile} onSave={setPrintVehicleProfile} />
       </div>
         <button
           type="button"
@@ -3274,6 +3274,7 @@ export default function App() {
         )}
         eventLog={eventLog}
         odometerKm={odometerKm}
+        vehicleProfile={printVehicleProfile}
         dailyDriverCard={(slot) => {
           const card = slot === 1 ? card1Data : card2Data
           const imported = slot === 1 ? insertedSlot1 : insertedSlot2

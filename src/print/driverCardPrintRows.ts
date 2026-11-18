@@ -22,12 +22,12 @@ const locationSymbols: Record<string, number> = {
 }
 const pad = (n: number) => String(n).padStart(2, '0')
 
-function time(ms: number): string {
+export function printTimeUtc(ms: number): string {
   const date = new Date(ms)
   return `${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`
 }
 
-function date(ms: number): string {
+export function printDateUtc(ms: number): string {
   const value = new Date(ms)
   return `${pad(value.getUTCDate())}.${pad(value.getUTCMonth() + 1)}.${value.getUTCFullYear()}`
 }
@@ -45,6 +45,17 @@ function divider(...symbols: PrintCell[]): PrintRow {
   const middle = cells(symbols)
   const left = Math.floor((columns - middle.length) / 2)
   return [...Array<string>(left).fill('-'), ...middle, ...Array<string>(columns - left - middle.length).fill('-')]
+}
+
+export function createPrintRows() {
+  const rows: PrintRow[] = []
+  const add = (...parts: PrintCell[]) => {
+    const line = cells(parts)
+    for (let start = 0; start < line.length; start += columns) rows.push(line.slice(start, start + columns))
+  }
+  const separator = (...parts: PrintCell[]) => rows.push(divider(...parts))
+
+  return { rows, add, separator }
 }
 
 function kilometers(km: number): string {
@@ -83,13 +94,8 @@ export function buildDriverCardPrintRows(input: DailyCardPrintInput): PrintRow[]
   const from = day.dayStartMs
   const to = Math.min(day.dayEndMs, printedAtUtc)
   const inDay = (at: number) => at >= from && at < to
-  const stamp = (at: number) => time(at + offset)
-  const rows: PrintRow[] = []
-  const add = (...parts: PrintCell[]) => {
-    const line = cells(parts)
-    for (let start = 0; start < line.length; start += columns) rows.push(line.slice(start, start + columns))
-  }
-  const separator = (...parts: PrintCell[]) => rows.push(divider(...parts))
+  const stamp = (at: number) => printTimeUtc(at + offset)
+  const { rows, add, separator } = createPrintRows()
 
   function addHolder(data: ReturnType<typeof holder>, icon: number) {
     separator(icon)
@@ -103,12 +109,12 @@ export function buildDriverCardPrintRows(input: DailyCardPrintInput): PrintRow[]
     separator()
     add('!!! No legal printout!!!')
     const end = day.dayEndMs
-    add(36, ' ', date(from + offset), ' ', stamp(from))
-    add(41, ' ', date(end + offset), ' ', stamp(end))
+    add(36, ' ', printDateUtc(from + offset), ' ', stamp(from))
+    add(41, ' ', printDateUtc(end + offset), ' ', stamp(end))
     add(`UTC ${offset < 0 ? '-' : '+'}${duration(Math.abs(offset))}`)
     separator()
   }
-  add(18, ' ', date(printedAtUtc + offset), ' ', stamp(printedAtUtc), input.isUtc ? ' (UTC)' : ' (LOC)')
+  add(18, ' ', printDateUtc(printedAtUtc + offset), ' ', stamp(printedAtUtc), input.isUtc ? ' (UTC)' : ' (LOC)')
   separator(18)
   const generation = imported ? imported.generation : 'GEN2 v2'
   if (generation) add('         ', generation)
@@ -134,12 +140,12 @@ export function buildDriverCardPrintRows(input: DailyCardPrintInput): PrintRow[]
   if (control && control.atUtc <= printedAtUtc) {
     separator(4)
     add(4, 14, ' ', control.cardNumber)
-    add(4, ' ', date(control.atUtc + offset), ' ', stamp(control.atUtc))
+    add(4, ' ', printDateUtc(control.atUtc + offset), ' ', stamp(control.atUtc))
   }
 
   separator(14)
   const dailyRecord = imported?.printDays?.[new Date(from).toISOString().slice(0, 10)]
-  add('   ', date(from), dailyRecord?.presence == null ? '' : ` ${dailyRecord.presence}`)
+  add('   ', printDateUtc(from), dailyRecord?.presence == null ? '' : ` ${dailyRecord.presence}`)
   const uses = (imported?.vehicleUses ?? [])
     .filter((use) => use.fromUtc < to && use.toUtc > from)
     .sort((a, b) => a.fromUtc - b.fromUtc)
@@ -249,7 +255,7 @@ export function buildDriverCardPrintRows(input: DailyCardPrintInput): PrintRow[]
   add(2, 2, ' ', duration(crew))
 
   function addIncident(incident: DddCardIncident, icon: number) {
-    add(icon, ' ', date(incident.fromUtc + offset), ' ', stamp(incident.fromUtc))
+    add(icon, ' ', printDateUtc(incident.fromUtc + offset), ' ', stamp(incident.fromUtc))
     add('  ', incident.typeLabel)
     if (incident.toUtc != null) add('  ', duration(incident.toUtc - incident.fromUtc))
     if (incident.registration) add(24, ' ', incident.registration)

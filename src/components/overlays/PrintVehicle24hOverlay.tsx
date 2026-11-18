@@ -5,6 +5,7 @@
 import { Print24hVehicleSVG } from '../../PrintTemplates'
 import type { SymbolMap } from '../../TachoTypes'
 import type { SecondActivitySnapshot } from '../../TachoTypes'
+import { PrintPreview } from './PrintPreview'
 import type { Translations } from '../../translations/types'
 
 export type PrintVehicle24hOverlayProps = {
@@ -33,17 +34,14 @@ export function PrintVehicle24hOverlay({
   if (!open) return null
 
   return (
-    <div className="print-driver1-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label={t.ui.printVehicle24hTitle}>
-      <button type="button" className="print-overlay-close" onClick={onClose} aria-label={t.printOverlay.close}>×</button>
-      <div className="print-driver1-paper" onClick={(e) => e.stopPropagation()}>
-        <Print24hVehicleSVG
-          dateUtc={printVehicle24hSelectedDate ?? simulatedUtcTime}
-          odometerKm={odometerKm}
-          secondHistory={secondHistory}
-          symbolMap={symbolMap}
-          isUtc={printVehicle24hIsUtc}
-        />
-      </div>
-    </div>
+    <PrintPreview title={t.ui.printVehicle24hTitle} closeLabel={t.printOverlay.close} onClose={onClose} ready={!!symbolMap?.[18]}>
+      <Print24hVehicleSVG
+        dateUtc={printVehicle24hSelectedDate ?? simulatedUtcTime}
+        odometerKm={odometerKm}
+        secondHistory={secondHistory}
+        symbolMap={symbolMap}
+        isUtc={printVehicle24hIsUtc}
+      />
+    </PrintPreview>
   )
 }

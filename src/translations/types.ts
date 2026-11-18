@@ -214,6 +214,7 @@ export type Translations = {
     recordedLocationTypes: Record<string, string>
   }
   controls: {
+    dataScenariosSettings: string
     generateWorkWeek: string
     generateWorkWeekTitle: string
     generateWorkWeekDisabledTitle: string
@@ -231,6 +232,7 @@ export type Translations = {
     simulationControlsHint: string
   }
   printOverlay: {
+    driverCard24hTitle: string
     driver1Title: string
     basicInfo: string
     name: string

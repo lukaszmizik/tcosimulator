@@ -3,7 +3,7 @@
  * Extrahováno z App.tsx pro zlepšení udržovatelnosti.
  */
 
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import type { Translations } from './translations/types'
 
 export type ControlPanelProps = {
@@ -39,6 +39,7 @@ export type ControlPanelProps = {
   onOpenWorkWeekData: () => void
   onSaveCard1ToFile: () => void
   onShowCardData: () => void
+  printVehicleSettings?: ReactNode
 }
 
 export function ControlPanel({
@@ -72,6 +73,7 @@ export function ControlPanel({
   onOpenWorkWeekData,
   onSaveCard1ToFile,
   onShowCardData,
+  printVehicleSettings,
 }: ControlPanelProps) {
   const [generateWorkWeekFlash, setGenerateWorkWeekFlash] = useState(false)
   const handleGenerateWorkWeekClick = () => {
@@ -156,16 +158,6 @@ export function ControlPanel({
         </div>
       </div>
 
-      <div className="control-panel-section">
-        <label className="control-panel-checkbox-label">
-          <input
-            type="checkbox"
-            checked={remoteDataDownloadActive}
-            onChange={(e) => onRemoteDataDownloadActiveChange(e.target.checked)}
-          />
-          <span>{t.ui.remoteDataDownloadActive}</span>
-        </label>
-      </div>
       <div className="control-panel-section ignition-section">
         <div className="control-panel-label">{t.ui.ignitionLabel}</div>
         <div className="ignition-buttons">
@@ -208,6 +200,21 @@ export function ControlPanel({
           >
             {t.ui.reset}
           </button>
+        </div>
+      </div>
+      <details className="control-panel-extras" onKeyDown={(event) => event.stopPropagation()}>
+        <summary>{t.controls.dataScenariosSettings}</summary>
+        <div className="control-panel-section">
+          <label className="control-panel-checkbox-label">
+            <input
+              type="checkbox"
+              checked={remoteDataDownloadActive}
+              onChange={(e) => onRemoteDataDownloadActiveChange(e.target.checked)}
+            />
+            <span>{t.ui.remoteDataDownloadActive}</span>
+          </label>
+        </div>
+        <div className="control-panel-extra-actions">
           <button
             type="button"
             className={`control-btn control-btn-simulate ${!ignitionOn || !cardInserted ? 'control-slider-disabled' : ''}`}
@@ -259,7 +266,8 @@ export function ControlPanel({
             {t.controls.showCardData}
           </button>
         </div>
-      </div>
+        {printVehicleSettings}
+      </details>
     </div>
   )
 }

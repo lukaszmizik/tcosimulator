@@ -319,17 +319,17 @@ export const SPECIAL_SYMBOLS = {
 
 export const MAX_MANUAL_ACTIVITIES = 6
 
-/** Karta Lukas Zmizik – lastWithdrawal se načítá z úložiště karty, při prvním vložení null. */
+/** Virtuální karta 1 – lastWithdrawal se načítá z úložiště karty, při prvním vložení null. */
 export const TEST_CARD_ZMIZIK: CardData = {
-  name: 'Lukas Zmizik',
-  surname: 'Zmizik',
+  name: 'Alois Nebel',
+  surname: 'Nebel',
   lastWithdrawal: null,
 }
 
-/** Karta Roman Milewski – lastWithdrawal se načítá z úložiště karty, při prvním vložení null. */
+/** Virtuální karta 2 – lastWithdrawal se načítá z úložiště karty, při prvním vložení null. */
 export const TEST_CARD_NOVAK: CardData = {
-  name: 'Roman Milewski',
-  surname: 'Milewski',
+  name: 'Albert Einstein',
+  surname: 'Einstein',
   lastWithdrawal: null,
 }
 

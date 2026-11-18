@@ -19,11 +19,8 @@ export type BuildDroppedCardDataInput = {
   card2StoredLastWithdrawal: number | null
   /** Okamžik, který handler dřív četl jako new Date() pro výchozí vyjmutí. */
   now: Date
-  slot: 1 | 2
   otherCard: CardData | null
   driverState: DroppedCardDriverState | undefined
-  driver1Name: string
-  driver2Name: string
 }
 
 export function buildDroppedCardData(input: BuildDroppedCardDataInput): CardData {
@@ -33,11 +30,8 @@ export function buildDroppedCardData(input: BuildDroppedCardDataInput): CardData
     card1StoredLastWithdrawal,
     card2StoredLastWithdrawal,
     now,
-    slot,
     otherCard,
     driverState,
-    driver1Name,
-    driver2Name,
   } = input
 
   const templateId = cardId === 'zmizik' || cardId === 'novak' ? cardId : undefined
@@ -53,16 +47,13 @@ export function buildDroppedCardData(input: BuildDroppedCardDataInput): CardData
     d.setSeconds(0, 0)
     lastWithdrawal = d.getTime()
   }
-  let name = template.name
   if (otherCard) {
     lastWithdrawal = otherCard.lastWithdrawal
-    name = slot === 2 ? driver2Name : driver1Name
   }
 
   return {
     ...template,
     lastWithdrawal,
-    name,
     templateId,
     isFirstInsertion: driverState?.isFirstInsertion ?? true,
     itsConsent: driverState?.itsConsent,

@@ -56,7 +56,6 @@ import { useCardWizard2 } from './CardWizard2'
 import { useActionLog } from './ActionLogContext'
 import * as WorkShift from './WorkShift'
 import {
-  loadCard1ActivityHistory,
   saveCard1ActivityHistory,
   loadCard1LastWithdrawal,
   saveCard1LastWithdrawal,
@@ -92,7 +91,7 @@ import {
   loadTachographCardActivityHistoryByTemplateId,
 } from './data/tachograph_write_data'
 import { generateRandomWorkWeek } from './MockDataGenerator'
-import { exportWorkWeekToTxt, workWeekToTxtString, simulatorToGraphData } from './workWeekExportTxt'
+import { workWeekToTxtString, simulatorToGraphData } from './workWeekExportTxt'
 import { parseWorkWeekTxt, activitiesByDay, expandToWeeksContainingData, type DayData, type CountryMarker } from './workWeekTxtParser'
 import { WorkWeekGraphView } from './WorkWeekGraphView'
 import { InsertedCardsHistory } from './InsertedCardsHistory'
@@ -111,6 +110,7 @@ import { parseSymbols } from './Symbols'
 import { isWarningCode } from './data/warnings'
 import { useLanguage } from './translations'
 import { ControlPanel } from './ControlPanel'
+import { VirtualCardNameSettings, loadVirtualCardNames, virtualCardTemplate } from './VirtualCardNameSettings'
 import { PrintVehicleSettings } from './components/PrintVehicleSettings'
 import { loadPrintVehicleProfile } from './data/printVehicleProfile'
 import { DriverCardVisual } from './DriverCardVisual'
@@ -144,6 +144,7 @@ export { TEST_CARDS }
 export default function App() {
   const { addEntry } = useActionLog()
   const { t, language, setLanguage } = useLanguage()
+  const [virtualCardNames, setVirtualCardNames] = useState(loadVirtualCardNames)
   const menusById = useMemo(() => applyMenuTranslations(buildMenusById(), t), [t])
   const [symbolMap, setSymbolMap] = useState<SymbolMap | null>(null)
   const [displayMode, setDisplayMode] = useState<'operating' | 'menu'>('operating')
@@ -336,7 +337,6 @@ export default function App() {
     lastWithdrawalUtc?: number | null
     card2Data?: { days: DayData[]; countryMarkers: CountryMarker[]; manualEntryBuffer?: ManualEntrySegment[]; lastWithdrawalUtc?: number | null }
   } | null>(null)
-  const workWeekFileInputRef = useRef<HTMLInputElement>(null)
   const [dddPreview, setDddPreview] = useState<DddCardPreview | null>(null)
   const [dddPreviewOpen, setDddPreviewOpen] = useState(false)
   const [cardGraphsWindowOpen, setCardGraphsWindowOpen] = useState(false)
@@ -1782,24 +1782,19 @@ export default function App() {
       setCardPickerSlot(null)
       return
     }
-    const templateIdRaw = cardId as keyof typeof TEST_CARDS | ''
-    const template = templateIdRaw && TEST_CARDS[templateIdRaw] ? TEST_CARDS[templateIdRaw] : null
-    if (!template) return
-
-    const templateId = templateIdRaw === 'zmizik' || templateIdRaw === 'novak' ? templateIdRaw : undefined
+    if (cardId !== 'zmizik' && cardId !== 'novak') return
+    const templateId = cardId
+    const template = virtualCardTemplate(templateId, virtualCardNames)
     if ((slot === 1 ? card2Data : card1Data)?.templateId === templateId) return
     addEntry(`${t.actions.vlozeniKarty} ${template.surname ?? template.name} do slotu ${slot}`)
     const cardData = buildDroppedCardData({
-      cardId: templateId === 'novak' ? 'novak' : 'zmizik',
+      cardId: templateId,
       template,
       card1StoredLastWithdrawal: loadCard1LastWithdrawal(),
       card2StoredLastWithdrawal: loadCard2LastWithdrawal(),
       now: new Date(),
-      slot,
       otherCard: slot === 1 ? card2Data : card1Data,
       driverState: (templateId && driverCardStateByTemplateId[templateId]) ?? undefined,
-      driver1Name: t.ui.driver1,
-      driver2Name: t.ui.driver2,
     })
     lastCardInsertionKeyPressRef.current = Date.now()
     const skipReadyToDrive = !ignitionOn && displayAwakeFromStandby
@@ -1820,7 +1815,7 @@ export default function App() {
     setDragOverSlot(null)
     setCardsOpen(false)
     setCardPickerSlot(null)
-  }, [ignitionOn, displayAwakeFromStandby, simulatedUtcTime, timeOffsetMs, countries, card1Data, card2Data, driverCardStateByTemplateId, driver1ManualEntryBuffer, driver2ManualEntryBuffer, addEntry, setCardInsertionState, virtualLocation])
+  }, [ignitionOn, displayAwakeFromStandby, simulatedUtcTime, timeOffsetMs, countries, card1Data, card2Data, driverCardStateByTemplateId, driver1ManualEntryBuffer, driver2ManualEntryBuffer, addEntry, setCardInsertionState, virtualLocation, virtualCardNames])
 
   const handleSlotDrop = (e: React.DragEvent, slot: 1 | 2) => {
     e.preventDefault()
@@ -2292,33 +2287,6 @@ export default function App() {
       refMs,
     }))
   }, [activityHistory, cardActivityHistoryByTemplateId, driver1ManualEntryBuffer, driver2ManualEntryBuffer, card1Data, card2Data, dddCards])
-
-  const handleOpenWorkWeekData = useCallback(() => {
-    workWeekFileInputRef.current?.click()
-  }, [])
-
-  const handleWorkWeekFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => {
-      const txt = typeof reader.result === 'string' ? reader.result : ''
-      try {
-        const parsed = parseWorkWeekTxt(txt)
-        const days = activitiesByDay(parsed.activities)
-        setWorkWeekGraphData({ days, countryMarkers: parsed.countryMarkers })
-      } catch {
-        setWorkWeekGraphData({ days: [], countryMarkers: [] })
-      }
-    }
-    reader.readAsText(file, 'utf-8')
-    e.target.value = ''
-  }, [])
-
-  const handleSaveCard1ToFile = useCallback(() => {
-    const activityHistory = loadCard1ActivityHistory()
-    exportWorkWeekToTxt(activityHistory, driver1ManualEntryBuffer, 1)
-  }, [driver1ManualEntryBuffer])
 
   const handleReset = useCallback(() => {
     setTargetSpeed(0)
@@ -2954,10 +2922,10 @@ export default function App() {
                 onRemove={() => handleRemovePreparedCard(index)}
               >
                 {templateId && (
-                  <div data-prep-holder={TEST_CARDS[templateId].surname} data-inserted-slot={insertedSlot ?? ''}>
+                  <div data-prep-holder={virtualCardTemplate(templateId, virtualCardNames).surname} data-inserted-slot={insertedSlot ?? ''}>
                     <DriverCardVisual
                       cardId={templateId}
-                      data={card1Data?.templateId === templateId ? card1Data : card2Data?.templateId === templateId ? card2Data : TEST_CARDS[templateId]}
+                      data={card1Data?.templateId === templateId ? card1Data : card2Data?.templateId === templateId ? card2Data : virtualCardTemplate(templateId, virtualCardNames)}
                       insertedSlot={insertedSlot}
                       draggable={insertedSlot == null && ignitionOn}
                       onDragStart={(event) => handleCardDragStart(event, templateId)}
@@ -3283,11 +3251,8 @@ export default function App() {
           cardInserted={card1Inserted || card2Inserted}
           isMultiManning={isMultiManning}
           onGenerateWorkWeek={handleGenerateWorkWeek}
-          workWeekFileInputRef={workWeekFileInputRef}
-          onWorkWeekFileChange={handleWorkWeekFileChange}
-          onOpenWorkWeekData={handleOpenWorkWeekData}
-          onSaveCard1ToFile={handleSaveCard1ToFile}
           onShowCardData={handleShowCardData}
+          virtualCardSettings={<VirtualCardNameSettings names={virtualCardNames} onSave={setVirtualCardNames} language={language} />}
           printVehicleSettings={<PrintVehicleSettings profile={printVehicleProfile} onSave={setPrintVehicleProfile} />}
           infoPanels={(
             <div
@@ -3417,7 +3382,6 @@ export default function App() {
             onResetLoadUnload={() => setVehicleLoadUnloadEvents([])}
             onClose={() => {
               setWorkWeekGraphData(null)
-              if (workWeekFileInputRef.current) workWeekFileInputRef.current.value = ''
             }}
           />,
           document.body

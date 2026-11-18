@@ -28,11 +28,8 @@ export type ControlPanelProps = {
   cardInserted: boolean
   isMultiManning: boolean
   onGenerateWorkWeek: () => void
-  workWeekFileInputRef: React.RefObject<HTMLInputElement>
-  onWorkWeekFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void
-  onOpenWorkWeekData: () => void
-  onSaveCard1ToFile: () => void
   onShowCardData: () => void
+  virtualCardSettings?: ReactNode
   printVehicleSettings?: ReactNode
   infoPanels?: ReactNode
 }
@@ -72,11 +69,9 @@ export function ControlPanel(p: ControlPanelProps) {
       <div className="dash-tool-buttons">
         <button onClick={p.onSimulate4h10m} disabled={!p.ignitionOn || !p.cardInserted}>{t.ui.generate4h10mDriving}</button>
         <button onClick={p.onGenerateWorkWeek} disabled={p.isMultiManning || p.ignitionOn}>{t.controls.generateWorkWeek}</button>
-        <button onClick={p.onOpenWorkWeekData}>{t.controls.openFromFile}</button>
-        <button onClick={p.onSaveCard1ToFile}>{t.controls.saveDataToFile}</button>
         <button onClick={p.onShowCardData}>{t.controls.showCardData}</button>
       </div>
-      <input ref={p.workWeekFileInputRef} type="file" accept=".txt" hidden onChange={p.onWorkWeekFileChange}/>
+      {p.virtualCardSettings}
       {p.printVehicleSettings}
     </details>
   </section>

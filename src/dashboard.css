@@ -230,3 +230,26 @@ html body { min-width:0 !important; width:100%; }
     background: #1976d2;
   }
 }
+
+.virtual-card-names {
+  margin-block: 12px;
+}
+.virtual-card-names fieldset {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+  align-items: end;
+  gap: 8px;
+  min-width: 0;
+}
+.virtual-card-names label {
+  display: grid;
+  gap: 4px;
+}
+.virtual-card-names input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #576777;
+  border-radius: 4px;
+  background: #17232f;
+  color: inherit;
+}

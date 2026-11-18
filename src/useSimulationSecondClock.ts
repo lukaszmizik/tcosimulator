@@ -34,6 +34,7 @@ type UseSimulationSecondClockParams = {
   simulatedUtcTimeRef: MutableRefObject<number>
   setSimulatedUtcTime: Dispatch<SetStateAction<number>>
   currentSpeedRef: MutableRefObject<number>
+  odometerKmRef: MutableRefObject<number>
   leftActivityIdRef: MutableRefObject<Parameters<typeof getActivityCode>[0]>
   rightActivityIdRef: MutableRefObject<Parameters<typeof getActivityCode>[0]>
   minuteAccumulatorRef: MutableRefObject<MinuteAccumulator | null>
@@ -60,6 +61,7 @@ export function useSimulationSecondClock(params: UseSimulationSecondClockParams)
     simulatedUtcTimeRef,
     setSimulatedUtcTime,
     currentSpeedRef,
+    odometerKmRef,
     leftActivityIdRef,
     rightActivityIdRef,
     minuteAccumulatorRef,
@@ -91,6 +93,7 @@ export function useSimulationSecondClock(params: UseSimulationSecondClockParams)
       // Sekundový tracker + logování po minutách (přesunuto z useEffect[simulatedUtcTime])
       const timestamp = next
       const speed = currentSpeedRef.current
+      const odometerKm = odometerKmRef.current
       const isDriving = speed > 0
       const leftChar = isDriving ? DRIVING_SYMBOL : getActivityCode(leftActivityIdRef.current)
       const rightChar = isDriving ? getActivityCode('AVAILABILITY') : getActivityCode(rightActivityIdRef.current)
@@ -107,6 +110,7 @@ export function useSimulationSecondClock(params: UseSimulationSecondClockParams)
           driver1: driver1Activity,
           driver2: driver2Activity,
           speed,
+          odometerKm,
           driver1CardId: card1Id,
           driver2CardId: card2Id,
         }]

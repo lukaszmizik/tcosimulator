@@ -3,11 +3,12 @@ import { createPortal } from 'react-dom'
 import type { SymbolMap } from '../../TachoTypes'
 import type { PrintRow } from '../../print/driverCardPrintRows'
 
-export function PrintPreview({ title, closeLabel, onClose, ready = true, children }: {
+export function PrintPreview({ title, closeLabel, onClose, ready = true, paperClassName, children }: {
   title: string
   closeLabel: string
   onClose: () => void
   ready?: boolean
+  paperClassName?: string
   children: ReactNode
 }) {
   async function print() {
@@ -24,7 +25,7 @@ export function PrintPreview({ title, closeLabel, onClose, ready = true, childre
           <button type="button" disabled={!ready} onClick={() => void print()}>Tisk / PDF</button>
         </div>
         <div className="daily-card-print-scroll">
-          <article className="daily-card-print-paper" aria-label={title}>{children}</article>
+          <article className={paperClassName ? `daily-card-print-paper ${paperClassName}` : 'daily-card-print-paper'} aria-label={title}>{children}</article>
         </div>
       </div>
     </div>,

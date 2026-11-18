@@ -1,47 +1,19 @@
-/**
- * Overlay pro tisk vozidla – 24h výtisk (Print24hVehicleSVG).
- */
-
-import { Print24hVehicleSVG } from '../../PrintTemplates'
+import { useState } from 'react'
 import type { SymbolMap } from '../../TachoTypes'
-import type { SecondActivitySnapshot } from '../../TachoTypes'
-import { PrintPreview } from './PrintPreview'
 import type { Translations } from '../../translations/types'
+import { buildVehicleDayPrintRows, type VehicleDayPrintData } from '../../print/vehicleDayPrintRows'
+import { PrintPreview, PrintRows } from './PrintPreview'
 
-export type PrintVehicle24hOverlayProps = {
-  open: boolean
+export function PrintVehicle24hOverlay({ onClose, t, input, symbols }: {
   onClose: () => void
   t: Translations
-  printVehicle24hSelectedDate: number | null
-  simulatedUtcTime: number
-  odometerKm: number
-  secondHistory: SecondActivitySnapshot[]
-  symbolMap: SymbolMap | null
-  printVehicle24hIsUtc: boolean
-}
-
-export function PrintVehicle24hOverlay({
-  open,
-  onClose,
-  t,
-  printVehicle24hSelectedDate,
-  simulatedUtcTime,
-  odometerKm,
-  secondHistory,
-  symbolMap,
-  printVehicle24hIsUtc,
-}: PrintVehicle24hOverlayProps) {
-  if (!open) return null
-
+  input: () => VehicleDayPrintData & { selectedDayUtc: number; printedAtUtc: number; isUtc: boolean }
+  symbols: SymbolMap | null
+}) {
+  const [rows] = useState(() => buildVehicleDayPrintRows(input()))
   return (
-    <PrintPreview title={t.ui.printVehicle24hTitle} closeLabel={t.printOverlay.close} onClose={onClose} ready={!!symbolMap?.[18]}>
-      <Print24hVehicleSVG
-        dateUtc={printVehicle24hSelectedDate ?? simulatedUtcTime}
-        odometerKm={odometerKm}
-        secondHistory={secondHistory}
-        symbolMap={symbolMap}
-        isUtc={printVehicle24hIsUtc}
-      />
+    <PrintPreview title={t.ui.printVehicle24hTitle} closeLabel={t.printOverlay.close} onClose={onClose} ready={!!symbols?.[18]}>
+      <PrintRows rows={rows} symbols={symbols} />
     </PrintPreview>
   )
 }

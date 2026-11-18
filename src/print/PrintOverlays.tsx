@@ -6,6 +6,7 @@ import './dailyDriverCardPrint.css'
 import { DailyDriverCardPrint } from '../components/overlays/DailyDriverCardPrint'
 import type { PrintVehicleProfile } from '../data/printVehicleProfile'
 import type { DailyCardPrintInput } from './driverCardPrintRows'
+import type { VehicleDayPrintData } from './vehicleDayPrintRows'
 import type { UsePrintStateReturn } from './usePrintState'
 import type { SymbolMap } from '../TachoTypes'
 import type { CardData, EventLogEntry, ManualEntrySegment } from '../TachoTypes'
@@ -29,7 +30,7 @@ export type PrintOverlaysProps = {
   driver1ManualEntryBuffer: ManualEntrySegment[]
   slot1CardActivities?: readonly Driver1PrintCardActivity[]
   eventLog: EventLogEntry[]
-  odometerKm: number
+  vehicleDay: () => VehicleDayPrintData
   vehicleProfile: PrintVehicleProfile
   dailyDriverCard: (slot: 1 | 2) => Omit<DailyCardPrintInput, 'selectedDayUtc' | 'isUtc'>
 }
@@ -45,7 +46,7 @@ export function PrintOverlays({
   driver1ManualEntryBuffer,
   slot1CardActivities = [],
   eventLog,
-  odometerKm,
+  vehicleDay,
   vehicleProfile,
   dailyDriverCard,
 }: PrintOverlaysProps) {
@@ -102,17 +103,19 @@ export function PrintOverlays({
         eventLog={eventLog}
       />
 
-      <PrintVehicle24hOverlay
-        open={printVehicle24hOpen}
-        onClose={onCloseVehicle24h}
-        t={t}
-        printVehicle24hSelectedDate={printVehicle24hSelectedDate}
-        simulatedUtcTime={simulatedUtcTime}
-        odometerKm={odometerKm}
-        secondHistory={secondHistory}
-        symbolMap={symbolMap}
-        printVehicle24hIsUtc={printVehicle24hIsUtc}
-      />
+      {printVehicle24hOpen && (
+        <PrintVehicle24hOverlay
+          onClose={onCloseVehicle24h}
+          t={t}
+          input={() => ({
+            ...vehicleDay(),
+            selectedDayUtc: printVehicle24hSelectedDate ?? simulatedUtcTime,
+            printedAtUtc: simulatedUtcTime,
+            isUtc: printVehicle24hIsUtc,
+          })}
+          symbols={symbolMap}
+        />
+      )}
 
       {printVDiagramOpen && (
         <PrintVDiagramOverlay

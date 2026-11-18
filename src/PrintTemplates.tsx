@@ -10,7 +10,6 @@ import { useLanguage } from './translations'
 import type { ManualEntrySegment } from './TachoTypes'
 import type { EventLogEntry } from './TachoTypes'
 import type { SymbolMap } from './TachoTypes'
-import type { SecondActivitySnapshot } from './TachoTypes'
 import type { ActivityHistoryEntry } from './TachoTypes'
 import { formatDurationHhMm } from './VDOCounter'
 import type { VDODurationsMs } from './VDOCounter'
@@ -641,37 +640,6 @@ export function Print24hDriverSVG(props: Print24hDriverProps) {
   return (
     <PaperStrip>
       <g>{lines}</g>
-    </PaperStrip>
-  )
-}
-
-export type Print24hVehicleProps = {
-  dateUtc: number
-  odometerKm: number
-  secondHistory?: SecondActivitySnapshot[]
-  symbolMap?: SymbolMap | null
-  /** true = UTC výtisk, false = místní čas (volba NE) */
-  isUtc?: boolean
-}
-
-/**
- * Šablona výtisku: 24h den – vozidlo
- */
-export function Print24hVehicleSVG(props: Print24hVehicleProps) {
-  const { dateUtc, symbolMap, isUtc = true } = props
-  const centerX = PAPER_VIEWBOX.width / 2 - 12
-  const dateUtcStart = dateUtc
-  const dateUtcEnd = dateUtc + 24 * 3600 * 1000
-
-  return (
-    <PaperStrip height={48 + (isUtc ? PRINT_SECTION1_HEIGHT : PRINT_SECTION1_LOCAL_HEIGHT)}>
-      <g>
-        {isUtc ? (
-          <PrintSection1UTC dateUtc={dateUtc} symbolMap={symbolMap} centerX={centerX} />
-        ) : (
-          <PrintSection1Local dateUtcStart={dateUtcStart} dateUtcEnd={dateUtcEnd} symbolMap={symbolMap} centerX={centerX} />
-        )}
-      </g>
     </PaperStrip>
   )
 }

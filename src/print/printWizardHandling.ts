@@ -76,6 +76,7 @@ export type PrintMenuActionInput = {
   secondHistory: Array<{ timestampUtc: number }>
   simulatedUtcTime: number
   currentMenuPath: string[]
+  vehicleActivities?: readonly { minuteStartUtc: number }[]
   /** Doložené činnosti karty ve šachtě 1. Den přidají jen u výtisku 24h řidiče 1. */
   cardActivities?: readonly { startUtc: number; endUtc: number; isManualEntry?: boolean }[]
 }
@@ -98,6 +99,12 @@ export function resolvePrintMenuAction(input: PrintMenuActionInput): PrintMenuAc
     if (action === 'PRINT_24H_D1' || action === 'PRINT_24H_D2') {
       for (const day of utcDaysIntersectingCardActivities(input.cardActivities ?? [])) {
         dayStarts.add(day)
+      }
+    }
+    if (action === 'PRINT_24H_V') {
+      for (const entry of input.vehicleActivities ?? []) {
+        const d = new Date(entry.minuteStartUtc)
+        dayStarts.add(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
       }
     }
     let availableDatesUtc = Array.from(dayStarts).sort((a, b) => b - a)

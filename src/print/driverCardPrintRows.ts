@@ -32,7 +32,7 @@ export function printDateUtc(ms: number): string {
   return `${pad(value.getUTCDate())}.${pad(value.getUTCMonth() + 1)}.${value.getUTCFullYear()}`
 }
 
-function duration(ms: number): string {
+export function duration(ms: number): string {
   const minutes = Math.floor(ms / minuteMs)
   return `${pad(Math.floor(minutes / 60))}h${pad(minutes % 60)}`
 }

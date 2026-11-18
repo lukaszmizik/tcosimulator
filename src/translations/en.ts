@@ -400,7 +400,7 @@ export const en: Translations = {
     zavreniTisku: 'close print', // 125
     zruseniVarovani: 'cancel warning', // 126
     navratVPrivodciTiskem: 'return in print wizard', // 127
-    vysunutiKartyBezCilove: 'card ejection without end country', // 128
+    zruseniVyhozuKarty: 'card withdrawal cancelled', // 128
     navratZeZadaniZeme: 'return from country entry', // 129
     navratZPotvrzeniNakladky: 'return from load/unload confirmation', // 130
     opusteniVdoPrehledu: 'leave VDO overview', // 131

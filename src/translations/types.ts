@@ -295,7 +295,7 @@ export type Translations = {
     zavreniTisku: string
     zruseniVarovani: string
     navratVPrivodciTiskem: string
-    vysunutiKartyBezCilove: string
+    zruseniVyhozuKarty: string
     navratZeZadaniZeme: string
     navratZPotvrzeniNakladky: string
     opusteniVdoPrehledu: string

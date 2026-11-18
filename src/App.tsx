@@ -123,7 +123,7 @@ import { useMenuCountryInput } from './useMenuCountryInput'
 import { useMenuLoadUnload } from './useMenuLoadUnload'
 import { useSimulationSecondClock, type MinuteAccumulator } from './useSimulationSecondClock'
 import { useDrivingInterval } from './useDrivingInterval'
-import { advanceWithdrawalBargraf, applyCardWithdrawalKey } from './cardWithdrawalTransitions'
+import { COUNTRY_CONFIRM_MS, advanceWithdrawalBargraf, applyCardWithdrawalKey } from './cardWithdrawalTransitions'
 import { buildSimulated4h10m } from './simulate4h10m'
 import { buildShowCardGraphData } from './showCardGraphData'
 import { buildDroppedCardData } from './buildDroppedCardData'
@@ -565,6 +565,18 @@ export default function App() {
     return () => clearInterval(id)
   }, [cardWithdrawalState?.phase, cardWithdrawalState?.phaseStartTime])
 
+  const countryPromptStart = cardWithdrawalState?.phase === 'countrySelect'
+    ? cardWithdrawalState.phaseStartTime : null
+  useEffect(() => {
+    if (countryPromptStart === null) return
+    const remaining = countryPromptStart + COUNTRY_CONFIRM_MS - Date.now()
+    const id = window.setTimeout(() => {
+      setCardWithdrawalState(current => current?.phase === 'countrySelect' &&
+        current.phaseStartTime === countryPromptStart ? null : current)
+    }, Math.max(0, remaining))
+    return () => window.clearTimeout(id)
+  }, [countryPromptStart])
+
   const countriesRef = useRef(countries)
   const spanishRegionsRef = useRef(spanishRegions)
   countriesRef.current = countries
@@ -656,7 +668,7 @@ export default function App() {
   cardInsertionStateRef.current = cardInsertionState
 
   const runEjectForSlot = useCallback((slot: 1 | 2) => {
-    if (!ignitionOnRef.current) return
+    if (!ignitionOnRef.current || cardWithdrawalStateRef.current || cardInsertionStateRef.current?.slot !== slot) return
     onEjectRequestedForWizard(slot)
     setCardInsertionState((prev) => (prev?.slot === slot ? null : prev))
   }, [onEjectRequestedForWizard, setCardInsertionState])
@@ -725,33 +737,15 @@ export default function App() {
   }, [countries, isMultiManning, setVdoCounterActive, setDisplayMode, commitSlotManual, noteDddWithdrawal])
 
   const handleCardWithdrawalKey = useCallback((action: 'ok' | 'up' | 'down' | 'back') => {
-    setCardWithdrawalState((prev) => {
-      if (!prev) return null
-      const result = applyCardWithdrawalKey(prev, action, countries.length)
-      if (result.type === 'state') return result.state
-      if (result.type === 'ejectWithoutCountry') {
-        const withdrawalTime = Math.floor(simulatedUtcTimeRef.current / 60000) * 60000
-        const templateId = prev.cardData.templateId
-        if (templateId === CARD1_TEMPLATE_ID) saveCard1LastWithdrawal(withdrawalTime)
-        else if (templateId === CARD2_TEMPLATE_ID) saveCard2LastWithdrawal(withdrawalTime)
-        noteDddWithdrawal(prev.cardData.cardNumber, withdrawalTime)
-        setLastEjectionTimeBySlot((p) => ({ ...p, [prev.slot]: withdrawalTime }))
-        if (prev.slot === 1) {
-          setCard1Data(null)
-          setCard1InsertedRef.current(false)
-        } else {
-          setCard2Data(null)
-          setCard2InsertedRef.current(false)
-        }
-        setCardInsertionState((p) => (p?.slot === prev.slot ? null : p))
-        setVdoCounterActive(false)
-        setDisplayMode('operating')
-        return null
-      }
-      performCardEjectWithCountry(prev)
-      return null
-    })
-  }, [countries, performCardEjectWithCountry, setVdoCounterActive, setDisplayMode, setDriver1ManualEntryBuffer, setDriver2ManualEntryBuffer])
+    const prev = cardWithdrawalStateRef.current
+    if (!prev) return
+    const result = applyCardWithdrawalKey(prev, action, countries.length)
+    const next = result.type === 'state' ? result.state : null
+    cardWithdrawalStateRef.current = next
+    setCardWithdrawalState(next)
+    if (result.type === 'ejectWithCountry') performCardEjectWithCountry(prev)
+    return result.type
+  }, [countries.length, performCardEjectWithCountry])
 
   const minuteAccumulatorRef = useRef<MinuteAccumulator | null>(null)
   const recordDddMinuteRef = useRef<(cardNumber: string, entry: ActivityHistoryEntry) => void>(() => {})
@@ -1388,9 +1382,9 @@ export default function App() {
       return
     }
     if (cardWithdrawalState?.phase === 'countrySelect') {
-      const code = countries[cardWithdrawalState.countryIndex]?.code ?? 'CZ'
-      addEntry(t.actions.stiskOk, `${t.manualEntry.endCountry} ${code}`)
-      handleCardWithdrawalKey('ok')
+      const code = countries[cardWithdrawalState.countryIndex]?.code
+      const result = handleCardWithdrawalKey('ok')
+      if (result === 'state' && code) addEntry(t.actions.stiskOk, `${t.manualEntry.endCountry} ${code}`)
       return
     }
     if (cardWithdrawalState?.phase === 'print24hQuestion') {
@@ -1572,7 +1566,7 @@ export default function App() {
       return
     }
     if (cardWithdrawalState) {
-      addEntry(t.actions.stiskZpet, cardWithdrawalState.phase === 'countrySelect' ? t.actions.vysunutiKartyBezCilove : undefined)
+      addEntry(t.actions.stiskZpet, t.actions.zruseniVyhozuKarty)
       handleCardWithdrawalKey('back')
       return
     }

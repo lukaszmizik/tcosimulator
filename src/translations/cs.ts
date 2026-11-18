@@ -400,7 +400,7 @@ export const cs: Translations = {
     zavreniTisku: 'zavření tisku', // 125
     zruseniVarovani: 'zrušení varování', // 126
     navratVPrivodciTiskem: 'návrat v průvodci tiskem', // 127
-    vysunutiKartyBezCilove: 'vysunutí karty bez zadání cílové země', // 128
+    zruseniVyhozuKarty: 'zrušení výhozu karty', // 128
     navratZeZadaniZeme: 'návrat ze zadání země', // 129
     navratZPotvrzeniNakladky: 'návrat z potvrzení nakládky/vykládky', // 130
     opusteniVdoPrehledu: 'opuštění VDO přehledu', // 131

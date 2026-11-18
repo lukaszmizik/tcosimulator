@@ -401,7 +401,7 @@ export const ru: Translations = {
     zavreniTisku: 'закрытие печати', // 125
     zruseniVarovani: 'отмена предупреждения', // 126
     navratVPrivodciTiskem: 'возврат в мастер печати', // 127
-    vysunutiKartyBezCilove: 'извлечение карты без страны прибытия', // 128
+    zruseniVyhozuKarty: 'извлечение карты отменено', // 128
     navratZeZadaniZeme: 'возврат из ввода страны', // 129
     navratZPotvrzeniNakladky: 'возврат из подтверждения погрузки/разгрузки', // 130
     opusteniVdoPrehledu: 'выход из обзора VDO', // 131

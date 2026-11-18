@@ -519,6 +519,7 @@ export const PAPER_VIEWBOX = { width: 228, height: 1200 }
 
 export type PaperStripProps = {
   children: ReactNode
+  height?: number
   /** Převrácený poměr (papír je užší než výška) */
   aspectRatio?: 'portrait' | 'landscape'
 }
@@ -526,9 +527,9 @@ export type PaperStripProps = {
 /**
  * Papírová komponenta – obal pro výtisk simulující tepelný papír 57 mm.
  */
-export function PaperStrip({ children }: PaperStripProps) {
+export function PaperStrip({ children, height = PAPER_VIEWBOX.height }: PaperStripProps) {
   const { t } = useLanguage()
-  const { width, height } = PAPER_VIEWBOX
+  const { width } = PAPER_VIEWBOX
   return (
     <svg
       className="print-paper-strip"
@@ -663,7 +664,7 @@ export function Print24hVehicleSVG(props: Print24hVehicleProps) {
   const dateUtcEnd = dateUtc + 24 * 3600 * 1000
 
   return (
-    <PaperStrip>
+    <PaperStrip height={48 + (isUtc ? PRINT_SECTION1_HEIGHT : PRINT_SECTION1_LOCAL_HEIGHT)}>
       <g>
         {isUtc ? (
           <PrintSection1UTC dateUtc={dateUtc} symbolMap={symbolMap} centerX={centerX} />
@@ -723,7 +724,7 @@ export function PrintSpeedVehicleSVG(props: PrintSpeedVehicleSVGProps) {
       : null
 
   return (
-    <PaperStrip>
+    <PaperStrip height={300}>
       <g>
         <PrintSection1UTC dateUtc={dateUtc} symbolMap={symbolMap} centerX={centerX} />
         {renderPrintCardTypeLine(centerX, yCardType)}
@@ -732,294 +733,6 @@ export function PrintSpeedVehicleSVG(props: PrintSpeedVehicleSVGProps) {
         {vehicleElements}
       </g>
     </PaperStrip>
-  )
-}
-
-export type PrintVDiagramSVGProps = {
-  secondHistory: SecondActivitySnapshot[]
-  dateUtc: number
-  /** Výtisk v UTC čase – určuje zobrazení sekce 1 hlavičky */
-  isUtc?: boolean
-  symbolMap?: SymbolMap | null
-}
-
-/** Rozměry V-diagramu – přizpůsobené papíru 57 mm */
-const VDIAGRAM_CONTENT_RATIO = 0.7
-const VDIAGRAM_PAPER = {
-  width: 228,
-  height: 2100,
-  /** 5 sekcí hlavičky + 1 sekce pod grafem */
-  headerReserved: 120,
-  footerReserved: 80,
-  /** Font hlavičkových sekcí – jednotná velikost všech výtisků */
-  headerFontSize: PRINT_FONT_SIZE,
-  /** Marginy – obsah (text + graf) vycentrován na 70 % šířky (160px) */
-  marginLeft: Math.round((228 - 228 * VDIAGRAM_CONTENT_RATIO) / 2),
-  marginRight: Math.round((228 - 228 * VDIAGRAM_CONTENT_RATIO) / 2),
-  chartWidth: Math.round(228 * VDIAGRAM_CONTENT_RATIO),
-  chartHeight: 1850,
-  /** Délka hlavní čárky (hodiny) vs. vedlejší (15 min) */
-  tickMajorLen: 6,
-  tickMinorLen: 3,
-  /** Délka hlavní čárky rychlosti (30 km/h) vs. vedlejší (10 km/h) */
-  speedTickMajorLen: 6,
-  speedTickMinorLen: 3,
-}
-
-/**
- * Šablona výtisku: V-diagram (rychlost).
- * Převzato z původního VDiagram.tsx, rozměry přizpůsobeny papírové komponentě.
- * Rezervováno místo pro hlavičku a zápatí (budoucí rozšíření).
- */
-export function PrintVDiagramSVG(props: PrintVDiagramSVGProps) {
-  const { t } = useLanguage()
-  const { secondHistory, dateUtc, isUtc = true, symbolMap } = props
-  const {
-    width,
-    height,
-    headerReserved,
-    footerReserved,
-    marginLeft,
-    chartWidth,
-    chartHeight,
-    headerFontSize,
-    tickMajorLen,
-    tickMinorLen,
-    speedTickMajorLen,
-    speedTickMinorLen,
-  } = VDIAGRAM_PAPER
-
-  const chartTop = headerReserved
-  const d = new Date(dateUtc)
-  const dayStart = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())).getTime()
-  const dayEnd = dayStart + 24 * 3600 * 1000
-
-  const dayData = secondHistory
-    .filter((s) => s.timestampUtc >= dayStart && s.timestampUtc < dayEnd)
-    .sort((a, b) => a.timestampUtc - b.timestampUtc)
-
-  const pad = (n: number) => String(n).padStart(2, '0')
-  const speedToPx = (speed: number) =>
-    marginLeft + (Math.min(125, Math.max(0, speed)) / 125) * chartWidth
-  const timeToPx = (ms: number) =>
-    ((ms - dayStart) / (24 * 3600 * 1000)) * chartHeight
-
-  const speedMajorLines = [30, 60, 90, 120]
-  const speedMinorLines = [10, 20, 40, 50, 70, 80, 100, 110]
-  const dataPoints = dayData.map((s) => `${speedToPx(s.speed)},${timeToPx(s.timestampUtc)}`)
-  const polyPoints =
-    dataPoints.length > 0
-      ? dataPoints.length === 1
-        ? `${speedToPx(0)},${timeToPx(dayData[0].timestampUtc)} ${dataPoints[0]}`
-        : dataPoints.join(' ')
-      : ''
-
-  return (
-    <svg
-      className="print-vdiagram-svg"
-      viewBox={`0 0 ${width} ${height}`}
-      preserveAspectRatio="xMinYMin meet"
-      role="img"
-      aria-label={t.ui.vDiagramTitle}
-    >
-      <defs>
-        <linearGradient id="print-vdiagram-paper-shine" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="#fafafa" />
-          <stop offset="50%" stopColor="#ffffff" />
-          <stop offset="100%" stopColor="#f5f5f5" />
-        </linearGradient>
-      </defs>
-      <rect
-        x="2"
-        y="0"
-        width={width - 4}
-        height={height}
-        fill="url(#print-vdiagram-paper-shine)"
-        stroke="#ddd"
-        strokeWidth="1"
-        rx="2"
-      />
-
-      {/* První sekce – detekce UTC (bez volby = jako V-diagram, s potvrzením UTC = stejně) */}
-      <g id="vdiagram-header">
-        {isUtc && <PrintSection1UTC dateUtc={dateUtc} symbolMap={symbolMap} centerX={width / 2} headerFontSize={headerFontSize} />}
-      </g>
-
-      {/* Grafická oblast – věrně podle originálu tachografu */}
-      <g id="vdiagram-chart" transform={`translate(0, ${chartTop})`}>
-        {/* Osa rychlosti 0 – nepřerušovaná čára */}
-        <line
-          x1={marginLeft}
-          y1={0}
-          x2={marginLeft}
-          y2={chartHeight}
-          stroke="#333"
-          strokeWidth={0.8}
-        />
-        {/* Mřížka – vertikální (30, 60, …) a horizontální (čas) světle šedá */}
-        {speedMajorLines.map((kmh) => (
-          <line
-            key={`v-major-${kmh}`}
-            x1={speedToPx(kmh)}
-            y1={0}
-            x2={speedToPx(kmh)}
-            y2={chartHeight}
-            stroke="#ccc"
-            strokeDasharray="2 2"
-            strokeWidth={0.5}
-          />
-        ))}
-        {speedMinorLines.map((kmh) => (
-          <line
-            key={`v-minor-${kmh}`}
-            x1={speedToPx(kmh)}
-            y1={0}
-            x2={speedToPx(kmh)}
-            y2={chartHeight}
-            stroke="#e0e0e0"
-            strokeDasharray="1 1"
-            strokeWidth={0.3}
-          />
-        ))}
-        {Array.from({ length: 25 }, (_, i) => (
-          <line
-            key={`h-major-${i}`}
-            x1={marginLeft}
-            y1={((i * 3600 * 1000) / (24 * 3600 * 1000)) * chartHeight}
-            x2={marginLeft + chartWidth}
-            y2={((i * 3600 * 1000) / (24 * 3600 * 1000)) * chartHeight}
-            stroke="#ccc"
-            strokeDasharray="2 2"
-            strokeWidth={0.5}
-          />
-        ))}
-        {Array.from({ length: 24 }, (_, i) =>
-          [15, 30, 45].map((min) => (
-            <line
-              key={`h-minor-${i}-${min}`}
-              x1={marginLeft}
-              y1={(((i * 60 + min) * 60 * 1000) / (24 * 3600 * 1000)) * chartHeight}
-              x2={marginLeft + chartWidth}
-              y2={(((i * 60 + min) * 60 * 1000) / (24 * 3600 * 1000)) * chartHeight}
-              stroke="#e0e0e0"
-              strokeDasharray="1 1"
-              strokeWidth={0.3}
-            />
-          ))
-        )}
-
-        {/* Časová osa – odrážky vlevo od osy, nezasahují do grafu */}
-        {Array.from({ length: 25 }, (_, i) => (
-          <line
-            key={`hour-${i}`}
-            x1={marginLeft - tickMajorLen}
-            y1={((i * 3600 * 1000) / (24 * 3600 * 1000)) * chartHeight}
-            x2={marginLeft}
-            y2={((i * 3600 * 1000) / (24 * 3600 * 1000)) * chartHeight}
-            stroke="#000"
-            strokeWidth={0.5}
-          />
-        ))}
-        {Array.from({ length: 24 }, (_, i) =>
-          [15, 30, 45].map((min) => (
-            <line
-              key={`min-${i}-${min}`}
-              x1={marginLeft - tickMinorLen}
-              y1={(((i * 60 + min) * 60 * 1000) / (24 * 3600 * 1000)) * chartHeight}
-              x2={marginLeft}
-              y2={(((i * 60 + min) * 60 * 1000) / (24 * 3600 * 1000)) * chartHeight}
-              stroke="#000"
-              strokeWidth={0.5}
-            />
-          ))
-        )}
-
-        {/* Rychlost – odrážky nad grafem, nezasahují do grafu */}
-        {speedMajorLines.map((kmh) => (
-          <line
-            key={`speed-major-${kmh}`}
-            x1={speedToPx(kmh)}
-            y1={-speedTickMajorLen}
-            x2={speedToPx(kmh)}
-            y2={0}
-            stroke="#000"
-            strokeWidth={0.5}
-          />
-        ))}
-        {speedMinorLines.map((kmh) => (
-          <line
-            key={`speed-minor-${kmh}`}
-            x1={speedToPx(kmh)}
-            y1={-speedTickMinorLen}
-            x2={speedToPx(kmh)}
-            y2={0}
-            stroke="#555"
-            strokeWidth={0.4}
-          />
-        ))}
-
-        {/* Časové štítky HH:MM (osa Y) – stejný font jako datum nad grafem */}
-        {Array.from({ length: 25 }, (_, i) => {
-          const labelX = marginLeft - tickMajorLen - 8
-          const labelY = (i * 3600 * 1000) / (24 * 3600 * 1000) * chartHeight
-          return (
-            <text
-              key={i}
-              x={labelX}
-              y={labelY}
-              textAnchor="middle"
-              dominantBaseline="middle"
-              className="print-vdiagram-axis-time"
-              fontFamily={PRINT_FONT}
-              transform={`rotate(90, ${labelX}, ${labelY})`}
-            >
-              {pad(i)}:00
-            </text>
-          )
-        })}
-
-        {/* Hodnoty rychlosti 30, 60, 90, 120 – stejný font jako datum nad grafem */}
-        {speedMajorLines.map((kmh) => {
-          const labelY = -speedTickMajorLen - 8
-          const px = speedToPx(kmh)
-          return (
-            <text
-              key={kmh}
-              x={px}
-              y={labelY}
-              textAnchor="middle"
-              dominantBaseline="middle"
-              className="print-vdiagram-axis-speed"
-              fontFamily={PRINT_FONT}
-              transform={`rotate(90, ${px}, ${labelY})`}
-            >
-              {kmh}
-            </text>
-          )
-        })}
-
-        {/* Křivka rychlosti */}
-        {polyPoints && (
-          <polyline
-            points={polyPoints}
-            fill="none"
-            stroke="#333"
-            strokeWidth={0.8}
-          />
-        )}
-      </g>
-
-      {/* Zápatí – rezervováno pro pozdější rozšíření */}
-      <g id="vdiagram-footer">
-        <rect
-          x={2}
-          y={height - footerReserved}
-          width={width - 4}
-          height={footerReserved - 2}
-          fill="none"
-        />
-      </g>
-    </svg>
   )
 }
 

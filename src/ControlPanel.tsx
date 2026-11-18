@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import type { SupportedLanguage, Translations } from './translations/types'
 import { Speedometer } from './Speedometer'
 export type ControlPanelProps = {
@@ -32,6 +33,8 @@ export type ControlPanelProps = {
   onOpenWorkWeekData: () => void
   onSaveCard1ToFile: () => void
   onShowCardData: () => void
+  printVehicleSettings?: ReactNode
+  infoPanels?: ReactNode
 }
 
 
@@ -63,7 +66,8 @@ export function ControlPanel(p: ControlPanelProps) {
       </section>
       <section className="dash-module reset-module"><button className="reset-key" onClick={p.onReset} title={t.ui.resetTitle}><span>⟲</span>{t.ui.reset}</button></section>
     </div>
-    <details className="dash-extras"><summary>Data, scénáře a další nastavení</summary>
+    {p.infoPanels}
+    <details className="dash-extras" onKeyDown={(event) => event.stopPropagation()}><summary>{t.controls.dataScenariosSettings}</summary>
       <label className="dash-check"><input type="checkbox" checked={p.remoteDataDownloadActive} onChange={e=>p.onRemoteDataDownloadActiveChange(e.target.checked)}/>{t.ui.remoteDataDownloadActive}</label>
       <div className="dash-tool-buttons">
         <button onClick={p.onSimulate4h10m} disabled={!p.ignitionOn || !p.cardInserted}>{t.ui.generate4h10mDriving}</button>
@@ -73,6 +77,7 @@ export function ControlPanel(p: ControlPanelProps) {
         <button onClick={p.onShowCardData}>{t.controls.showCardData}</button>
       </div>
       <input ref={p.workWeekFileInputRef} type="file" accept=".txt" hidden onChange={p.onWorkWeekFileChange}/>
+      {p.printVehicleSettings}
     </details>
   </section>
 }

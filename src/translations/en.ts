@@ -238,6 +238,7 @@ export const en: Translations = {
     },
   },
   controls: {
+    dataScenariosSettings: 'Data, scenarios and settings',
     generateWorkWeek: 'Generate work week', // 80
     generateWorkWeekTitle: 'Generate 5–6 work shifts with driving, work and breaks into memory and Zmizik card', // 81
     generateWorkWeekDisabledTitle: 'Cannot generate work week in crew mode',
@@ -264,6 +265,7 @@ export const en: Translations = {
     dataAndRecords: 'Data and records',
   },
   printOverlay: {
+    driverCard24hTitle: '24h driver card printout',
     driver1Title: 'Printout driver 1', // 88
     basicInfo: 'Basic info', // 89
     name: 'Name:', // 90

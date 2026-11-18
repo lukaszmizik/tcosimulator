@@ -39,35 +39,32 @@ export function PrintVehicleSettings({ profile, onSave }: {
   }
 
   return (
-    <details className="print-vehicle-settings" onKeyDown={(event) => event.stopPropagation()}>
-      <summary>Další nastavení</summary>
-      <form onSubmit={submit} onChange={() => setMessage('')}>
-        <h2>Firma a vozidlo</h2>
-        <div className="print-vehicle-fields">
-          {fields.map(([key, label, maxLength]) => (
-            <label key={key}>
-              {label}
-              <input
-                value={draft[key]}
-                maxLength={maxLength}
-                onChange={(event) => setDraft({ ...draft, [key]: event.target.value })}
-              />
-            </label>
-          ))}
-          <label>
-            Standardní druh nákladu
-            <select value={draft.load} onChange={(event) => setDraft({
-              ...draft, load: event.target.value as PrintVehicleProfile['load'],
-            })}>
-              <option value="">Neuveden</option>
-              <option value="passengers">Cestující</option>
-              <option value="goods">Zboží</option>
-            </select>
+    <form className="print-vehicle-settings" onSubmit={submit} onChange={() => setMessage('')}>
+      <h2>Firma a vozidlo</h2>
+      <div className="print-vehicle-fields">
+        {fields.map(([key, label, maxLength]) => (
+          <label key={key}>
+            {label}
+            <input
+              value={draft[key]}
+              maxLength={maxLength}
+              onChange={(event) => setDraft({ ...draft, [key]: event.target.value })}
+            />
           </label>
-        </div>
-        <button type="submit">Uložit údaje</button>
-        <span role="status">{message}</span>
-      </form>
-    </details>
+        ))}
+        <label>
+          Standardní druh nákladu
+          <select value={draft.load} onChange={(event) => setDraft({
+            ...draft, load: event.target.value as PrintVehicleProfile['load'],
+          })}>
+            <option value="">Neuveden</option>
+            <option value="passengers">Cestující</option>
+            <option value="goods">Zboží</option>
+          </select>
+        </label>
+      </div>
+      <button type="submit">Uložit údaje</button>
+      <span role="status">{message}</span>
+    </form>
   )
 }

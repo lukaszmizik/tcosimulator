@@ -4,6 +4,7 @@
 
 import './dailyDriverCardPrint.css'
 import { DailyDriverCardPrint } from '../components/overlays/DailyDriverCardPrint'
+import type { PrintVehicleProfile } from '../data/printVehicleProfile'
 import type { DailyCardPrintInput } from './driverCardPrintRows'
 import type { UsePrintStateReturn } from './usePrintState'
 import type { SymbolMap } from '../TachoTypes'
@@ -11,7 +12,6 @@ import type { CardData, EventLogEntry, ManualEntrySegment } from '../TachoTypes'
 import type { SecondActivitySnapshot } from '../TachoTypes'
 import type { Translations } from '../translations/types'
 import { getCard1StoredData } from '../data/card_stored_data'
-import { VEHICLE_TECHNICAL_DATA } from '../data/vehicle_technical_data'
 import { PrintDriver1Overlay } from '../components/overlays/PrintDriver1Overlay'
 import { PrintVehicle24hOverlay } from '../components/overlays/PrintVehicle24hOverlay'
 import { PrintVDiagramOverlay } from '../components/overlays/PrintVDiagramOverlay'
@@ -30,6 +30,7 @@ export type PrintOverlaysProps = {
   slot1CardActivities?: readonly Driver1PrintCardActivity[]
   eventLog: EventLogEntry[]
   odometerKm: number
+  vehicleProfile: PrintVehicleProfile
   dailyDriverCard: (slot: 1 | 2) => Omit<DailyCardPrintInput, 'selectedDayUtc' | 'isUtc'>
 }
 
@@ -45,6 +46,7 @@ export function PrintOverlays({
   slot1CardActivities = [],
   eventLog,
   odometerKm,
+  vehicleProfile,
   dailyDriverCard,
 }: PrintOverlaysProps) {
   const {
@@ -72,8 +74,8 @@ export function PrintOverlays({
         })()
       : null
   const speedVehicleDataBlock = {
-    vin: VEHICLE_TECHNICAL_DATA.vehicleIdentificationNumber,
-    registrationNumber: VEHICLE_TECHNICAL_DATA.vehicleRegistration,
+    vin: vehicleProfile.vin,
+    registrationNumber: vehicleProfile.registration,
   }
 
   return (
@@ -84,7 +86,7 @@ export function PrintOverlays({
           symbols={symbolMap}
           onClose={onCloseDriver1}
           closeLabel={t.printOverlay.close}
-          title={t.printOverlay.driver1Title.replace(/1$/, String(printDriverSlot))}
+          title={`${t.printOverlay.driverCard24hTitle} ${printDriverSlot}`}
         />
       )}
 
@@ -112,15 +114,17 @@ export function PrintOverlays({
         printVehicle24hIsUtc={printVehicle24hIsUtc}
       />
 
-      <PrintVDiagramOverlay
-        open={printVDiagramOpen}
-        onClose={onCloseVDiagram}
-        t={t}
-        printVDiagramSelectedDate={printVDiagramSelectedDate}
-        simulatedUtcTime={simulatedUtcTime}
-        secondHistory={secondHistory}
-        symbolMap={symbolMap}
-      />
+      {printVDiagramOpen && (
+        <PrintVDiagramOverlay
+          onClose={onCloseVDiagram}
+          t={t}
+          dateUtc={printVDiagramSelectedDate ?? simulatedUtcTime}
+          simulatedUtcTime={simulatedUtcTime}
+          secondHistory={secondHistory}
+          symbolMap={symbolMap}
+          profile={vehicleProfile}
+        />
+      )}
 
       <PrintSpeedVehicleOverlay
         open={printSpeedVehicleOpen}

@@ -14,11 +14,27 @@
   font-size: 13px;
 }
 
-.print-vehicle-settings summary {
-  cursor: pointer;
+.control-panel-extras {
+  flex-basis: 100%;
+  min-width: 0;
 }
 
-.print-vehicle-settings form {
+.control-panel-extras summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.control-panel-extras > div {
+  margin-top: 8px;
+}
+
+.control-panel-extra-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.print-vehicle-settings {
   margin-top: 10px;
   padding: 12px;
   border: 1px solid #647080;
@@ -94,8 +110,8 @@
 }
 
 .daily-card-print-paper {
-  width: max-content;
-  min-width: 100%;
+  box-sizing: border-box;
+  width: 266px;
   padding: 14px 17px 12px;
   background: #fffefa;
   color: #141310;
@@ -119,9 +135,22 @@
   line-height: 1;
 }
 
-.daily-card-print-note {
-  margin-top: 5px;
-  font-size: 0.82em;
+.daily-card-print-toolbar h2 {
+  margin: 0;
+  font-size: inherit;
+  font-weight: 600;
+}
+
+.vdiagram-print-band,
+.daily-card-print-paper .print-paper-strip {
+  display: block;
+  width: 100%;
+  height: auto;
+  break-inside: avoid;
+}
+
+.vdiagram-print-band {
+  font: 12px VT323, monospace;
 }
 
 @media print {
@@ -151,7 +180,6 @@
   }
 
   .daily-card-print-paper {
-    box-sizing: border-box;
     width: 56.5mm;
     min-width: 0;
     margin: 0;

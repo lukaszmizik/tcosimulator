@@ -164,8 +164,14 @@ export default function App() {
   /** Čas poslední manuální úpravy panelu (+/-) – po tuto dobu nesyncovat panel zpět, aby tlačítko + zůstalo funkční */
   const lastPanelAdjustmentMsRef = useRef<number>(0)
   const [nr165Dismissed, setNr165Dismissed] = useState(false)
-  /** Sbalený stav infoboxů – úzký proužek s ikonami */
-  const infoPanelsCollapsed = false
+  const [mobileInfoPanels, setMobileInfoPanels] = useState(false)
+  useEffect(() => {
+    const query = window.matchMedia('screen and (max-width: 900px)')
+    const sync = () => setMobileInfoPanels(query.matches)
+    sync()
+    query.addEventListener('change', sync)
+    return () => query.removeEventListener('change', sync)
+  }, [])
   /** Výstraha při pokusu o generování pracovního týdne, když na kartě již jsou data (překryv). */
   const [generateWorkWeekBlockedWarning, setGenerateWorkWeekBlockedWarning] = useState(false)
   /** Modal: pokus o zápis duplicitních dat na kartu */
@@ -3216,23 +3222,6 @@ export default function App() {
         </FaceplateFrame>
         <div className="slot-tap-controls">{([1,2] as const).map(slot => {const card=slot === 1 ? card1Data : card2Data;return <button key={slot} disabled={!!card} onClick={() => openCardPicker(slot)}>Slot {slot} · {card ? card.surname || card.name : 'Vložit kartu'}</button>})}</div>
 
-      <div className={`info-panels-wrapper info-panels-wrapper--attached ${infoPanelsCollapsed ? 'info-panels-wrapper--collapsed' : ''}`}>
-          {infoPanelsCollapsed ? (
-            <div className="info-panels-strip">
-              <InfoPanel items={panelItems} resetTrigger={infoPanelResetTrigger} symbolMap={symbolMap} collapsed />
-              {showNr165Warning && !nr165Dismissed && (
-                <Nr165WarningBox onClose={() => setNr165Dismissed(true)} symbolMap={symbolMap} collapsed />
-              )}
-            </div>
-          ) : (
-            <div className="info-panels-stack">
-              <InfoPanel items={panelItems} resetTrigger={infoPanelResetTrigger} symbolMap={symbolMap} />
-              {showNr165Warning && !nr165Dismissed && (
-                <Nr165WarningBox onClose={() => setNr165Dismissed(true)} symbolMap={symbolMap} />
-              )}
-            </div>
-          )}
-        </div>
 
         <ControlPanel
           t={t}
@@ -3264,8 +3253,31 @@ export default function App() {
           onOpenWorkWeekData={handleOpenWorkWeekData}
           onSaveCard1ToFile={handleSaveCard1ToFile}
           onShowCardData={handleShowCardData}
+          printVehicleSettings={<PrintVehicleSettings profile={printVehicleProfile} onSave={setPrintVehicleProfile} />}
+          infoPanels={(
+            <div
+              className="info-panels-wrapper info-panels-wrapper--attached"
+              role={mobileInfoPanels ? 'region' : undefined}
+              aria-label={mobileInfoPanels ? t.ui.infoPanelLabel : undefined}
+              tabIndex={mobileInfoPanels ? 0 : undefined}
+              onKeyDown={mobileInfoPanels ? (event) => event.stopPropagation() : undefined}
+            >
+              <div className="info-panels-stack">
+                <InfoPanel
+                  items={panelItems}
+                  resetTrigger={infoPanelResetTrigger}
+                  symbolMap={symbolMap}
+                />
+                {showNr165Warning && !nr165Dismissed && (
+                  <Nr165WarningBox
+                    onClose={() => setNr165Dismissed(true)}
+                    symbolMap={symbolMap}
+                  />
+                )}
+              </div>
+            </div>
+          )}
         />
-        <PrintVehicleSettings profile={printVehicleProfile} onSave={setPrintVehicleProfile} />
       </div>
       </div>
       <footer className="vdo-labels">Continental VDO DTCO 4.1 G2V2 · lukas@zmizik.com</footer>
@@ -3297,6 +3309,7 @@ export default function App() {
         )}
         eventLog={eventLog}
         odometerKm={odometerKm}
+        vehicleProfile={printVehicleProfile}
         dailyDriverCard={(slot) => {
           const card = slot === 1 ? card1Data : card2Data
           const imported = slot === 1 ? insertedSlot1 : insertedSlot2

@@ -5,6 +5,7 @@
 
 import { PrintSpeedVehicleSVG, PRINT_MARK_EXCESS_SPEED, type PrintDriverDataBlockData, type PrintVehicleDataBlockData } from '../../PrintTemplates'
 import type { SymbolMap } from '../../TachoTypes'
+import { PrintPreview } from './PrintPreview'
 import type { Translations } from '../../translations/types'
 
 export type PrintSpeedVehicleOverlayProps = {
@@ -31,18 +32,15 @@ export function PrintSpeedVehicleOverlay({
   if (!open) return null
 
   return (
-    <div className="print-driver1-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label={t.ui.printSpeedVehicleTitle}>
-      <button type="button" className="print-overlay-close" onClick={onClose} aria-label={t.printOverlay.close}>×</button>
-      <div className="print-driver1-paper" onClick={(e) => e.stopPropagation()}>
-        <PrintSpeedVehicleSVG
-          dateUtc={simulatedUtcTime}
-          symbolMap={symbolMap}
-          printMarkSymbolIds={PRINT_MARK_EXCESS_SPEED}
-          printMarkSuffix="90 km/h"
-          driverDataBlock={driverDataBlock ?? undefined}
-          vehicleDataBlock={vehicleDataBlock ?? undefined}
-        />
-      </div>
-    </div>
+    <PrintPreview title={t.ui.printSpeedVehicleTitle} closeLabel={t.printOverlay.close} onClose={onClose} ready={!!symbolMap?.[18]}>
+      <PrintSpeedVehicleSVG
+        dateUtc={simulatedUtcTime}
+        symbolMap={symbolMap}
+        printMarkSymbolIds={PRINT_MARK_EXCESS_SPEED}
+        printMarkSuffix="90 km/h"
+        driverDataBlock={driverDataBlock ?? undefined}
+        vehicleDataBlock={vehicleDataBlock ?? undefined}
+      />
+    </PrintPreview>
   )
 }

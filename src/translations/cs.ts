@@ -238,6 +238,7 @@ export const cs: Translations = {
     },
   },
   controls: {
+    dataScenariosSettings: 'Data, scénáře a další nastavení',
     generateWorkWeek: 'Generovat pracovní týden', // 80
     generateWorkWeekTitle: 'Vygenerovat 5–6 pracovních směn s jízdou, prací a přestávkami do paměti a na kartu Zmizík', // 81
     generateWorkWeekDisabledTitle: 'V režimu osádky nelze generovat pracovní týden',
@@ -264,6 +265,7 @@ export const cs: Translations = {
     dataAndRecords: 'Data a záznamy',
   },
   printOverlay: {
+    driverCard24hTitle: '24h výtisk karty řidiče',
     driver1Title: 'Výtisk řidič 1', // 88
     basicInfo: 'Základní info', // 89
     name: 'Jméno:', // 90

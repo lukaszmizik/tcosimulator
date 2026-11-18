@@ -238,6 +238,7 @@ export const ru: Translations = {
     },
   },
   controls: {
+    dataScenariosSettings: 'Данные, сценарии и настройки',
     generateWorkWeek: 'Сформировать рабочую неделю', // 80
     generateWorkWeekTitle: 'Сгенерировать 5–6 рабочих смен с поездками, работой и перерывами в память и карту Zmizik', // 81
     generateWorkWeekDisabledTitle: 'В режиме экипажа нельзя сформировать рабочую неделю',
@@ -264,6 +265,7 @@ export const ru: Translations = {
     dataAndRecords: 'Данные и записи',
   },
   printOverlay: {
+    driverCard24hTitle: 'Суточная распечатка карты водителя',
     driver1Title: 'Распечатка водитель 1', // 88
     basicInfo: 'Основная информация', // 89
     name: 'Имя:', // 90

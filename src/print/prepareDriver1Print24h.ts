@@ -1,14 +1,13 @@
 /**
- * Příprava 24hodinového výtisku karty řidiče 1 pro zvolený kalendářní den UTC.
- * Doložené činnosti berou příznak původu z převodu časové osy karty.
+ * Příprava 24hodinového výtisku karty řidiče pro zvolený kalendářní den UTC.
+ * Doložené činnosti berou příznak původu z původních záznamů karty.
  * Ruční buffer se skládá zvlášť: razítko země je jen bod a činnost neukončí.
  * Při překryvu zůstává doložená činnost z DDD. Ruční záznam doplní jen volný čas.
  * Neznámý ani nepokrytý čas se do odpočinku nepřičte. Součty jsou až z výsledných úseků.
  */
 
 import { segmentToMsUtc } from '../CardLogic'
-import type { EditorActivityId, ManualEntrySegment } from '../TachoTypes'
-import { buildSimulatorSlotGraph } from 'tacho-viewer-slot-graph'
+import type { ActivityHistoryEntry, EditorActivityId, ManualEntrySegment, SecondActivitySnapshot } from '../TachoTypes'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -19,6 +18,11 @@ export type Driver1PrintCardActivity = {
   startUtc: number
   endUtc: number
   isManualEntry?: boolean
+  isCrew?: boolean
+  slot?: 1 | 2
+  registration?: string
+  open?: boolean
+  simulated?: boolean
 }
 
 export type Driver1Print24hActivity = {
@@ -27,6 +31,11 @@ export type Driver1Print24hActivity = {
   endMs: number
   /** Pravda jen u úseku, který vznikl z ručního doplnění. */
   isManualEntry: boolean
+  isCrew?: boolean
+  slot?: 1 | 2
+  registration?: string
+  open?: boolean
+  simulated?: boolean
 }
 
 export type Driver1Print24hSums = {
@@ -77,54 +86,79 @@ export function utcDaysIntersectingCardActivities(
   return [...days].sort((a, b) => b - a)
 }
 
-function activityIdFromGraphType(type: string): Driver1Print24hActivityId | null {
-  if (type === 'řízení') return 'DRIVING'
-  if (type === 'práce') return 'WORK'
-  if (type === 'pohotovost') return 'AVAILABILITY'
-  if (type === 'neznámá') return 'UNKNOWN'
-  if (type === 'odpočinek' || type === 'odpočinek>24h' || type === 'odpočinek>45h') return 'REST'
-  return null
-}
+const activityIds = {
+  driving: 'DRIVING',
+  work: 'WORK',
+  availability: 'AVAILABILITY',
+  rest: 'REST',
+  unknown: 'UNKNOWN',
+} as const
 
 function cardPieces(activities: readonly Driver1PrintCardActivity[]): Piece[] {
-  if (activities.length === 0) return []
-  const graph = buildSimulatorSlotGraph({
-    activities: activities.map((activity) => ({
-      kind: activity.kind,
-      startUtc: activity.startUtc,
-      endUtc: activity.endUtc,
-      isManualEntry: activity.isManualEntry === true,
-    })),
-    manualSegments: [],
-    simulatedMinutes: [],
-    locations: [],
-    currentSlot: 1,
+  return activities.map(({ kind, startUtc, endUtc, isManualEntry, ...context }) => ({
+    ...context,
+    activityId: activityIds[kind],
+    startMs: startUtc,
+    endMs: endUtc,
+    isManualEntry: isManualEntry === true,
+  }))
+}
+
+/** Historie vybrané karty může obsahovat záznamy z obou šachet. */
+export function simulatedPrintCardActivities(
+  history: readonly ActivityHistoryEntry[], cardId: string, now: number,
+  fallbackSlot: 1 | 2 = 1,
+): Driver1PrintCardActivity[] {
+  return history.flatMap((entry) => {
+    const slot = entry.driver1CardId === cardId ? 1
+      : entry.driver2CardId === cardId ? 2
+      : entry.driver1CardId == null && entry.driver2CardId == null ? fallbackSlot : null
+    if (!slot || entry.minuteStartUtc >= now) return []
+    const activity = slot === 1 ? entry.driver1 : entry.driver2
+    if (activity === 'none') return []
+    return [{
+      kind: activity === 'otherWork' ? 'work' : activity,
+      startUtc: entry.minuteStartUtc,
+      endUtc: Math.min(entry.minuteStartUtc + 60_000, now),
+      isCrew: entry.isCrew,
+      slot,
+      simulated: true,
+    }]
   })
-  const blocks = graph.days.flatMap((day) => day.activities) as Array<{
-    type: string
-    startMs: number
-    endMs: number
-    isManualEntry?: boolean
-  }>
-  const pieces: Piece[] = []
-  for (const block of blocks) {
-    const activityId = activityIdFromGraphType(block.type)
-    if (!activityId || block.endMs <= block.startMs) continue
-    pieces.push({
-      activityId,
-      startMs: block.startMs,
-      endMs: block.endMs,
-      isManualEntry: block.isManualEntry === true,
-    })
+}
+
+/** Rozpracovaná minuta podle skutečných záznamů a identifikace karty v šachtě. */
+export function ongoingPrintCardActivity(
+  samples: readonly SecondActivitySnapshot[], cardId: string, now: number, isCrew: boolean,
+): Driver1PrintCardActivity | null {
+  const sample = samples[samples.length - 1]
+  if (!sample || sample.timestampUtc > now || now - sample.timestampUtc > 1000) return null
+  const slot = sample.driver1CardId === cardId ? 1 : sample.driver2CardId === cardId ? 2 : null
+  if (!slot) return null
+  const activity = slot === 1 ? sample.driver1 : sample.driver2
+  if (activity === 'none') return null
+
+  const minuteStart = Math.floor(now / 60_000) * 60_000
+  let start = sample.timestampUtc
+  for (let index = samples.length - 2; index >= 0; index--) {
+    const previous = samples[index]
+    if (previous.timestampUtc < minuteStart || start - previous.timestampUtc !== 1000 ||
+      (slot === 1 ? previous.driver1CardId !== cardId || previous.driver1 !== activity
+        : previous.driver2CardId !== cardId || previous.driver2 !== activity)) break
+    start = previous.timestampUtc
   }
-  return pieces
+  if (start >= now || start < minuteStart) return null
+  return {
+    kind: activity === 'otherWork' ? 'work' : activity, startUtc: start,
+    endUtc: now, slot, isCrew, open: true, simulated: true,
+  }
 }
 
 function clipPiece(piece: Piece, dayStartMs: number, dayEndMs: number): Piece | null {
   const startMs = Math.max(piece.startMs, dayStartMs)
   const endMs = Math.min(piece.endMs, dayEndMs)
   if (endMs <= startMs) return null
-  return { ...piece, startMs, endMs }
+  return { ...piece, startMs, endMs, open: piece.open && endMs === piece.endMs }
 }
 
 function subtractPiece(piece: Piece, blockers: readonly Piece[]): Piece[] {
@@ -136,7 +170,7 @@ function subtractPiece(piece: Piece, blockers: readonly Piece[]): Piece[] {
         next.push(item)
         continue
       }
-      if (item.startMs < block.startMs) next.push({ ...item, endMs: block.startMs })
+      if (item.startMs < block.startMs) next.push({ ...item, endMs: block.startMs, open: false })
       if (item.endMs > block.endMs) next.push({ ...item, startMs: block.endMs })
     }
     pieces = next
@@ -162,9 +196,12 @@ function mergeAdjacent(items: readonly Piece[]): Piece[] {
       last &&
       last.endMs === item.startMs &&
       last.activityId === item.activityId &&
-      last.isManualEntry === item.isManualEntry
+      last.isManualEntry === item.isManualEntry &&
+      last.slot === item.slot && last.isCrew === item.isCrew && last.registration === item.registration &&
+      last.simulated === item.simulated
     ) {
       last.endMs = item.endMs
+      last.open = item.open
     } else {
       merged.push({ ...item })
     }

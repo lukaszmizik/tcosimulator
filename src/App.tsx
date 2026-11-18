@@ -107,12 +107,14 @@ import { parseSymbols } from './Symbols'
 import { isWarningCode } from './data/warnings'
 import { useLanguage } from './translations'
 import { ControlPanel } from './ControlPanel'
+import { PrintVehicleSettings } from './components/PrintVehicleSettings'
+import { loadPrintVehicleProfile } from './data/printVehicleProfile'
 import { DriverCardVisual } from './DriverCardVisual'
 import { CardPrepMenu, type CardPrep } from './CardPrepMenu'
 import { usePrintState } from './print/usePrintState'
 import { PrintOverlays } from './print/PrintOverlays'
 import { applyPrintWizardKey, resolvePrintMenuAction } from './print/printWizardHandling'
-import { driver1PrintCardActivities } from './print/prepareDriver1Print24h'
+import { driver1PrintCardActivities, simulatedPrintCardActivities, ongoingPrintCardActivity } from './print/prepareDriver1Print24h'
 import { useMenuCountryInput } from './useMenuCountryInput'
 import { useMenuLoadUnload } from './useMenuLoadUnload'
 import { useSimulationSecondClock, type MinuteAccumulator } from './useSimulationSecondClock'
@@ -152,6 +154,7 @@ export default function App() {
   // Simulovaný čas UTC – vnitřní čas simulátoru, nezávislý na systémovém čase
   const [simulatedUtcTime, setSimulatedUtcTime] = useState(() => Date.now())
   const [timeOffsetMs, setTimeOffsetMs] = useState(0)
+  const [printVehicleProfile, setPrintVehicleProfile] = useState(loadPrintVehicleProfile)
   const localTime = useMemo(
     () => new Date(simulatedUtcTime + timeOffsetMs),
     [simulatedUtcTime, timeOffsetMs],
@@ -172,7 +175,7 @@ export default function App() {
   // Načtení symbolů ze souboru symboly.txt (dostupného jako statický asset, např. v /public)
   useEffect(() => {
     let cancelled = false
-    fetch('/symboly.txt')
+    fetch(`${import.meta.env.BASE_URL}symboly.txt`)
       .then((res) => (res.ok ? res.text() : Promise.reject(new Error('Failed to load symboly.txt'))))
       .then((text) => {
         if (cancelled) return
@@ -1115,7 +1118,7 @@ export default function App() {
     setPrintWizardState((prev) => applyPrintWizardKey(prev, action, {
       setCurrentMenuPath,
       openPrintVDiagram: printState.openPrintVDiagram,
-      openPrintDriver1: printState.openPrintDriver1,
+      openPrintDriverCard: printState.openPrintDriverCard,
       openPrintVehicle24h: printState.openPrintVehicle24h,
     }))
   }, [printState])
@@ -1416,7 +1419,11 @@ export default function App() {
     }
     if (selectedItem.action) {
       const item = selectedItem as import('./MenuStructure').MenuItem & { requiresDate?: boolean; requiresUtcConfirm?: boolean }
-      const slot1CardNumber = card1InsertedRef.current ? card1DataRef.current?.cardNumber : undefined
+      const printSlot = selectedItem.action === 'PRINT_24H_D1' ? 1 : selectedItem.action === 'PRINT_24H_D2' ? 2 : null
+      const printCard = printSlot === 1 && card1InsertedRef.current ? card1DataRef.current
+        : printSlot === 2 && card2InsertedRef.current ? card2DataRef.current : null
+      const printDdd = printCard?.cardNumber ? dddCardsRef.current[printCard.cardNumber] : undefined
+      const printCardId = printCard?.templateId ?? printCard?.cardNumber
       const printAction = resolvePrintMenuAction({
         action: selectedItem.action,
         line2: selectedItem.line2,
@@ -1425,9 +1432,15 @@ export default function App() {
         secondHistory,
         simulatedUtcTime,
         currentMenuPath,
-        cardActivities: driver1PrintCardActivities(
-          slot1CardNumber ? dddCardsRef.current[slot1CardNumber]?.original.activities : null,
-        ),
+        cardActivities: printSlot && printCardId
+          ? [
+            ...(printDdd?.original.activities ?? []),
+            ...simulatedPrintCardActivities(
+              printDdd?.workingActivities ?? cardActivityHistoryByTemplateIdRef.current[printCardId] ?? [],
+              printCardId, simulatedUtcTime, printSlot,
+            ),
+          ]
+          : [],
       })
       if (printAction?.type === 'dateWizard') {
         addEntry(t.actions.stiskOk, `${t.actions.vyberDataProTisk} ${selectedItem.line2 ?? selectedItem.action}`)
@@ -1436,7 +1449,7 @@ export default function App() {
       }
       if (printAction?.type === 'openDriver1') {
         addEntry(t.actions.stiskOk, `${t.actions.tiskRidic1} ${selectedItem.line2 ?? selectedItem.action}`)
-        printState.openPrintDriver1(null)
+        printState.openPrintDriverCard(null)
         return
       }
       if (printAction?.type === 'openVDiagram') {
@@ -3199,6 +3212,7 @@ export default function App() {
           onSaveCard1ToFile={handleSaveCard1ToFile}
           onShowCardData={handleShowCardData}
         />
+        <PrintVehicleSettings profile={printVehicleProfile} onSave={setPrintVehicleProfile} />
       </div>
         <button
           type="button"
@@ -3260,6 +3274,46 @@ export default function App() {
         )}
         eventLog={eventLog}
         odometerKm={odometerKm}
+        dailyDriverCard={(slot) => {
+          const card = slot === 1 ? card1Data : card2Data
+          const imported = slot === 1 ? insertedSlot1 : insertedSlot2
+          const printCardId = card?.templateId ?? card?.cardNumber
+          const ongoing = printCardId ? ongoingPrintCardActivity(secondHistory, printCardId, simulatedUtcTime, isMultiManning) : null
+          const simulated = printCardId
+            ? simulatedPrintCardActivities(
+              imported?.workingActivities ?? cardActivityHistoryByTemplateId[printCardId] ?? [],
+              printCardId, ongoing?.startUtc ?? simulatedUtcTime, slot,
+            )
+            : []
+          if (ongoing) simulated.push(ongoing)
+          const recordedForCard = (at: number) => simulated.some((activity) => at >= activity.startUtc && at < activity.endUtc)
+          return {
+            printedAtUtc: simulatedUtcTime,
+            localOffsetMs: timeOffsetMs,
+            profile: printVehicleProfile,
+            card,
+            secondCard: slot === 1 ? (card2Inserted ? card2Data : null) : (card1Inserted ? card1Data : null),
+            imported: imported?.original,
+            secondImported: (slot === 1 ? insertedSlot2 : insertedSlot1)?.original,
+            manual: slot === 1 ? driver1ManualEntryBuffer : driver2ManualEntryBuffer,
+            simulated,
+            vehicleEvents: eventLog,
+            simulatedConditions: [
+              ...outModeEvents.map((event) => ({
+                atUtc: event.minuteStartUtc, kind: event.type === 'activation' ? 'out' : 'out_end',
+              })),
+              ...ferryTrainEvents.map((event) => ({
+                atUtc: event.minuteStartUtc, kind: event.type === 'activation' ? 'ferry' : 'ferry_end',
+              })),
+            ].filter((event) => recordedForCard(event.atUtc)),
+            simulatedPlaces: recordedGpsLocations.flatMap((entry) => {
+              if (!recordedForCard(entry.minuteStartUtc)) return []
+              const kind = entry.recordType === 'gps_3h' ? 'gps'
+                : entry.recordType === 'end_country_card' ? 'end_country' : entry.recordType ?? 'gps'
+              return [{ atUtc: entry.minuteStartUtc, kind, detail: entry.gpsLocation }]
+            }),
+          }
+        }}
       />
 
       {workWeekGraphData !== null &&

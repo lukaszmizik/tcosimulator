@@ -108,6 +108,7 @@ import { workingTimeDisplay } from './workingTimeDisplay'
 import { counterCardSlot, counterIndexAfterCardRemoval, slot1CounterLcdProps, vdo24hEntryAvailable, vdoCounterClosesWithoutCard, buildTimesSequence, timesLocationFrom, stepTimesLocation, type VdoNamedScreen } from './slot1DddCounter'
 import { parseSymbols } from './Symbols'
 import { isWarningCode } from './data/warnings'
+import { LANGUAGE_PAGE, languages, recalledLanguage, rememberLanguage } from './firstLevelDisplay'
 import { useLanguage } from './translations'
 import { ControlPanel } from './ControlPanel'
 import { VirtualCardNameSettings, loadVirtualCardNames, virtualCardTemplate } from './VirtualCardNameSettings'
@@ -154,6 +155,8 @@ export default function App() {
   const [operatingScreenIndex, setOperatingScreenIndex] = useState(0)
   /** Prozatímní pojmenovaná obrazovka. Šipka dolů z hlavního Counteru, šipka nahoru zpět. */
   const [vdoNamedScreen, setVdoNamedScreen] = useState<VdoNamedScreen | null>(null)
+  const [languageDraft, setLanguageDraft] = useState<typeof language | null>(null)
+  const [languageSaved, setLanguageSaved] = useState(false)
   const [currentMenuPath, setCurrentMenuPath] = useState<string[]>([ENTRY_MENU_ID])
   const [selectedIndex, setSelectedIndex] = useState(0)
   // Simulovaný čas UTC – vnitřní čas simulátoru, nezávislý na systémovém čase
@@ -242,12 +245,27 @@ export default function App() {
     })
     if (next !== operatingScreenIndex) setOperatingScreenIndex(next)
   }, [card1Inserted, card2Inserted, operatingScreenIndex])
+  const languagePage = displayMode === 'operating' && vdoCounterActive && !vdoNamedScreen && operatingScreenIndex === LANGUAGE_PAGE
   useEffect(() => {
-    if (!vdoCounterClosesWithoutCard(card1Inserted, card2Inserted)) return
-    if (!vdoCounterActive && vdoNamedScreen == null) return
+    if (currentSpeed > 0 && vdoCounterActive && operatingScreenIndex >= 2) {
+      setVdoCounterActive(false)
+      setOperatingScreenIndex(0)
+    }
+    if (!languagePage || currentSpeed > 0) {
+      setLanguageDraft(null)
+      setLanguageSaved(false)
+    }
+  }, [languagePage, currentSpeed, vdoCounterActive, operatingScreenIndex])
+  useEffect(() => {
+    if (!languageSaved) return
+    const timer = window.setTimeout(() => setLanguageSaved(false), 2000)
+    return () => window.clearTimeout(timer)
+  }, [languageSaved])
+  useEffect(() => {
+    if (!vdoCounterClosesWithoutCard(card1Inserted, card2Inserted) || operatingScreenIndex >= 2) return
     setVdoCounterActive(false)
     setVdoNamedScreen(null)
-  }, [card1Inserted, card2Inserted, vdoCounterActive, vdoNamedScreen])
+  }, [card1Inserted, card2Inserted, operatingScreenIndex, vdoCounterActive, vdoNamedScreen])
   /** Čas rozjezdu s kartou 1 (pro pravidlo 1 h v režimu osádky). Reset při vyjmutí obou karet. */
   const [drivingStartTime, setDrivingStartTime] = useState<number | null>(null)
   /** Čas vložení karty do slotu 2. Nastaví se při vložení; reset při vyjmutí obou karet. */
@@ -309,6 +327,12 @@ export default function App() {
   const [cardDragging, setCardDragging] = useState(false)
   const [card1Data, setCard1Data] = useState<CardData | null>(null)
   const [card2Data, setCard2Data] = useState<CardData | null>(null)
+  const languageCard = card1Data?.cardNumber || card1Data?.templateId || card2Data?.cardNumber || card2Data?.templateId
+  useEffect(() => {
+    const saved = languageCard && recalledLanguage(languageCard)
+    if (saved) setLanguage(saved)
+  }, [languageCard, setLanguage])
+
   /** Sekvence vložení karty (1M) – řízena useCardWizard */
   /** Průvodce vyjmutím karty (Withdrawal Wizard). Trigger: krátký stisk tlačítka slotu s vloženou kartou. */
   const [cardWithdrawalState, setCardWithdrawalState] = useState<CardWithdrawalState | null>(null)
@@ -1210,6 +1234,12 @@ export default function App() {
   }, [])
 
   const browseOperatingTimes = useCallback((direction: 'down' | 'up') => {
+    if (languagePage && languageDraft && currentSpeed === 0) {
+      const delta = direction === 'down' ? 1 : -1
+      setLanguageDraft(languages[(languages.indexOf(languageDraft) + delta + languages.length) % languages.length])
+      return
+    }
+    setLanguageSaved(false)
     const entryContext = {
       vdoCounterActive: true,
       card1Inserted,
@@ -1263,7 +1293,7 @@ export default function App() {
     }
     setOperatingScreenIndex(next.slot === 1 ? 0 : 1)
     setVdoNamedScreen(next.kind === 'counter' ? null : next.kind === 'card' ? 'vdoCard' : next.kind)
-  }, [card1Inserted, card2Inserted, isMultiManning, tachoState.ferryTrainModeActive, outModeActive, card1Data, card2Data, currentSpeed, leftActivityId, rightActivityId, vdoCounterActive, vdoNamedScreen, operatingScreenIndex])
+  }, [languagePage, languageDraft, card1Inserted, card2Inserted, isMultiManning, tachoState.ferryTrainModeActive, outModeActive, card1Data, card2Data, currentSpeed, leftActivityId, rightActivityId, vdoCounterActive, vdoNamedScreen, operatingScreenIndex])
 
   const handleUp = useCallback(() => {
     if (!ignitionOn) {
@@ -1290,7 +1320,7 @@ export default function App() {
       return
     }
     if (displayMode === 'operating') {
-      if (!card1Inserted && !card2Inserted) return
+      if (currentSpeed > 0 && !card1Inserted && !card2Inserted) return
       browseOperatingTimes('up')
       return
     }
@@ -1323,7 +1353,7 @@ export default function App() {
       return
     }
     if (displayMode === 'operating') {
-      if (!card1Inserted && !card2Inserted) return
+      if (currentSpeed > 0 && !card1Inserted && !card2Inserted) return
       browseOperatingTimes('down')
       return
     }
@@ -1418,6 +1448,18 @@ export default function App() {
     }
     if (displayMode === 'operating') {
       if (currentSpeed > 0) return /* při jízdě menu tlačítkem OK nevyvolat */
+      if (languagePage) {
+        if (languageDraft) {
+          setLanguage(languageDraft)
+          if (languageCard) rememberLanguage(languageCard, languageDraft)
+          setLanguageDraft(null)
+          setLanguageSaved(true)
+        } else {
+          setLanguageSaved(false)
+          setLanguageDraft(language)
+        }
+        return
+      }
       addEntry(t.actions.stiskOk, t.actions.vstupDoMenu)
       setVdoCounterActive(false)
       setDisplayMode('menu')
@@ -1543,7 +1585,7 @@ export default function App() {
     }
     setMenuComingSoonInfo({ id: `menu-coming-soon-${Date.now()}` })
     addEntry(t.actions.stiskOk, t.infoPanel.menuComingSoon)
-  }, [t, ignitionOn, wakeDisplayFromStandby, displayMode, currentSpeed, selectedItem, menusById, currentMenuPath, countries, spanishRegions, secondHistory, activityHistory, simulatedUtcTime, overrideWarningCode, drivingWithoutCardWarningActive, ignitionWarningActive, breakWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, cardInsertionState, cardWithdrawalState, printWizardState, menuCountryInputState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, openMenuCountryInput, confirmMenuLoadUnload, isPrintoutActive, printState, addEntry, getCardInsertionOkDetail])
+  }, [languagePage, languageDraft, languageCard, language, setLanguage, t, ignitionOn, wakeDisplayFromStandby, displayMode, currentSpeed, selectedItem, menusById, currentMenuPath, countries, spanishRegions, secondHistory, activityHistory, simulatedUtcTime, overrideWarningCode, drivingWithoutCardWarningActive, ignitionWarningActive, breakWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, cardInsertionState, cardWithdrawalState, printWizardState, menuCountryInputState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, openMenuCountryInput, confirmMenuLoadUnload, isPrintoutActive, printState, addEntry, getCardInsertionOkDetail])
 
   const handleBack = useCallback(() => {
     if (!ignitionOn) {
@@ -1587,6 +1629,10 @@ export default function App() {
       return
     }
     if (displayMode === 'operating' && vdoCounterActive) {
+      if (languagePage && languageDraft) {
+        setLanguageDraft(null)
+        return
+      }
       addEntry(t.actions.stiskZpet, t.actions.opusteniVdoPrehledu)
       setVdoCounterActive(false)
       setVdoNamedScreen(null)
@@ -1602,7 +1648,7 @@ export default function App() {
       setCurrentMenuPath((path) => leaveSubmenu(path).path)
       setSelectedIndex(leaveSubmenu(currentMenuPath).index)
     }
-  }, [t, ignitionOn, wakeDisplayFromStandby, displayMode, canGoBack, vdoCounterActive, overrideWarningCode, cardInsertionState, cardWithdrawalState, printWizardState, menuCountryInputState, menuLoadUnloadConfirmState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, leaveMenuLoadUnloadByBack, drivingWithoutCardWarningActive, drivingWithoutValidCardWarningActive, ignitionWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, isPrintoutActive, printState, addEntry])
+  }, [languagePage, languageDraft, t, ignitionOn, wakeDisplayFromStandby, displayMode, canGoBack, vdoCounterActive, overrideWarningCode, cardInsertionState, cardWithdrawalState, printWizardState, menuCountryInputState, menuLoadUnloadConfirmState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, leaveMenuLoadUnloadByBack, drivingWithoutCardWarningActive, drivingWithoutValidCardWarningActive, ignitionWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, isPrintoutActive, printState, addEntry])
 
   const cycleLeftActivity = useCallback(() => {
     setLeftActivityId((id) => getNextActivity(id))
@@ -3091,6 +3137,8 @@ export default function App() {
                 <TachoDisplay
                   lcdPreview
                   {...displayProps}
+                  languageDraft={languageDraft}
+                  languageSaved={languageSaved}
                   vdoNamedScreen={vdoNamedScreen}
                   slot1DebugBreak={slot1LcdProps.slot1DebugBreak}
                   slot1DebugDailyRemainingMs={slot1LcdProps.slot1DebugDailyRemainingMs}

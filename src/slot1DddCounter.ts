@@ -1,3 +1,4 @@
+import { UTC_PAGE, LANGUAGE_PAGE, MAIN_MENU_PAGE } from './firstLevelDisplay'
 import type { DrivingBreakDisplay } from './drivingBreakDisplay'
 
 /**
@@ -68,7 +69,7 @@ export function buildTimesSequence(input: {
       }
     }
   }
-  for (let index = 2; index <= 6; index += 1) steps.push({ kind: 'info', index })
+  for (const index of [UTC_PAGE, LANGUAGE_PAGE, MAIN_MENU_PAGE]) steps.push({ kind: 'info', index })
   return steps
 }
 

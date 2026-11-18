@@ -1,3 +1,5 @@
+import { LANGUAGE_PAGE, MAIN_MENU_PAGE, UTC_PAGE, languageLabels, utcRows } from './firstLevelDisplay'
+import type { SupportedLanguage } from './translations/types'
 /**
  * Vizuál displeje tachografu - L1, L2, ikonky, všechny obrazovky
  */
@@ -75,6 +77,8 @@ export type TachoDisplayProps = {
   /** Index obrazovky VDO counter (0–6) na základní obrazovce */
   operatingScreenIndex?: number
   /** Pojmenovaná obrazovka. Hlavní Counter je výchozí obrazovka bez názvu. */
+  languageDraft?: SupportedLanguage | null
+  languageSaved?: boolean
   vdoNamedScreen?: VdoNamedScreen | null
   /** Odjetý čas od platného odpočinku. null je neznámý a na přehledu se ukáže jako pomlčky. */
   drivenSinceRestMs?: number | null
@@ -506,7 +510,7 @@ function VdoiDisplay(props: { symbolMap: SymbolMap | null; extensionsRemaining: 
 }
 
 function OperatingDisplay(props: TachoDisplayProps) {
-  const { t } = useLanguage()
+  const { language, t } = useLanguage()
   const {
     symbolMap,
     timeStr,
@@ -617,6 +621,23 @@ function OperatingDisplay(props: TachoDisplayProps) {
         </div>
       </div>
     )
+  }
+
+  if (vdoCounterActive && !vdoNamedScreen && currentSpeed === 0 && operatingScreenIndex >= UTC_PAGE) {
+    const labels = languageLabels[props.languageDraft ?? language]
+    let rows: string[]
+    if (operatingScreenIndex === LANGUAGE_PAGE) {
+      if (props.languageDraft) rows = ['(42) ' + labels.title, labels.name]
+      else if (props.languageSaved) rows = [labels.title, t.ui.saved]
+      else rows = labels.prompt
+    } else if (operatingScreenIndex === MAIN_MENU_PAGE) {
+      rows = labels.menu
+    } else {
+      rows = utcRows(props.simulatedUtcTime ?? props.localTime.getTime(), props.localTime)
+    }
+    return <div className="lcd-two-rows lcd-card-insertion">
+      {rows.map((row, index) => <div className="lcd-row" key={index}>{parseSymbols(row, symbolMap)}</div>)}
+    </div>
   }
 
   if (!vdoCounterActive || !anyCard) {

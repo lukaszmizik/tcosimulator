@@ -120,12 +120,17 @@ export function InfoPanel({ items, resetTrigger, symbolMap, collapsed = false, m
     dismissedIdsRef.current = new Set([...dismissedIdsRef.current, id])
   }
 
-  if (openItems.length === 0) return null
+  const visibleItems = openItems.flatMap((item) => {
+    if (!item.activeOnly) return [item]
+    const current = items.find((candidate) => candidate.id === item.id && !candidate.hidden)
+    return current ? [current] : []
+  })
+  if (visibleItems.length === 0) return null
 
   if (collapsed) {
     return (
       <div className="info-panel-strip-icons" role="complementary" aria-label={t.ui.infoPanelIconsLabel}>
-        {openItems.map((item) => (
+        {visibleItems.map((item) => (
           <InfoIcon key={item.id} type={item.type} />
         ))}
       </div>
@@ -135,7 +140,7 @@ export function InfoPanel({ items, resetTrigger, symbolMap, collapsed = false, m
   return (
     <aside ref={panelRef} className="info-panel" role="complementary" aria-label={t.ui.infoPanelLabel}>
       <div className="info-panel-inner info-panel-stack">
-        {openItems.map((item) => (
+        {visibleItems.map((item) => (
           <div key={`${item.id}-${language}`} className={`info-panel-item info-panel-item--${item.type}`}
             data-current={(mobile && item.id === newestItemId) || undefined}>
             <InfoIcon type={item.type} />
@@ -190,42 +195,38 @@ function formatLastWithdrawal(ts: number): string {
 function ManualEntryBufferDisplay({ buffer, label }: { buffer: ManualEntrySegment[]; label: string }) {
   const pad = (n: number) => String(n).padStart(2, '0')
   const fmt = (s: ManualEntrySegment) => `${pad(s.day)}.${pad(s.month)}. ${pad(s.hour)}:${pad(s.minute)}`
+  const rows: { start: ManualEntrySegment; end?: ManualEntrySegment }[] = []
+  for (let index = 0; index < buffer.length; index++) {
+    const start = buffer[index]!
+    if (start.activityId === 'START_COUNTRY' || start.activityId === 'END_COUNTRY') {
+      rows.push({ start })
+      continue
+    }
+    // Průvodce ukládá každou potvrzenou činnost jako dvojici začátek–konec.
+    const end = buffer[index + 1]
+    if (end?.activityId === start.activityId) {
+      if (segmentToMsUtc(start) < segmentToMsUtc(end)) rows.push({ start, end })
+      index++
+    }
+  }
   return (
     <div>
       <div className="info-panel-manual-label">{label}</div>
       <div className="info-panel-manual-list">
-      {buffer.map((seg, i) => {
-        const sym = ACTIVITY_SYMBOLS.find((a) => a.id === seg.activityId)
-        const code = sym?.code ?? '?'
-        const next = buffer[i + 1]
-        const isCountry = seg.activityId === 'START_COUNTRY' || seg.activityId === 'END_COUNTRY'
-        if (!isCountry && next && segmentToMsUtc(seg) === segmentToMsUtc(next)) return null
-        if (!isCountry && next && (next.activityId === 'START_COUNTRY' || next.activityId === 'END_COUNTRY')) return null
-        const segBg = ACTIVITY_ID_TO_BG[seg.activityId] ?? INFO_PANEL_SYMBOL_BG_DEFAULT
-        const symbolWrap = (c: string) => (
-          <span className="tacho-icon info-panel-symbol-wrap info-panel-symbol" style={{ background: segBg }}>
-            {c}
-          </span>
-        )
-        return (
-          <div key={i} className="info-panel-manual-item">
-            <span className="info-panel-manual-time">{fmt(seg)}</span>
-            {isCountry ? (
-              <>
-                {symbolWrap(code)}
-                {seg.countryCode && <span className="info-panel-manual-country"> {seg.countryCode}</span>}
-              </>
-            ) : (
-              <>
-                {' → '}
-                <span className="info-panel-manual-time">{next ? fmt(next) : '—'}</span>
-                {' '}
-                {symbolWrap(code)}
-              </>
-            )}
-          </div>
-        )
-      })}
+        {rows.map(({ start, end }, index) => {
+          const symbol = ACTIVITY_SYMBOLS.find((activity) => activity.id === start.activityId)
+          const background = ACTIVITY_ID_TO_BG[start.activityId] ?? INFO_PANEL_SYMBOL_BG_DEFAULT
+          return (
+            <div key={index} className="info-panel-manual-item">
+              <span className="info-panel-manual-time">{fmt(start)}</span>
+              {end && <> → <span className="info-panel-manual-time">{fmt(end)}</span>{' '}</>}
+              <span className="tacho-icon info-panel-symbol-wrap info-panel-symbol" style={{ background }}>
+                {symbol?.code ?? '?'}
+              </span>
+              {start.countryCode && <span className="info-panel-manual-country"> {start.countryCode}</span>}
+            </div>
+          )
+        })}
       </div>
     </div>
   )
@@ -559,11 +560,14 @@ export function useInfoPanelItems(props: {
         message: `${t.infoPanel.lastWithdrawal} ${formatLastWithdrawal(lastWithdraw)}`,
       })
     }
+  }
 
-    const buffer = cardInsertionState.manualEntryBuffer
+  if (cardInsertionState && manualEntryPhase && SUPPLEMENT_ACTIVITIES_PHASES.includes(manualEntryPhase)) {
+    const buffer = cardInsertionState.manualEntryBuffer.slice(cardInsertionState.manualEntryStartIndex)
     if (buffer.length > 0) {
       items.push({
         id: 'manual-entry-data',
+        activeOnly: true,
         type: 'info',
         message: t.infoPanel.manualEntryData,
         content: <ManualEntryBufferDisplay buffer={buffer} label={t.infoPanel.manualEntryData} />,

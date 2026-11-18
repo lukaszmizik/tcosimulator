@@ -163,6 +163,8 @@ export type CardInsertionState = {
   segmentStart: { day: number; month: number; year: number; hour: number; minute: number }
   currentSegment: ManualEntrySegment
   manualEntryBuffer: ManualEntrySegment[]
+  /** Index prvního záznamu přidaného během tohoto vložení karty. */
+  manualEntryStartIndex: number
   countryIndex: number
   selectingSpanishRegion: boolean
   spanishRegionIndex: number

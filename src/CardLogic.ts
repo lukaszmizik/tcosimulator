@@ -66,6 +66,7 @@ export function createInitialCardInsertionState(
   const seg = utcMsToSegment(utcMs)
   const requestedCode = options?.initialCountryCode ? (ROUTE_TO_TACHOGRAPH_CODE[options.initialCountryCode] ?? options.initialCountryCode) : 'CZ'
   const countryIndex = Math.max(0, countries.findIndex((c) => c.code === requestedCode))
+  const existingBuffer = options?.existingManualEntryBuffer ?? []
   return {
     slot,
     phase: 'welcome',
@@ -77,7 +78,8 @@ export function createInitialCardInsertionState(
     editorBlinkField: 'activity',
     segmentStart: { day: seg.day, month: seg.month, year: seg.year, hour: seg.hour, minute: seg.minute },
     currentSegment: { ...seg },
-    manualEntryBuffer: options?.existingManualEntryBuffer ?? [],
+    manualEntryBuffer: existingBuffer,
+    manualEntryStartIndex: existingBuffer.length,
     countryIndex,
     selectingSpanishRegion: false,
     spanishRegionIndex: 0,

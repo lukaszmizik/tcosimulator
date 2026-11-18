@@ -3099,9 +3099,11 @@ export default function App() {
               )}
               <div
                 id="main-display"
+                data-lcd-preview={lcdDebugEnabled || undefined}
                 className={`lcd-screen ${!ignitionOn && !displayAwakeFromStandby ? 'lcd-screen-off' : ''}`}
               >
                 <TachoDisplay
+                  lcdPreview={lcdDebugEnabled}
                   {...displayProps}
                   vdoNamedScreen={vdoNamedScreen}
                   slot1DebugBreak={slot1LcdProps.slot1DebugBreak}

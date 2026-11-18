@@ -30,6 +30,7 @@ import type { DrivingBreakDisplay } from './drivingBreakDisplay'
 import type { VdoNamedScreen } from './slot1DddCounter'
 
 export type TachoDisplayProps = {
+  lcdPreview?: boolean
   withdrawalBargrafTick?: number
   symbolMap: SymbolMap | null
   cardInsertionState: CardInsertionState | null
@@ -202,6 +203,7 @@ export function TachoDisplay(props: TachoDisplayProps) {
   if (cardInsertionState) {
     return (
       <CardInsertionDisplay2
+        lcdPreview={props.lcdPreview}
         symbolMap={symbolMap}
         cardInsertionState={cardInsertionState}
         isMultiManning={props.isMultiManning}

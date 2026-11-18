@@ -12,6 +12,7 @@ import { parseSymbols, getIconChar, TachoIcon, TACHO_FONT } from './Symbols'
 import { getActivityCode, utcMsToSegment } from './CardLogic'
 
 export type CardInsertionDisplay2Props = {
+  lcdPreview?: boolean
   symbolMap: SymbolMap | null
   cardInsertionState: CardInsertionState
   isMultiManning: boolean
@@ -157,7 +158,7 @@ export function CardInsertionDisplay2(props: CardInsertionDisplay2Props) {
             <span className="lcd-l2-sep">.</span>
             <span className="lcd-l2-num">{String(start.month).padStart(2, '0')}</span>
             <span className="lcd-l2-sep">.</span>
-            <span className="lcd-l2-num lcd-l2-year">{start.year}</span>
+            <span className="lcd-l2-num lcd-l2-year">{props.lcdPreview ? String(start.year).slice(-2) : start.year}</span>
             <span className="lcd-l2-space lcd-l2-space-big" />
             <span className="lcd-l2-num">{String(start.hour).padStart(2, '0')}</span>
             <span className="lcd-l2-sep">:</span>
@@ -179,7 +180,7 @@ export function CardInsertionDisplay2(props: CardInsertionDisplay2Props) {
               <span className="lcd-l2-sep">.</span>
               <span className={`lcd-l2-num${blinkField('month')}`}>{String(seg.month).padStart(2, '0')}</span>
               <span className="lcd-l2-sep">.</span>
-              <span className={`lcd-l2-num lcd-l2-year${blinkField('year')}`}>{seg.year}</span>
+              <span className={`lcd-l2-num lcd-l2-year${blinkField('year')}`}>{props.lcdPreview ? String(seg.year).slice(-2) : seg.year}</span>
               <span className="lcd-l2-space lcd-l2-space-big" />
               <span className={`lcd-l2-num${blinkField('hour')}`}>{String(seg.hour).padStart(2, '0')}</span>
               <span className="lcd-l2-sep">:</span>

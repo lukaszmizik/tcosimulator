@@ -2045,3 +2045,37 @@ body {
   color: white;
   font: bold 10px/1 sans-serif;
 }
+
+/* CasioFX9860 advances a standard character by 3510 / 4096 em. */
+#main-display[data-lcd-preview] {
+  container-type: inline-size;
+}
+#main-display[data-lcd-preview] > .lcd-two-rows {
+  font-size: calc(94cqw / 16 * 4096 / 3510);
+  inline-size: 16ch;
+  margin-inline: auto;
+  padding: 0;
+  justify-content: center;
+  gap: 0;
+}
+#main-display[data-lcd-preview] .lcd-row {
+  height: 50%;
+  min-height: 0;
+  margin: 0;
+  gap: 0;
+  line-height: 1;
+  white-space: nowrap;
+}
+#main-display[data-lcd-preview] :is(.lcd-row-menu-title, .lcd-menu-item, .lcd-menu-item-text) {
+  font-size: inherit;
+  padding: 0;
+}
+#main-display[data-lcd-preview] :is(.lcd-row-sides, .lcd-row-left, .lcd-row-right, .lcd-menu-item) {
+  gap: 0;
+}
+#main-display[data-lcd-preview] :is(.lcd-welcome-l1-name, .lcd-rotate-spinner, .lcd-l2-symbol, .lcd-l2-sep) {
+  margin-inline: 0;
+}
+#main-display[data-lcd-preview] .lcd-l2-num { min-width: 0; }
+#main-display[data-lcd-preview] .lcd-l2-space { width: 1ch; }
+#main-display[data-lcd-preview] .lcd-row.lcd-loading-bargraf { width: 100%; }

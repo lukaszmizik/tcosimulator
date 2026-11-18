@@ -40,6 +40,7 @@ export type ControlPanelProps = {
   onSaveCard1ToFile: () => void
   onShowCardData: () => void
   printVehicleSettings?: ReactNode
+  infoPanels?: ReactNode
 }
 
 export function ControlPanel({
@@ -74,6 +75,7 @@ export function ControlPanel({
   onSaveCard1ToFile,
   onShowCardData,
   printVehicleSettings,
+  infoPanels,
 }: ControlPanelProps) {
   const [generateWorkWeekFlash, setGenerateWorkWeekFlash] = useState(false)
   const handleGenerateWorkWeekClick = () => {
@@ -202,6 +204,7 @@ export function ControlPanel({
           </button>
         </div>
       </div>
+      {infoPanels}
       <details className="control-panel-extras" onKeyDown={(event) => event.stopPropagation()}>
         <summary>{t.controls.dataScenariosSettings}</summary>
         <div className="control-panel-section">

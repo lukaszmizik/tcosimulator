@@ -2431,3 +2431,127 @@ body {
   min-height: 202px;
   position: relative;
 }
+
+.mobile-tachograph-scroll {
+  display: contents;
+}
+
+/* The panel now lives beside the settings in DOM order. On desktop it is
+   positioned in the space reserved to the right of the device. */
+.control-panel .info-panels-wrapper--attached {
+  right: -320px;
+}
+
+@media screen and (max-width: 800px) {
+  body {
+    min-width: 0;
+  }
+
+  .app-root {
+    min-width: 0;
+    flex-direction: column !important;
+    padding: 12px !important;
+    gap: 12px !important;
+  }
+
+  .control-panel-lang-left,
+  .driver-cards-column,
+  .driver-cards-column .card-prep {
+    max-width: 100%;
+  }
+
+  .device-column {
+    width: 100%;
+    min-width: 0;
+    padding-right: 0;
+  }
+
+  .vdo-wrapper {
+    min-width: 0;
+  }
+
+  .mobile-tachograph-scroll {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .control-panel {
+    padding: 12px;
+    gap: 16px;
+    min-width: 0;
+  }
+
+  .control-panel-row-main,
+  .control-panel-row-time-apply,
+  .ignition-buttons {
+    flex-wrap: wrap;
+    gap: 10px;
+    max-width: 100%;
+  }
+
+  .control-panel-row-main > .control-panel-section {
+    flex-basis: 100%;
+    min-width: 0;
+  }
+
+  .control-panel .control-slider {
+    width: 100%;
+  }
+
+  .info-panels-toggle--at-tacho {
+    display: none;
+  }
+
+  .control-panel .info-panels-wrapper--attached {
+    position: static;
+    display: flex;
+    flex: 0 0 100%;
+    flex-flow: row nowrap;
+    min-width: 0;
+    align-items: stretch;
+    gap: 8px;
+    padding-bottom: 6px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    pointer-events: auto;
+  }
+
+  .control-panel .info-panels-wrapper--attached:not(:has(.info-panel-item, .info-panel-nr165-warning)) {
+    display: none;
+  }
+
+  .info-panels-wrapper--attached .info-panels-stack,
+  .info-panels-wrapper--attached .info-panel,
+  .info-panels-wrapper--attached .info-panel-inner {
+    display: contents;
+  }
+
+  .info-panels-wrapper--attached .info-panel-item,
+  .info-panels-wrapper--attached .info-panel-nr165-warning {
+    flex: 0 0 90%;
+    min-width: 0;
+    width: auto;
+    scroll-snap-align: start;
+    overflow-wrap: anywhere;
+  }
+
+  .info-panels-wrapper--attached .info-panel-nr165-warning {
+    order: -1;
+  }
+
+  .info-panel-item--info[data-history] {
+    background: #e8ecf0;
+    border-left-color: #7a8794;
+    color: #263442;
+  }
+
+  .info-panel-item--info[data-history] .info-panel-icon--info {
+    background: #526171;
+  }
+
+  .info-panel-item--info[data-history] .info-panel-symbol-wrap {
+    filter: grayscale(1);
+  }
+}

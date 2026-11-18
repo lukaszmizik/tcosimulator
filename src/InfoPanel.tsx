@@ -110,11 +110,14 @@ export function InfoPanel({ items, resetTrigger, symbolMap, collapsed = false }:
     )
   }
 
+  const activeIds = new Set(items.filter((item) => !item.hidden).map((item) => item.id))
+
   return (
     <aside className="info-panel" role="complementary" aria-label={t.ui.infoPanelLabel}>
       <div className="info-panel-inner info-panel-stack">
         {openItems.map((item) => (
-          <div key={`${item.id}-${language}`} className={`info-panel-item info-panel-item--${item.type}`}>
+          <div key={`${item.id}-${language}`} className={`info-panel-item info-panel-item--${item.type}`}
+            data-history={!activeIds.has(item.id) || undefined}>
             <InfoIcon type={item.type} />
             {item.content != null ? (
               <div className="info-panel-content">{item.content}</div>

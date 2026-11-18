@@ -165,6 +165,14 @@ export default function App() {
   const [nr165Dismissed, setNr165Dismissed] = useState(false)
   /** Sbalený stav infoboxů – úzký proužek s ikonami */
   const [infoPanelsCollapsed, setInfoPanelsCollapsed] = useState(false)
+  const [mobileInfoPanels, setMobileInfoPanels] = useState(false)
+  useEffect(() => {
+    const query = window.matchMedia('screen and (max-width: 800px)')
+    const sync = () => setMobileInfoPanels(query.matches)
+    sync()
+    query.addEventListener('change', sync)
+    return () => query.removeEventListener('change', sync)
+  }, [])
   /** Výstraha při pokusu o generování pracovního týdne, když na kartě již jsou data (překryv). */
   const [generateWorkWeekBlockedWarning, setGenerateWorkWeekBlockedWarning] = useState(false)
   /** Modal: pokus o zápis duplicitních dat na kartu */
@@ -2966,6 +2974,7 @@ export default function App() {
         data-debug-driving-without-card-warning={String(drivingWithoutCardWarningActive)}
         data-debug-display-mode={displayMode}
       >
+        <div className="mobile-tachograph-scroll">
         <div className="vdo-main-panel">
           <div className="vdo-top-section">
             <div className="display-area" style={{ position: 'relative' }}>
@@ -3178,6 +3187,7 @@ export default function App() {
             </div>
           </div>
         </div>
+        </div>
         <div className="vdo-labels">Continental VDO DTCO 4.1 G2V2 · lukas@zmizik.com</div>
 
         <ControlPanel
@@ -3212,6 +3222,31 @@ export default function App() {
           onSaveCard1ToFile={handleSaveCard1ToFile}
           onShowCardData={handleShowCardData}
           printVehicleSettings={<PrintVehicleSettings profile={printVehicleProfile} onSave={setPrintVehicleProfile} />}
+          infoPanels={(
+            <div
+              className="info-panels-wrapper info-panels-wrapper--attached"
+              role={mobileInfoPanels ? 'region' : undefined}
+              aria-label={mobileInfoPanels ? t.ui.infoPanelLabel : undefined}
+              tabIndex={mobileInfoPanels ? 0 : undefined}
+              onKeyDown={mobileInfoPanels ? (event) => event.stopPropagation() : undefined}
+            >
+              <div className={infoPanelsCollapsed && !mobileInfoPanels ? 'info-panels-strip' : 'info-panels-stack'}>
+                <InfoPanel
+                  items={panelItems}
+                  resetTrigger={infoPanelResetTrigger}
+                  symbolMap={symbolMap}
+                  collapsed={infoPanelsCollapsed && !mobileInfoPanels}
+                />
+                {showNr165Warning && !nr165Dismissed && (
+                  <Nr165WarningBox
+                    onClose={() => setNr165Dismissed(true)}
+                    symbolMap={symbolMap}
+                    collapsed={infoPanelsCollapsed && !mobileInfoPanels}
+                  />
+                )}
+              </div>
+            </div>
+          )}
         />
       </div>
         <button
@@ -3228,24 +3263,6 @@ export default function App() {
           </span>
         </button>
       </div>
-
-      <div className={`info-panels-wrapper info-panels-wrapper--attached ${infoPanelsCollapsed ? 'info-panels-wrapper--collapsed' : ''}`}>
-          {infoPanelsCollapsed ? (
-            <div className="info-panels-strip">
-              <InfoPanel items={panelItems} resetTrigger={infoPanelResetTrigger} symbolMap={symbolMap} collapsed />
-              {showNr165Warning && !nr165Dismissed && (
-                <Nr165WarningBox onClose={() => setNr165Dismissed(true)} symbolMap={symbolMap} collapsed />
-              )}
-            </div>
-          ) : (
-            <div className="info-panels-stack">
-              <InfoPanel items={panelItems} resetTrigger={infoPanelResetTrigger} symbolMap={symbolMap} />
-              {showNr165Warning && !nr165Dismissed && (
-                <Nr165WarningBox onClose={() => setNr165Dismissed(true)} symbolMap={symbolMap} />
-              )}
-            </div>
-          )}
-        </div>
       </div>
 
       {duplicateDataWarningOpen && (

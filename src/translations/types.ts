@@ -120,6 +120,7 @@ export type Translations = {
   }
   cardWizard: {
     pleaseWait: string
+    pleaseWaitLine2?: string
     lastRemoval: string
     decision1m: string
     supplement: string

@@ -33,7 +33,8 @@ export type CardInsertionDisplay2Props = {
 /** Zobrazení – shodné s CardWizard (L1, L2, symboly, kurzor) */
 export function CardInsertionDisplay2(props: CardInsertionDisplay2Props) {
   const { symbolMap, cardInsertionState: cs, isMultiManning, countries, spanishRegions, lastEjectionTimeBySlot, localTime, timeOffsetMs = 0, timeStr, currentSpeed, odometerKm, card1Inserted, card2Inserted, leftActivityId, rightActivityId } = props
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
+  const countryQuestion = language === 'en' ? '' : '?'
   /** Ve fázích načítání (welcome, loading) se zobrazuje pouze příjmení. */
   const displayName = cs.phase === 'welcome' || cs.phase === 'loading' ? (cs.cardSurname ?? cs.cardName) : cs.cardName
 
@@ -70,7 +71,7 @@ export function CardInsertionDisplay2(props: CardInsertionDisplay2Props) {
       return (
         <div className="lcd-two-rows lcd-card-insertion">
           <div className="lcd-row lcd-row-left">{t.cardWizard.pleaseWait}</div>
-          <div className="lcd-row" />
+          <div className="lcd-row lcd-row-left">{t.cardWizard.pleaseWaitLine2}</div>
         </div>
       )
     }
@@ -134,8 +135,8 @@ export function CardInsertionDisplay2(props: CardInsertionDisplay2Props) {
         ? (spanishRegions[cs.spanishRegionIndex]?.code ?? '')
         : (countries[cs.countryIndex]?.code ?? 'CZ')
       const l1 = cs.stampActivityId === 'START_COUNTRY'
-        ? parseSymbols(`(37)(36)?\u00A0${t.cardWizard.startCountry}`, symbolMap)
-        : parseSymbols(`(41)(37)? ${t.cardWizard.endCountry}`, symbolMap)
+        ? parseSymbols(`(37)(36)${countryQuestion}\u00A0${t.cardWizard.startCountry}`, symbolMap)
+        : parseSymbols(`(41)(37)${countryQuestion} ${t.cardWizard.endCountry}`, symbolMap)
       return (
         <div className="lcd-two-rows lcd-card-insertion">
           <div className="lcd-row lcd-row-left">{l1}</div>
@@ -188,11 +189,11 @@ export function CardInsertionDisplay2(props: CardInsertionDisplay2Props) {
             </span>
           ) : seg.activityId === 'START_COUNTRY' ? (
             <span className={`lcd-l2-country-text${blinkField('activity')}`}>
-              {parseSymbols(`(37)(36)?\u00A0${t.cardWizard.startCountry}`, symbolMap)}
+              {parseSymbols(`(37)(36)${countryQuestion}\u00A0${t.cardWizard.startCountry}`, symbolMap)}
             </span>
           ) : seg.activityId === 'END_COUNTRY' ? (
             <span className={`lcd-l2-country-text${blinkField('activity')}`}>
-              {parseSymbols(`(41)(37)? ${t.cardWizard.endCountry}`, symbolMap)}
+              {parseSymbols(`(41)(37)${countryQuestion} ${t.cardWizard.endCountry}`, symbolMap)}
             </span>
           ) : null}
         </div>
@@ -276,7 +277,7 @@ export function CardInsertionDisplay2(props: CardInsertionDisplay2Props) {
       return (
         <div className="lcd-two-rows lcd-card-insertion">
           <div className="lcd-row lcd-row-left">{t.cardWizard.pleaseWait}</div>
-          <div className="lcd-row" />
+          <div className="lcd-row lcd-row-left">{t.cardWizard.pleaseWaitLine2}</div>
         </div>
       )
     }
@@ -293,7 +294,7 @@ export function CardInsertionDisplay2(props: CardInsertionDisplay2Props) {
       return (
         <div className="lcd-two-rows lcd-card-insertion">
           <div className="lcd-row lcd-row-left">{t.cardWizard.pleaseWait}</div>
-          <div className="lcd-row" />
+          <div className="lcd-row lcd-row-left">{t.cardWizard.pleaseWaitLine2}</div>
         </div>
       )
     }

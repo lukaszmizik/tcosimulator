@@ -116,8 +116,9 @@ export const ru: Translations = {
     cannotDetermine: 'Это значение сейчас нельзя определить.',
   },
   cardWizard: {
-    pleaseWait: 'пожалуйста, подождите!', // 9
-    lastRemoval: 'Последн. Иеъятие', // 10
+    pleaseWait: 'Пожалуйста', // 9
+    pleaseWaitLine2: 'подождите!',
+    lastRemoval: 'Последн. изъятие', // 10
     decision1m: '{slot}(42)\u00A0Осуществить', // 11 – {slot} = номер слота (1/2), (19) = symbol M
     supplement: 'ручной ввод?', // 12
     yes: 'да', // 13
@@ -132,22 +133,22 @@ export const ru: Translations = {
     vdoQuestion: 'VDO данные?', // 22
     publish: 'Опубликовать', // 23
     inputSaved: 'сохранено', // 24
-    confirmData: 'введённые данные', // 25
-    confirm: 'подтвердить?', // 26
-    readyToDrive: 'к поездке', // 27
-    publishReady: 'готов', // 28
+    confirmData: 'Подтвердить', // 25
+    confirm: 'ручной ввод?', // 26
+    readyToDrive: 'движению', // 27
+    publishReady: 'Готов к', // 28
   },
   tachoDisplay: {
     input: 'ввод', // 29
     saved: 'сохранено', // 30
-    endCountry: 'страна прибытия', // 31
-    startCountry: 'страна отправления', // 32
+    endCountry: 'Конец страны', // 31
+    startCountry: 'Нач. страны', // 32
     printUtc: 'UTC время?', // 33
     printStarted: 'запущен...', // 34
     cardWarning: '\u00A0карта!', // 35 (неразрывный пробел перед текстом)
-    excessSpeed: 'превыш. скорость',
-    ejectionBlockedL1: 'извлечение не',
-    ejectionBlockedL2: 'возможно',
+    excessSpeed: 'Превыш. скор.',
+    ejectionBlockedL1: 'Возврат карт',
+    ejectionBlockedL2: 'не возможен',
   },
   actionLog: {
     header: 'Журнал действий', // 36
@@ -302,7 +303,7 @@ export const ru: Translations = {
       PD2_ACT: { line2: '(44)(14)(18) активности' },
       PV_24H: { line2: '24ч(24)(18) день-печать' },
       PV_EVENT: { line2: '(27)(34)(24)(18) событие' },
-      PV_SPEED: { line2: '(39)(39)(18) превыш. скорость' },
+      PV_SPEED: { line2: '(39)(39)(18) Прев. скор.' },
       PV_TECH: { line2: '(5)(17)(18) техн. данные' },
       PV_CARDS: { line2: '(6)(14)(17)(18) Карты' },
       PV_V_DIAGRAM: { line2: '(44)v(18) v-диаграмма' },
@@ -340,7 +341,7 @@ export const ru: Translations = {
       DD2_EVENT: { line2: '(27)(34)(14)(20) событие' },
       DV_24H: { line2: '24ч(24)(20) день' },
       DV_EVENT: { line2: '(27)(34)(24)(20) событие' },
-      DV_SPEED: { line2: '(39)(39)(20) превыш. скорость' },
+      DV_SPEED: { line2: '(39)(39)(20) Прев. скор.' },
       DV_TECH: { line2: '(5)(17)(20) техн. данные' },
       DV_CARDS: { line2: '(6)(14)(17)(20) Карты' },
       DV_OWNER: { line2: '(3)(14) владелец' },

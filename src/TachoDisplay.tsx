@@ -163,6 +163,7 @@ function LoadUnloadConfirmDisplay() {
 }
 
 export function TachoDisplay(props: TachoDisplayProps) {
+  const { language } = useLanguage()
   const { symbolMap, cardInsertionState, cardWithdrawalState, drivingWithoutCardWarningActive, drivingWithoutValidCardWarningActive, breakWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, overrideWarningCode, menuCountryInputState, menuLoadUnloadConfirmState, printWizardState, printStartedToastUntil, displayMode, showOutOnL2 = false } = props
 
   if (typeof window !== 'undefined' && window.location.search.includes('debug=1')) {
@@ -183,7 +184,7 @@ export function TachoDisplay(props: TachoDisplayProps) {
   }
 
   if (overrideWarningCode) {
-    const def = getWarning(overrideWarningCode)
+    const def = getWarning(overrideWarningCode, language)
     if (def) {
       return <OverrideWarningDisplay symbolMap={symbolMap} warningDef={def} />
     }
@@ -326,7 +327,8 @@ function CardWithdrawalDisplay(props: TachoDisplayProps) {
 }
 
 function DrivingWithoutValidCardWarningDisplay({ symbolMap }: { symbolMap: SymbolMap | null }) {
-  const def = getWarning('29')!
+  const { language } = useLanguage()
+  const def = getWarning('29', language)!
   return (
     <div className="lcd-two-rows lcd-card-warning-blink">
       <div className="lcd-row lcd-row-warning-inline">
@@ -391,7 +393,8 @@ function PrintStartedDisplay(props: { symbolMap: SymbolMap | null }) {
 
 function MenuCountryInputDisplay(props: TachoDisplayProps) {
   const { symbolMap, menuCountryInputState, countries } = props
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
+  const countryQuestion = language === 'en' ? '' : '?'
   const mc = menuCountryInputState!
   if (mc.phase === 'confirmSaved') {
     return (
@@ -402,8 +405,8 @@ function MenuCountryInputDisplay(props: TachoDisplayProps) {
     )
   }
   const l1 = mc.type === 'start'
-    ? parseSymbols(`(37)(36)?\u00A0${t.tachoDisplay.startCountry}`, symbolMap)
-    : parseSymbols(`(41)(37)? ${t.tachoDisplay.endCountry}`, symbolMap)
+    ? parseSymbols(`(37)(36)${countryQuestion}\u00A0${t.tachoDisplay.startCountry}`, symbolMap)
+    : parseSymbols(`(41)(37)${countryQuestion} ${t.tachoDisplay.endCountry}`, symbolMap)
   const code = countries[mc.countryIndex]?.code ?? 'CZ'
   return (
     <div className="lcd-two-rows lcd-card-insertion">

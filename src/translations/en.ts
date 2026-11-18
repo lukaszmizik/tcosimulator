@@ -117,12 +117,12 @@ export const en: Translations = {
   },
   cardWizard: {
     pleaseWait: 'please wait!', // 9
-    lastRemoval: 'Last removal', // 10
+    lastRemoval: 'last withdrawal', // 10
     decision1m: '{slot}(42)\u00A0entry', // 11 – {slot} = slot number (1/2), (19) = symbol M
-    supplement: 'supplement?', // 12
+    supplement: 'addition?', // 12
     yes: 'yes', // 13
     no: 'no', // 14
-    startCountry: 'start country', // 15
+    startCountry: 'begin country', // 15
     endCountry: 'end country', // 16
     firstInsertion: 'First insertion', // 17
     regionSpain: 'Spain region', // 18
@@ -132,8 +132,8 @@ export const en: Translations = {
     vdoQuestion: 'VDO data?', // 22
     publish: 'Publish', // 23
     inputSaved: 'saved', // 24
-    confirmData: 'inserted data', // 25
-    confirm: 'confirm?', // 26
+    confirmData: 'confirm', // 25
+    confirm: 'entry?', // 26
     readyToDrive: 'to drive', // 27
     publishReady: 'ready', // 28
   },
@@ -141,7 +141,7 @@ export const en: Translations = {
     input: 'input', // 29
     saved: 'saved', // 30
     endCountry: 'end country', // 31
-    startCountry: 'start country', // 32
+    startCountry: 'begin country', // 32
     printUtc: 'UTC time?', // 33
     printStarted: 'started...', // 34
     cardWarning: '\u00A0card!', // 35 (non-breaking space before text)
@@ -302,19 +302,19 @@ export const en: Translations = {
       PD2_ACT: { line2: '(44)(14)(18) activities' },
       PV_24H: { line2: '24h(24)(18) day-print' },
       PV_EVENT: { line2: '(27)(34)(24)(18) event' },
-      PV_SPEED: { line2: '(39)(39)(18) excess speed' },
+      PV_SPEED: { line2: '(39)(39)(18) overspeed' },
       PV_TECH: { line2: '(5)(17)(18) tech. data' },
       PV_CARDS: { line2: '(6)(14)(17)(18) Cards' },
       PV_V_DIAGRAM: { line2: '(44)v(18) v-diagram' },
       PV_STATUS: { line2: '(44)D(18) status D1/D2' },
       PV_V_PROF: { line2: '%v(18) v-profile' },
       PV_N_PROF: { line2: '%n(18) n-profile' },
-      ID1_START: { line2: '(37)(36) start country' },
+      ID1_START: { line2: '(37)(36) begin country' },
       ID1_END: { line2: '(41)(37) end country' },
       ID1_SETTINGS: { line2: '?(19) Settings' },
       ID1_BT: { line2: '(1) Bluetooth' },
       ID1_MISC: { line2: 'Miscellaneous' },
-      ID2_START: { line2: '(37)(36) start country' },
+      ID2_START: { line2: '(37)(36) begin country' },
       ID2_END: { line2: '(41)(37) end country' },
       ID2_SETTINGS: { line2: '?(19) Settings' },
       ID2_BT: { line2: '(1) Bluetooth' },

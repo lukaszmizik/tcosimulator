@@ -22,7 +22,8 @@ export function OverrideWarningDisplay({ symbolMap, warningDef }: { symbolMap: S
 }
 
 export function DrivingWithoutCardWarningDisplay({ symbolMap }: { symbolMap: SymbolMap | null }) {
-  const def = getWarning('28')!
+  const { language } = useLanguage()
+  const def = getWarning('28', language)!
   return (
     <div className="lcd-two-rows lcd-card-warning-blink">
       <div className="lcd-row lcd-row-warning-inline">
@@ -36,7 +37,8 @@ export function DrivingWithoutCardWarningDisplay({ symbolMap }: { symbolMap: Sym
 }
 
 export function BreakWarningDisplay({ symbolMap, breakWarningActive }: { symbolMap: SymbolMap | null; breakWarningActive: '415' | '430' }) {
-  const def = getWarning(breakWarningActive)!
+  const { language } = useLanguage()
+  const def = getWarning(breakWarningActive, language)!
   return (
     <div className="lcd-two-rows lcd-card-warning-blink">
       <div className="lcd-row lcd-row-warning-inline">

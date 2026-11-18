@@ -706,7 +706,25 @@ export default function App() {
     getCurrentLocationCountryCode: () => currentLocationCountryCodeRefForWizard.current ?? null,
   })
 
-  cardInsertionStateRef.current = cardInsertionState
+  const pendingInsertionRef = useRef<CardInsertionState | null>(null)
+  const startOrQueueInsertion = useCallback((next: CardInsertionState) => {
+    if (cardInsertionStateRef.current) {
+      pendingInsertionRef.current = next
+      return
+    }
+    lastCardInsertionKeyPressRef.current = Date.now()
+    cardInsertionStateRef.current = next
+    setCardInsertionState(next)
+  }, [cardInsertionStateRef, lastCardInsertionKeyPressRef, setCardInsertionState])
+
+  // The wizard commits the previous card's entries on its transition to null.
+  useEffect(() => {
+    const pending = pendingInsertionRef.current
+    if (cardInsertionState || !pending) return
+    pendingInsertionRef.current = null
+    if (!(pending.slot === 1 ? card1Data : card2Data)) return
+    startOrQueueInsertion({ ...pending, phaseStartTime: Date.now() })
+  }, [cardInsertionState, card1Data, card2Data, startOrQueueInsertion])
 
   const runEjectForSlot = useCallback((slot: 1 | 2) => {
     if (!ignitionOnRef.current || cardWithdrawalStateRef.current || cardInsertionStateRef.current?.slot !== slot) return
@@ -1849,7 +1867,6 @@ export default function App() {
       setDddInsertMessage(null)
       addEntry(`${t.actions.vlozeniKarty} ${record.surname || record.firstName} do slotu ${slot}`)
       const cardData = decision.cardData
-      lastCardInsertionKeyPressRef.current = Date.now()
       const skipReadyToDrive = !ignitionOn && displayAwakeFromStandby
       const gpsCountry = virtualLocation?.country ?? undefined
       const wizardOptions = { skipReadyToDriveScreen: skipReadyToDrive, initialCountryCode: gpsCountry, existingManualEntryBuffer: decision.manualBuffer }
@@ -1858,13 +1875,13 @@ export default function App() {
         setCard1Inserted(true)
         setDriverCardInsertedAtUtc(simulatedUtcTimeRef.current)
         setDrivingWithoutCardWarningActive(false)
-        setCardInsertionState(createInitialCardInsertionState(1, cardData, simulatedUtcTimeRef.current, countries, wizardOptions))
+        startOrQueueInsertion(createInitialCardInsertionState(1, cardData, simulatedUtcTimeRef.current, countries, wizardOptions))
       }
       if (slot === 2) {
         setCard2Data(cardData)
         setCard2Inserted(true)
         setCard2InsertedAt(Date.now())
-        setCardInsertionState(createInitialCardInsertionState(2, cardData, simulatedUtcTimeRef.current, countries, wizardOptions))
+        startOrQueueInsertion(createInitialCardInsertionState(2, cardData, simulatedUtcTimeRef.current, countries, wizardOptions))
       }
       setDragOverSlot(null)
       setCardsOpen(false)
@@ -1885,7 +1902,6 @@ export default function App() {
       prepared: preparedTrainingCards[templateId],
       driverState: (templateId && driverCardStateByTemplateId[templateId]) ?? undefined,
     })
-    lastCardInsertionKeyPressRef.current = Date.now()
     const skipReadyToDrive = !ignitionOn && displayAwakeFromStandby
     const gpsCountry = virtualLocation?.country ?? undefined
     if (slot === 1) {
@@ -1893,18 +1909,18 @@ export default function App() {
       setCard1Inserted(true)
       setDriverCardInsertedAtUtc(simulatedUtcTimeRef.current)
       setDrivingWithoutCardWarningActive(false)
-      setCardInsertionState(createInitialCardInsertionState(1, cardData, simulatedUtcTime, countries, { skipReadyToDriveScreen: skipReadyToDrive, initialCountryCode: gpsCountry, existingManualEntryBuffer: templateId === CARD1_TEMPLATE_ID ? card1Manual : card2Manual }))
+      startOrQueueInsertion(createInitialCardInsertionState(1, cardData, simulatedUtcTime, countries, { skipReadyToDriveScreen: skipReadyToDrive, initialCountryCode: gpsCountry, existingManualEntryBuffer: templateId === CARD1_TEMPLATE_ID ? card1Manual : card2Manual }))
     }
     if (slot === 2) {
       setCard2Data(cardData)
       setCard2Inserted(true)
       setCard2InsertedAt(Date.now())
-      setCardInsertionState(createInitialCardInsertionState(2, cardData, simulatedUtcTime, countries, { skipReadyToDriveScreen: skipReadyToDrive, initialCountryCode: gpsCountry, existingManualEntryBuffer: templateId === CARD1_TEMPLATE_ID ? card1Manual : card2Manual }))
+      startOrQueueInsertion(createInitialCardInsertionState(2, cardData, simulatedUtcTime, countries, { skipReadyToDriveScreen: skipReadyToDrive, initialCountryCode: gpsCountry, existingManualEntryBuffer: templateId === CARD1_TEMPLATE_ID ? card1Manual : card2Manual }))
     }
     setDragOverSlot(null)
     setCardsOpen(false)
     setCardPickerSlot(null)
-  }, [ignitionOn, displayAwakeFromStandby, simulatedUtcTime, timeOffsetMs, countries, card1Data, card2Data, driverCardStateByTemplateId, preparedTrainingCards, card1Manual, card2Manual, addEntry, setCardInsertionState, virtualLocation, virtualCardNames, expiryByCard])
+  }, [ignitionOn, displayAwakeFromStandby, simulatedUtcTime, timeOffsetMs, countries, card1Data, card2Data, driverCardStateByTemplateId, preparedTrainingCards, card1Manual, card2Manual, addEntry, startOrQueueInsertion, virtualLocation, virtualCardNames, expiryByCard])
 
   const handleSlotDrop = (e: React.DragEvent, slot: 1 | 2) => {
     e.preventDefault()
@@ -2090,6 +2106,7 @@ export default function App() {
     setTargetSpeed(0)
     setIgnitionOn(false)
     // Globální reset zobrazení: okamžité ukončení všech aktivních stavů
+    pendingInsertionRef.current = null
     setCardInsertionState(null)
     setDisplayMode('operating')
     setCurrentMenuPath([ENTRY_MENU_ID])
@@ -2421,6 +2438,7 @@ export default function App() {
     setCard2Inserted(false)
     setCard1Data(null)
     setCard2Data(null)
+    pendingInsertionRef.current = null
     setCardInsertionState(null)
     setCardWithdrawalState(null)
     setCardActivityHistoryByTemplateId({})

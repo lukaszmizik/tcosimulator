@@ -6,7 +6,7 @@
  * a vrství od shora dolů. InfoPanel spravuje logiku interně.
  */
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useLayoutEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
 import type { ActivityHistoryEntry, CardInsertionState, ManualEntrySegment, MenuCountryInputState } from './TachoTypes'
 import type { VdoNamedScreen } from './slot1DddCounter'
@@ -34,6 +34,7 @@ export type InfoItem = {
   hidden?: boolean
   /** Volitelný React obsah – místo textu message se vykreslí content (pro výpis s symboly apod.) */
   content?: ReactNode
+  onDismiss?: () => void
 }
 
 type InfoPanelProps = {
@@ -44,6 +45,7 @@ type InfoPanelProps = {
   symbolMap?: SymbolMap | null
   /** Sbalený režim – zobraz jen úzký proužek s ikonami */
   collapsed?: boolean
+  mobile?: boolean
 }
 
 function InfoIcon({ type }: { type: 'info' | 'warning' }) {
@@ -55,7 +57,7 @@ function InfoIcon({ type }: { type: 'info' | 'warning' }) {
   )
 }
 
-export function InfoPanel({ items, resetTrigger, symbolMap, collapsed = false }: InfoPanelProps) {
+export function InfoPanel({ items, resetTrigger, symbolMap, collapsed = false, mobile = false }: InfoPanelProps) {
   const { t, language } = useLanguage()
   /** Otevřená okna – vrství se od shora dolů, uzavřou se až po kliknutí na zavřít */
   const [openItems, setOpenItems] = useState<InfoItem[]>([])
@@ -71,10 +73,15 @@ export function InfoPanel({ items, resetTrigger, symbolMap, collapsed = false }:
 
   // Položky visí v pořadí shora dolů; maže je jen uživatel (tlačítko Zavřít)
   const prevLanguageRef = useRef(language)
+  const prevVisibleIdsRef = useRef(new Set<string>())
+  const panelRef = useRef<HTMLElement>(null)
   useEffect(() => {
     const currentIds = new Set(items.map((i) => i.id))
     dismissedIdsRef.current = new Set([...dismissedIdsRef.current].filter((id) => currentIds.has(id)))
 
+    const previousVisibleIds = prevVisibleIdsRef.current
+    const visibleIds = new Set(items.filter((item) => !item.hidden).map((item) => item.id))
+    prevVisibleIdsRef.current = visibleIds
     const itemsById = new Map(items.map((i) => [i.id, i]))
     const dismissed = dismissedIdsRef.current
     const languageChanged = prevLanguageRef.current !== language
@@ -84,16 +91,30 @@ export function InfoPanel({ items, resetTrigger, symbolMap, collapsed = false }:
       const kept = prev.filter((p) => !dismissed.has(p.id) && (!p.activeOnly || currentIds.has(p.id)) && !itemsById.get(p.id)?.hidden)
       const toAdd = items.filter((i) => !i.hidden && !kept.some((p) => p.id === i.id) && !dismissed.has(i.id))
       const updated = kept.map((p) => itemsById.get(p.id) ?? p)
+      const resurfaced = mobile
+        ? updated.filter((item) => visibleIds.has(item.id) && !previousVisibleIds.has(item.id))
+        : []
       const hasChanges =
+        resurfaced.length > 0 ||
         toAdd.length > 0 ||
         languageChanged ||
         kept.some((p, i) => updated[i]?.message !== p.message || updated[i]?.title !== p.title || (updated[i]?.content != null) !== (p.content != null))
       if (!hasChanges && kept.length === prev.length) return prev
-      return [...toAdd, ...updated]
+      return [...toAdd, ...resurfaced, ...updated.filter((item) => !resurfaced.includes(item))]
     })
-  }, [items, language])
+  }, [items, language, mobile])
 
-  const handleDismiss = (id: string) => {
+  const newestItemId = openItems[0]?.id
+  useLayoutEffect(() => {
+    if (mobile && newestItemId) {
+      const rail = panelRef.current?.closest('.info-panels-wrapper--attached')
+      rail?.scrollTo({ left: 0, behavior: 'instant' })
+    }
+  }, [mobile, newestItemId])
+
+  const handleDismiss = (item: InfoItem) => {
+    const { id } = item
+    item.onDismiss?.()
     setOpenItems((prev) => prev.filter((i) => i.id !== id))
     dismissedIdsRef.current = new Set([...dismissedIdsRef.current, id])
   }
@@ -110,14 +131,12 @@ export function InfoPanel({ items, resetTrigger, symbolMap, collapsed = false }:
     )
   }
 
-  const activeIds = new Set(items.filter((item) => !item.hidden).map((item) => item.id))
-
   return (
-    <aside className="info-panel" role="complementary" aria-label={t.ui.infoPanelLabel}>
+    <aside ref={panelRef} className="info-panel" role="complementary" aria-label={t.ui.infoPanelLabel}>
       <div className="info-panel-inner info-panel-stack">
         {openItems.map((item) => (
           <div key={`${item.id}-${language}`} className={`info-panel-item info-panel-item--${item.type}`}
-            data-history={!activeIds.has(item.id) || undefined}>
+            data-current={(mobile && item.id === newestItemId) || undefined}>
             <InfoIcon type={item.type} />
             {item.content != null ? (
               <div className="info-panel-content">{item.content}</div>
@@ -130,7 +149,7 @@ export function InfoPanel({ items, resetTrigger, symbolMap, collapsed = false }:
             <button
               type="button"
               className="info-panel-close"
-              onClick={() => handleDismiss(item.id)}
+              onClick={() => handleDismiss(item)}
               aria-label={t.printOverlay.close}
             >
               ×

@@ -318,7 +318,7 @@ export function CardInsertionDisplay2(props: CardInsertionDisplay2Props) {
             {showSlot1Card && (cs.slot === 1 ? cardSymbolEl : <><TachoIcon code={SPECIAL_SYMBOLS.CARD_SYMBOL} /><span className="lcd-icon" style={{ fontFamily: TACHO_FONT }}>{getIconChar('card')}</span></>)}
           </div>
           <div className="lcd-row-center">
-            {odometerKm.toLocaleString('cs-CZ', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} km
+            {odometerKm.toLocaleString('cs-CZ', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}km
           </div>
           <div className="lcd-row-sides">
             {showSlot2Card && (cs.slot === 2 ? cardSymbolEl : <TachoIcon code={SPECIAL_SYMBOLS.CARD_SYMBOL} />)}

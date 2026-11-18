@@ -96,7 +96,7 @@ import { exportWorkWeekToTxt, workWeekToTxtString, simulatorToGraphData } from '
 import { parseWorkWeekTxt, activitiesByDay, expandToWeeksContainingData, type DayData, type CountryMarker } from './workWeekTxtParser'
 import { WorkWeekGraphView } from './WorkWeekGraphView'
 import { InsertedCardsHistory } from './InsertedCardsHistory'
-import { InfoPanel, useInfoPanelItems, useNr165Warning, Nr165WarningBox, lcdTeachInfoItem, visibleLcdTeachScreen } from './InfoPanel'
+import { InfoPanel, useInfoPanelItems, useNr165Warning, Nr165WarningBox, lcdTeachInfoItem, visibleLcdTeachScreen, type InfoItem } from './InfoPanel'
 import { REDUCED_DAILY_REST_MIN_MS, SPLIT_REST_SECOND_MS, formatDurationHhMm } from './VDOCounter'
 import { drivingBreakDisplay, drivingRestTotals } from './drivingBreakDisplay'
 import { drivingRemainderUndocumented, evaluateRecordedOut, undeterminedOverlaps } from './outDrivingEvaluation'
@@ -2875,7 +2875,18 @@ export default function App() {
     rightActivityId,
     breakCountingDown: slot1LcdProps.slot1DebugBreak?.phase === 'break' && !tachoState.ferryTrainModeActive,
   })
-  const panelItems = lcdTeachItem ? [...infoPanelItems, lcdTeachItem] : infoPanelItems
+  const nr165Visible = showNr165Warning && !nr165Dismissed
+  const panelItems: InfoItem[] = [
+    ...infoPanelItems,
+    ...(lcdTeachItem ? [lcdTeachItem] : []),
+    ...(mobileInfoPanels && nr165Visible ? [{
+      id: 'nr165-warning',
+      type: 'warning' as const,
+      message: t.infoPanel.nr165Warning,
+      activeOnly: true,
+      onDismiss: () => setNr165Dismissed(true),
+    }] : []),
+  ]
 
   const insertedSlot1 = card1Data?.cardNumber ? dddCards[card1Data.cardNumber] ?? null : null
   const insertedSlot2 = card2Data?.cardNumber ? dddCards[card2Data.cardNumber] ?? null : null
@@ -3276,10 +3287,11 @@ export default function App() {
               <div className="info-panels-stack">
                 <InfoPanel
                   items={panelItems}
+                  mobile={mobileInfoPanels}
                   resetTrigger={infoPanelResetTrigger}
                   symbolMap={symbolMap}
                 />
-                {showNr165Warning && !nr165Dismissed && (
+                {!mobileInfoPanels && nr165Visible && (
                   <Nr165WarningBox
                     onClose={() => setNr165Dismissed(true)}
                     symbolMap={symbolMap}

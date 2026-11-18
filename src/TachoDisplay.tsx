@@ -661,7 +661,7 @@ function OperatingDisplay(props: TachoDisplayProps) {
                 )}
               </div>
               <div className="lcd-row-center">
-                {odometerKm.toLocaleString('cs-CZ', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} km
+                {odometerKm.toLocaleString('cs-CZ', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}km
               </div>
               <div className="lcd-row-sides">
                 {card2Inserted && (
@@ -839,7 +839,7 @@ function OperatingDisplay(props: TachoDisplayProps) {
               )}
             </div>
             <div className="lcd-row-center">
-              {odometerKm.toLocaleString('cs-CZ', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} km
+              {odometerKm.toLocaleString('cs-CZ', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}km
             </div>
             <div className="lcd-row-sides">
               {card2Inserted && (

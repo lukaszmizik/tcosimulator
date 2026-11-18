@@ -182,6 +182,7 @@ html body { min-width:0 !important; width:100%; }
     overflow-x: auto;
     overscroll-behavior-x: contain;
     scroll-snap-type: x mandatory;
+    overflow-anchor: none;
     pointer-events: auto;
   }
 
@@ -205,21 +206,27 @@ html body { min-width:0 !important; width:100%; }
     overflow-wrap: anywhere;
   }
 
-  .info-panels-wrapper--attached .info-panel-nr165-warning {
-    order: -1;
-  }
-
-  .info-panel-item--info[data-history] {
+  .info-panel-item--info:not([data-current]) {
     background: #e8ecf0;
     border-left-color: #7a8794;
     color: #263442;
   }
 
-  .info-panel-item--info[data-history] .info-panel-icon--info {
+  .info-panel-item--info:not([data-current]) .info-panel-icon--info {
     background: #526171;
   }
 
-  .info-panel-item--info[data-history] .info-panel-symbol-wrap {
+  .info-panel-item--info:not([data-current]) .info-panel-symbol-wrap {
     filter: grayscale(1);
+  }
+
+  .info-panels-wrapper--attached .info-panel-item[data-current] {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    border-left-color: #1976d2;
+    color: #0d47a1;
+  }
+
+  .info-panels-wrapper--attached .info-panel-item[data-current] .info-panel-icon {
+    background: #1976d2;
   }
 }

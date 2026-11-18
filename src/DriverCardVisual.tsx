@@ -83,7 +83,8 @@ export function DriverCardVisual({
   }, [usesTemplateDefaults, birthDateProp, cardId])
   const validity = useMemo(() => {
     if (!usesTemplateDefaults) return { from: shown(validityFrom, '—'), to: shown(validityTo, '—') }
-    return cardId ? getValidityDatesForCard(cardId) : { from: '—', to: '—' }
+    const defaults = cardId ? getValidityDatesForCard(cardId) : { from: '—', to: '—' }
+    return { ...defaults, to: validityTo ?? defaults.to }
   }, [usesTemplateDefaults, validityFrom, validityTo, cardId])
   const country = shown(countryCode, 'CZ')
   const authorityText = usesTemplateDefaults ? 'Ministerstvo dopravy' : shown(authority, '—')

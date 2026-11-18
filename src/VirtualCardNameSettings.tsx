@@ -3,6 +3,7 @@ import { TEST_CARDS } from './TachoTypes'
 import type { SupportedLanguage } from './translations/types'
 
 type CardId = keyof typeof TEST_CARDS
+export type TrainingProfile = 'empty' | 'week' | 'expiring'
 type CardNames = Record<CardId, string>
 
 const STORAGE_KEY = 'tcosimulator.virtualCardNames'
@@ -15,9 +16,9 @@ const labels = {
 }
 
 const preparationLabels = {
-  cs: { empty: 'Nepoužitá karta', week: 'Karta s modelovým týdnem', confirm: 'Připravit kartu? Přepíše historii vybrané karty.', done: 'Karta připravena.' },
-  en: { empty: 'Unused card', week: 'Card with a sample week', confirm: 'Prepare the card? This replaces the selected card’s history.', done: 'Card prepared.' },
-  ru: { empty: 'Неиспользованная карта', week: 'Карта с примером недели', confirm: 'Подготовить карту? История выбранной карты будет заменена.', done: 'Карта подготовлена.' },
+  cs: { empty: 'Nepoužitá karta', expiring: 'Karta s končící platností', select: 'Připravit kartu…', expiryConfirm: 'Nastavit konec platnosti za 7 simulovaných dní? Historie karty zůstane zachována.', week: 'Karta s modelovým týdnem', confirm: 'Připravit kartu? Přepíše historii vybrané karty.', done: 'Karta připravena.' },
+  en: { empty: 'Unused card', expiring: 'Card nearing expiry', select: 'Prepare card…', expiryConfirm: 'Set expiry to 7 simulated days from now? Card history will be kept.', week: 'Card with a sample week', confirm: 'Prepare the card? This replaces the selected card’s history.', done: 'Card prepared.' },
+  ru: { empty: 'Неиспользованная карта', expiring: 'Карта с истекающим сроком', select: 'Подготовить карту…', expiryConfirm: 'Установить срок действия ещё на 7 дней симуляции? История карты сохранится.', week: 'Карта с примером недели', confirm: 'Подготовить карту? История выбранной карты будет заменена.', done: 'Карта подготовлена.' },
 }
 
 function normalizeName(value: unknown, cardId: CardId): string {
@@ -43,7 +44,7 @@ export function VirtualCardNameSettings({ names, onSave, language, onPrepare, in
   names: CardNames
   onSave: (names: CardNames) => void
   language: SupportedLanguage
-  onPrepare: (cardId: CardId, withWeek: boolean) => void
+  onPrepare: (cardId: CardId, profile: TrainingProfile) => void
   insertedIds: (CardId | undefined)[]
 }) {
   const [draft, setDraft] = useState(names)
@@ -51,9 +52,9 @@ export function VirtualCardNameSettings({ names, onSave, language, onPrepare, in
   const copy = labels[language]
 
   const preparation = preparationLabels[language]
-  const prepare = (id: CardId, withWeek: boolean) => {
-    if (!window.confirm(preparation.confirm)) return
-    onPrepare(id, withWeek)
+  const prepare = (id: CardId, profile: TrainingProfile) => {
+    if (!window.confirm(profile === 'expiring' ? preparation.expiryConfirm : preparation.confirm)) return
+    onPrepare(id, profile)
     setStatus(preparation.done)
   }
 
@@ -89,8 +90,17 @@ export function VirtualCardNameSettings({ names, onSave, language, onPrepare, in
               }}
             />
           </label>
-          <button type="button" disabled={insertedIds.includes(cardId)} onClick={() => prepare(cardId, false)}>{preparation.empty}</button>
-          <button type="button" disabled={insertedIds.includes(cardId)} onClick={() => prepare(cardId, true)}>{preparation.week}</button>
+          <select value="" aria-label={`${copy.card} ${index + 1} · ${preparation.select}`}
+            disabled={insertedIds.includes(cardId)}
+            onChange={(event) => {
+              const value = event.target.value
+              if (value === 'empty' || value === 'week' || value === 'expiring') prepare(cardId, value)
+            }}>
+            <option value="" disabled>{preparation.select}</option>
+            <option value="empty">{preparation.empty}</option>
+            <option value="week">{preparation.week}</option>
+            <option value="expiring">{preparation.expiring}</option>
+          </select>
           </div>
         ))}
         <button type="submit">{copy.save}</button>

@@ -142,8 +142,8 @@ export function buildVehicleDayPrintRows(input: VehicleDayPrintData & {
       add(14, '---')
       return
     }
-    const card = id === 'zmizik' ? getCard1StoredData()
-      : id === 'novak' ? getCard2StoredData() : input.resolveCard(id)
+    const card = input.resolveCard(id) ?? (id === 'zmizik' ? getCard1StoredData()
+      : id === 'novak' ? getCard2StoredData() : undefined)
     if (card?.surname) add(2, ' ', card.surname)
     if (card?.firstName) add('  ', card.firstName)
     add(2, 14, ' ', card?.issuingCountry ? `${card.issuingCountry} /` : '', card?.cardNumber ?? id)

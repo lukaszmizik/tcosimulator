@@ -108,6 +108,7 @@ export type CardData = {
   lastWithdrawalSource?: 'vehicle_last_use'
   /** Identita karty načtené z DDD. Šablony zmizik a novak ji nemají. */
   cardNumber?: string
+  trainingExpiryUtc?: number
   templateId?: 'zmizik' | 'novak'
   /** Po prvním úspěšném vložení se změní na false. */
   isFirstInsertion?: boolean

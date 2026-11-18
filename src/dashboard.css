@@ -236,7 +236,7 @@ html body { min-width:0 !important; width:100%; }
 }
 .virtual-card-names fieldset {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
   align-items: end;
   gap: 8px;
   min-width: 0;
@@ -245,7 +245,17 @@ html body { min-width:0 !important; width:100%; }
   display: grid;
   gap: 4px;
 }
-.virtual-card-names input {
+.virtual-card-names fieldset > div {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+}
+.virtual-card-names [role="status"] { grid-column: 1 / -1; }
+.virtual-card-names input, .virtual-card-names select {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  font: inherit;
   width: 100%;
   padding: 6px 8px;
   border: 1px solid #576777;

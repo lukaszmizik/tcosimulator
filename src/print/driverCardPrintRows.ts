@@ -70,7 +70,10 @@ function kilometers(km: number): string {
 
 export function printCardHolder(card: CardData | null, imported?: DddParsedCard | null) {
   if (imported) return imported
-  if (card?.templateId) return card.templateId === 'zmizik' ? getCard1StoredData() : getCard2StoredData()
+  if (card?.templateId) {
+    const stored = card.templateId === 'zmizik' ? getCard1StoredData() : getCard2StoredData()
+    return card.trainingExpiryUtc == null ? stored : { ...stored, dateOfExpiry: printDateUtc(card.trainingExpiryUtc) }
+  }
   return { firstName: card?.name, surname: card?.surname, cardNumber: card?.cardNumber, issuingCountry: '', dateOfExpiry: undefined }
 }
 

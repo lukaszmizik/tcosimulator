@@ -112,6 +112,8 @@ import { isWarningCode } from './data/warnings'
 import { LANGUAGE_PAGE, languages, recalledLanguage, rememberLanguage } from './firstLevelDisplay'
 import { useLanguage } from './translations'
 import { ControlPanel } from './ControlPanel'
+import type { TrainingProfile } from './VirtualCardNameSettings'
+import { printCardHolder, printDateUtc } from './print/driverCardPrintRows'
 import { VirtualCardNameSettings, loadVirtualCardNames, virtualCardTemplate } from './VirtualCardNameSettings'
 import { PrintVehicleSettings } from './components/PrintVehicleSettings'
 import { loadPrintVehicleProfile } from './data/printVehicleProfile'
@@ -355,6 +357,13 @@ export default function App() {
   const [card1Manual, setDriver1ManualEntryBuffer] = useState<ManualEntrySegment[]>(() => loadCard1ManualEntryBuffer())
   /** Uložené 1M záznamy pro řidiče 2 (pro výtisk). */
   const [card2Manual, setDriver2ManualEntryBuffer] = useState<ManualEntrySegment[]>(() => loadCard2ManualEntryBuffer())
+  const [expiryByCard, setExpiryByCard] = useState<Partial<Record<'zmizik' | 'novak', number>>>({})
+  const [expiryNote, setExpiryNote] = useState<{ slot: 1 | 2; days: number } | null>(null)
+  useEffect(() => {
+    if (!expiryNote) return
+    const timer = window.setTimeout(() => setExpiryNote(null), 3000)
+    return () => window.clearTimeout(timer)
+  }, [expiryNote])
   const [preparedTrainingCards, setPreparedTrainingCards] = useState<Partial<Record<'zmizik' | 'novak', true>>>({})
   const driver1ManualEntryBuffer = card1Data?.templateId === CARD2_TEMPLATE_ID ? card2Manual : card1Manual
   const driver2ManualEntryBuffer = card2Data?.templateId === CARD1_TEMPLATE_ID ? card1Manual : card2Manual
@@ -708,6 +717,11 @@ export default function App() {
   const performCardEjectWithCountry = useCallback((prev: CardWithdrawalState) => {
     flushActivitiesToCardBeforeEjectRef.current?.(prev.slot)
     const withdrawalTime = Math.floor(simulatedUtcTimeRef.current / 60000) * 60000
+    const expiryUtc = prev.cardData.trainingExpiryUtc
+    if (expiryUtc != null) {
+      const days = Math.floor(expiryUtc / 86400000) - Math.floor(withdrawalTime / 86400000)
+      if (days >= 0 && days <= 30) setExpiryNote({ slot: prev.slot, days })
+    }
     const templateId = prev.cardData.templateId
     if (templateId === CARD1_TEMPLATE_ID) saveCard1LastWithdrawal(withdrawalTime)
     else if (templateId === CARD2_TEMPLATE_ID) saveCard2LastWithdrawal(withdrawalTime)
@@ -1859,7 +1873,7 @@ export default function App() {
     }
     if (cardId !== 'zmizik' && cardId !== 'novak') return
     const templateId = cardId
-    const template = virtualCardTemplate(templateId, virtualCardNames)
+    const template = { ...virtualCardTemplate(templateId, virtualCardNames), trainingExpiryUtc: expiryByCard[templateId] }
     if ((slot === 1 ? card2Data : card1Data)?.templateId === templateId) return
     addEntry(`${t.actions.vlozeniKarty} ${template.surname ?? template.name} do slotu ${slot}`)
     const cardData = buildDroppedCardData({
@@ -1890,7 +1904,7 @@ export default function App() {
     setDragOverSlot(null)
     setCardsOpen(false)
     setCardPickerSlot(null)
-  }, [ignitionOn, displayAwakeFromStandby, simulatedUtcTime, timeOffsetMs, countries, card1Data, card2Data, driverCardStateByTemplateId, preparedTrainingCards, card1Manual, card2Manual, addEntry, setCardInsertionState, virtualLocation, virtualCardNames])
+  }, [ignitionOn, displayAwakeFromStandby, simulatedUtcTime, timeOffsetMs, countries, card1Data, card2Data, driverCardStateByTemplateId, preparedTrainingCards, card1Manual, card2Manual, addEntry, setCardInsertionState, virtualLocation, virtualCardNames, expiryByCard])
 
   const handleSlotDrop = (e: React.DragEvent, slot: 1 | 2) => {
     e.preventDefault()
@@ -2220,11 +2234,17 @@ export default function App() {
     }
   }, [card1Manual])
 
-  const prepareTrainingCard = (id: 'zmizik' | 'novak', withWeek: boolean) => {
+  const prepareTrainingCard = (id: 'zmizik' | 'novak', profile: TrainingProfile) => {
     if (card1Data?.templateId === id || card2Data?.templateId === id) return
     const first = id === CARD1_TEMPLATE_ID
     const now = simulatedUtcTimeRef.current
-    const generated = withWeek ? generateRandomWorkWeek(first ? 1 : 2, now, id, now, false) : null
+    if (profile === 'expiring') {
+      const expiryUtc = (Math.floor(now / 86400000) + 7) * 86400000
+      setExpiryByCard(prev => ({ ...prev, [id]: expiryUtc }))
+      return
+    }
+    setExpiryByCard(prev => ({ ...prev, [id]: undefined }))
+    const generated = profile === 'week' ? generateRandomWorkWeek(first ? 1 : 2, now, id, now, false) : null
     const manual = generated?.manualEntryBuffer ?? []
     const end = manual[manual.length - 1]
     const withdrawal = end ? segmentToMsUtc(end) : null
@@ -2405,6 +2425,8 @@ export default function App() {
     setCardWithdrawalState(null)
     setCardActivityHistoryByTemplateId({})
     setDriverCardStateByTemplateId({})
+    setExpiryByCard({})
+    setExpiryNote(null)
     setPreparedTrainingCards({})
     setDriver1ManualEntryBuffer([])
     setDriver2ManualEntryBuffer([])
@@ -3023,6 +3045,7 @@ export default function App() {
                   <div data-prep-holder={virtualCardTemplate(templateId, virtualCardNames).surname} data-inserted-slot={insertedSlot ?? ''}>
                     <DriverCardVisual
                       cardId={templateId}
+                      validityTo={expiryByCard[templateId] == null ? undefined : printDateUtc(expiryByCard[templateId]!)}
                       data={card1Data?.templateId === templateId ? card1Data : card2Data?.templateId === templateId ? card2Data : virtualCardTemplate(templateId, virtualCardNames)}
                       insertedSlot={insertedSlot}
                       draggable={insertedSlot == null && ignitionOn}
@@ -3195,6 +3218,7 @@ export default function App() {
                 <TachoDisplay
                   lcdPreview
                   {...displayProps}
+                  expiryNote={expiryNote}
                   languageDraft={languageDraft}
                   languageSaved={languageSaved}
                   vdoNamedScreen={vdoNamedScreen}
@@ -3420,7 +3444,9 @@ export default function App() {
           ferry: ferryTrainEvents,
           places: recordedGpsLocations,
           isCrew: isMultiManning,
-          resolveCard: (id) => dddCards[id]?.original,
+          resolveCard: (id) => id === 'zmizik' || id === 'novak'
+            ? printCardHolder({ ...virtualCardTemplate(id, virtualCardNames), templateId: id, trainingExpiryUtc: expiryByCard[id] })
+            : dddCards[id]?.original,
         })}
         vehicleProfile={printVehicleProfile}
         dailyDriverCard={(slot) => {

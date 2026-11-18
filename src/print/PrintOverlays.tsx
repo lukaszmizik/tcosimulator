@@ -17,7 +17,7 @@ import type { SymbolMap } from '../TachoTypes'
 import type { CardData, EventLogEntry, ManualEntrySegment } from '../TachoTypes'
 import type { SecondActivitySnapshot } from '../TachoTypes'
 import type { Translations } from '../translations/types'
-import { getCard1StoredData } from '../data/card_stored_data'
+import { printCardHolder } from './driverCardPrintRows'
 import { PrintDriver1Overlay } from '../components/overlays/PrintDriver1Overlay'
 import { PrintVehicle24hOverlay } from '../components/overlays/PrintVehicle24hOverlay'
 import { PrintVDiagramOverlay } from '../components/overlays/PrintVDiagramOverlay'
@@ -141,9 +141,7 @@ export function PrintOverlays({
             records: vehicleEvents,
             profile: vehicleProfile,
             card: card1Inserted && card1Data
-              ? dailyDriverCard(1).imported ?? (card1Data.templateId ? getCard1StoredData() : {
-                firstName: card1Data.name, surname: card1Data.surname, cardNumber: card1Data.cardNumber,
-              })
+              ? printCardHolder(card1Data, dailyDriverCard(1).imported)
               : null,
             printedAtUtc: simulatedUtcTime,
             localOffsetMs: vehicleDay().localOffsetMs,

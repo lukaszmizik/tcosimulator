@@ -32,6 +32,7 @@ import type { DrivingBreakDisplay } from './drivingBreakDisplay'
 import type { VdoNamedScreen } from './slot1DddCounter'
 
 export type TachoDisplayProps = {
+  expiryNote?: { slot: 1 | 2; days: number } | null
   lcdPreview?: boolean
   withdrawalBargrafTick?: number
   symbolMap: SymbolMap | null
@@ -202,7 +203,7 @@ export function TachoDisplay(props: TachoDisplayProps) {
     return <EjectionBlockedWarningDisplay symbolMap={symbolMap} />
   }
   /** Režim OUT (bez vložené karty): na hlavní obrazovce zobrazit nápis OUT místo symbolů aktivit. V menu zůstane menu. */
-  if (showOutOnL2 && props.displayMode === 'operating') {
+  if (!props.expiryNote && showOutOnL2 && props.displayMode === 'operating') {
     return <OperatingDisplay {...props} />
   }
   if (cardInsertionState) {
@@ -251,6 +252,14 @@ export function TachoDisplay(props: TachoDisplayProps) {
   }
   if (printStartedToastUntil != null && Date.now() < printStartedToastUntil) {
     return <PrintStartedDisplay symbolMap={symbolMap} />
+  }
+  if (props.expiryNote && props.ignitionOn && displayMode === 'operating') {
+    const lines = { cs: ['vyprší za', 'dní'], en: ['expires in', 'days'], ru: ['Срок действ.', 'карты'] }[language]
+    const { slot, days } = props.expiryNote
+    return <div className="lcd-two-rows lcd-card-insertion">
+      <div className="lcd-row lcd-row-left">{parseSymbols(`(47)(14)${slot} ${lines[0]}`, symbolMap)}</div>
+      <div className="lcd-row lcd-row-left">{lines[1]} {days}</div>
+    </div>
   }
   if (displayMode === 'operating') {
     return <OperatingDisplay {...props} />

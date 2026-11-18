@@ -3010,6 +3010,14 @@ export default function App() {
   const insertedSlot1 = card1Data?.cardNumber ? dddCards[card1Data.cardNumber] ?? null : null
   const insertedSlot2 = card2Data?.cardNumber ? dddCards[card2Data.cardNumber] ?? null : null
 
+  function cardForPrint(card: CardData | null): CardData | null {
+    if (!card?.templateId) return card
+    const { name, surname } = virtualCardTemplate(card.templateId, virtualCardNames)
+    return { ...card, name, surname }
+  }
+  const printCard1Data = cardForPrint(card1Data)
+  const printCard2Data = cardForPrint(card2Data)
+
   return (
     <div>
     <div className="app-root" data-lang={language} style={{ minHeight: '100vh', background: '#444', display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-start', margin: 0, padding: 24, gap: 24 }}>
@@ -3445,7 +3453,7 @@ export default function App() {
         secondHistory={secondHistory}
         symbolMap={symbolMap}
         card1Inserted={card1Inserted}
-        card1Data={card1Data}
+        card1Data={printCard1Data}
         driver1ManualEntryBuffer={driver1ManualEntryBuffer}
         slot1CardActivities={driver1PrintCardActivities(
           card1Inserted && card1Data?.cardNumber ? dddCards[card1Data.cardNumber]?.original.activities : null,
@@ -3468,7 +3476,7 @@ export default function App() {
         })}
         vehicleProfile={printVehicleProfile}
         dailyDriverCard={(slot) => {
-          const card = slot === 1 ? card1Data : card2Data
+          const card = slot === 1 ? printCard1Data : printCard2Data
           const imported = slot === 1 ? insertedSlot1 : insertedSlot2
           const printCardId = card?.templateId ?? card?.cardNumber
           const ongoing = printCardId ? ongoingPrintCardActivity(secondHistory, printCardId, simulatedUtcTime, isMultiManning) : null
@@ -3485,7 +3493,7 @@ export default function App() {
             localOffsetMs: timeOffsetMs,
             profile: printVehicleProfile,
             card,
-            secondCard: slot === 1 ? (card2Inserted ? card2Data : null) : (card1Inserted ? card1Data : null),
+            secondCard: slot === 1 ? (card2Inserted ? printCard2Data : null) : (card1Inserted ? printCard1Data : null),
             imported: imported?.original,
             secondImported: (slot === 1 ? insertedSlot2 : insertedSlot1)?.original,
             manual: slot === 1 ? driver1ManualEntryBuffer : driver2ManualEntryBuffer,

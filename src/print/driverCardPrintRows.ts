@@ -72,7 +72,14 @@ export function printCardHolder(card: CardData | null, imported?: DddParsedCard 
   if (imported) return imported
   if (card?.templateId) {
     const stored = card.templateId === 'zmizik' ? getCard1StoredData() : getCard2StoredData()
-    return card.trainingExpiryUtc == null ? stored : { ...stored, dateOfExpiry: printDateUtc(card.trainingExpiryUtc) }
+    const name = card.name.trim()
+    const surnameStart = name.lastIndexOf(' ') + 1
+    return {
+      ...stored,
+      firstName: name.slice(0, surnameStart).trimEnd(),
+      surname: card.surname || name.slice(surnameStart),
+      dateOfExpiry: card.trainingExpiryUtc == null ? stored.dateOfExpiry : printDateUtc(card.trainingExpiryUtc),
+    }
   }
   return { firstName: card?.name, surname: card?.surname, cardNumber: card?.cardNumber, issuingCountry: '', dateOfExpiry: undefined }
 }

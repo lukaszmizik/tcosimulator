@@ -2079,3 +2079,9 @@ body {
 #main-display[data-lcd-preview] .lcd-l2-num { min-width: 0; }
 #main-display[data-lcd-preview] .lcd-l2-space { width: 1ch; }
 #main-display[data-lcd-preview] .lcd-row.lcd-loading-bargraf { width: 100%; }
+
+/* Match the 1200/2048-em symbol advance to one Casio LCD character. */
+#main-display[data-lcd-preview] :is(.tacho-icon, .lcd-icon) {
+  font-size: calc(94cqw / 16 * 2048 / 1200) !important;
+  line-height: 1;
+}

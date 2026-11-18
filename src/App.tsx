@@ -9,6 +9,7 @@ import { createInitialCardInsertionState, activityFromChar, getNextActivity, get
 import { EDITOR_FIELD_ORDER } from './CardLogic'
 import { getVirtualLocationForDistance } from './VirtualRoute'
 import { FaceplateFrame } from './FaceplateFrame'
+import { LcdDebugGrid } from './LcdDebugGrid'
 import { TachoDisplay } from './TachoDisplay'
 import type { SymbolMap } from './TachoTypes'
 import type {
@@ -2634,6 +2635,7 @@ export default function App() {
     driver2ManualEntryBuffer,
   })
 
+  const lcdDebugEnabled = useMemo(() => new URLSearchParams(window.location.search).get('lcdDebug') === '1', [])
   /** Diagnostika režimu OUT: v URL přidej ?debug=1 a zobrazí se panel se stavem. */
   const showDebugPanel = typeof window !== 'undefined' && window.location.search.includes('debug=1')
   const slot1DrivingBreak = useMemo(() => {
@@ -3117,6 +3119,7 @@ export default function App() {
                   activityDurationMsByDriver={activityDurationMsByDriver}
                   workTime={slotWorkingTime}
                 />
+                {lcdDebugEnabled && <LcdDebugGrid />}
               </div>
               {slot1DrivingBreak && (
                 <div

@@ -2020,3 +2020,28 @@ body {
   min-height: 202px;
   position: relative;
 }
+
+.lcd-debug-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+.lcd-debug-band {
+  --guide: rgb(106 219 255 / 60%);
+  position: absolute;
+  box-sizing: border-box;
+  background-image: linear-gradient(to right, var(--guide) 1px, transparent 1px);
+  background-size: 6.25% 100%;
+  box-shadow: inset -1px 0 var(--guide), inset 0 1px var(--guide), inset 0 -1px var(--guide);
+}
+.lcd-debug-band[data-warning='true'] { --guide: rgb(255 154 95 / 80%); }
+.lcd-debug-band small:not(:empty) {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  padding: 0 2px;
+  background: #33180c;
+  color: white;
+  font: bold 10px/1 sans-serif;
+}

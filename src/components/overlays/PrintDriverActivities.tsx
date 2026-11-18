@@ -13,6 +13,8 @@ const AXIS = 25
 const COLUMN = 30
 const WIDTH = AXIS + 7 * COLUMN
 const HOUR_HEIGHT = 62
+const DATE_HEADER_HEIGHT = 104
+const AXIS_END_PADDING = 30
 const BAND_HOURS = [0, 6.5, 12.5, 18.5, 24]
 const ACTIVITY_WIDTH = { UNKNOWN: 1, REST: 6, AVAILABILITY: 12, WORK: 19, DRIVING: 27 }
 const LEGEND = [
@@ -102,27 +104,28 @@ function ActivityBand({ start, end, days, symbols, offset, zone }: {
 }) {
   const first = start === 0
   const last = end === 24
-  const top = first ? 127 : 0
+  const top = first ? DATE_HEADER_HEIGHT + 52 : 0
+  const bottom = last ? AXIS_END_PADDING : 0
   const height = (end - start) * HOUR_HEIGHT
   return (
     <svg className="vdiagram-print-band" role="img" aria-label={`Aktivity řidiče, ${start}–${end} h ${zone}`}
-      viewBox={`0 ${-top} ${WIDTH} ${top + height}`}>
+      viewBox={`0 ${-top} ${WIDTH} ${top + height + bottom}`}>
       {first && (
         <>
           {LEGEND.map((item, index) => {
             const x = AXIS + 6 + index * 36
             return (
               <g key={index}>
-                <text x={x + 17} y="-115" textAnchor="middle"
+                <text x={x + 17} y={-DATE_HEADER_HEIGHT - 40} textAnchor="middle"
                   fontFamily={'symbol' in item ? 'SymbolTacho1' : 'inherit'}>
                   {'symbol' in item ? symbols?.[item.symbol] : item.label}
                 </text>
-                <rect x={x} y={-79 - item.width} width="36" height={item.width} fill="#666" />
+                <rect x={x} y={-DATE_HEADER_HEIGHT - 4 - item.width} width="36" height={item.width} fill="#666" />
               </g>
             )
           })}
-          <line x1={AXIS} x2={WIDTH} y1="-75" y2="-75" className="vdiagram-gridline" />
-          <text x="9" y="-68" transform="rotate(90 9 -68)" dominantBaseline="central">{zone}</text>
+          <line x1={AXIS} x2={WIDTH} y1={-DATE_HEADER_HEIGHT} y2={-DATE_HEADER_HEIGHT} className="vdiagram-gridline" />
+          <text x="9" y={-DATE_HEADER_HEIGHT + 7} transform={`rotate(90 9 ${-DATE_HEADER_HEIGHT + 7})`} dominantBaseline="central">{zone}</text>
         </>
       )}
       {days.map(({ date, activities }, index) => {
@@ -131,8 +134,8 @@ function ActivityBand({ start, end, days, symbols, offset, zone }: {
         const to = date + end * HOUR
         return (
           <g key={date}>
-            <line x1={x} x2={x} y1={first ? -75 : 0} y2={height} className="vdiagram-gridline" />
-            {first && <text x={x + 12} y="-71" transform={`rotate(90 ${x + 12} -71)`}
+            <line x1={x} x2={x} y1={first ? -DATE_HEADER_HEIGHT : 0} y2={height} className="vdiagram-gridline" />
+            {first && <text x={x + 12} y={-DATE_HEADER_HEIGHT + 4} transform={`rotate(90 ${x + 12} ${-DATE_HEADER_HEIGHT + 4})`}
               dominantBaseline="central">{printDateUtc(date + offset)}</text>}
             {activities.filter(piece => piece.endMs > from && piece.startMs < to).map(piece => (
               <rect key={piece.startMs} x={x + 1} y={(Math.max(from, piece.startMs) - from) / HOUR * HOUR_HEIGHT}
@@ -143,7 +146,7 @@ function ActivityBand({ start, end, days, symbols, offset, zone }: {
           </g>
         )
       })}
-      <line x1={WIDTH - 0.5} x2={WIDTH - 0.5} y1={first ? -75 : 0} y2={height} className="vdiagram-gridline" />
+      <line x1={WIDTH - 0.5} x2={WIDTH - 0.5} y1={first ? -DATE_HEADER_HEIGHT : 0} y2={height} className="vdiagram-gridline" />
       {Array.from({ length: Math.ceil(end) - Math.ceil(start) + Number(last) }, (_, index) => {
         const hour = Math.ceil(start) + index
         const y = (hour - start) * HOUR_HEIGHT
@@ -152,7 +155,7 @@ function ActivityBand({ start, end, days, symbols, offset, zone }: {
           <g key={hour}>
             <line x1={AXIS - 4} x2={WIDTH} y1={y} y2={y} className="vdiagram-gridline" />
             <text x="9" y={y} transform={`rotate(90 9 ${y})`}
-              dominantBaseline="central" textAnchor={hour === 0 ? 'start' : hour === 24 ? 'end' : 'middle'}>{label}</text>
+              dominantBaseline="central" textAnchor="middle">{label}</text>
           </g>
         )
       })}

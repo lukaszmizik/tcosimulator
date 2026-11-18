@@ -168,6 +168,7 @@ export type CardInsertionState = {
   finalConfirmYes: boolean
   finalConfirmSkippedEditor: boolean
   /** Zobrazit ITS/VDO dotazy (pokud isFirstInsertion karty). */
+  consentConfirmed?: boolean
   showItsVdoQuestions: boolean
   itsYes: boolean
   vdoYes: boolean

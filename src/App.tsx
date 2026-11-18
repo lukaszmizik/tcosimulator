@@ -52,6 +52,7 @@ import {
 } from './TachoTypes'
 import { DRIVING_SYMBOL, segmentToMsUtc } from './CardLogic'
 import { activitiesForApplyTime, clockAfterApplyTime, insertedCardId, planApplyTimeJump } from './applyTimeJump'
+import { loadVirtualCardConsents, saveVirtualCardConsents } from './virtualCardConsents'
 import { useCardWizard2 } from './CardWizard2'
 import { useActionLog } from './ActionLogContext'
 import * as WorkShift from './WorkShift'
@@ -346,7 +347,10 @@ export default function App() {
   /** Data z karty – VDO counter čerpá z karty; bez karty z paměti tachografu (activityHistory) */
   const [cardActivityHistoryByTemplateId, setCardActivityHistoryByTemplateId] = useState<Record<string, ActivityHistoryEntry[]>>(() => loadTachographCardActivityHistoryByTemplateId())
   /** Persistence isFirstInsertion, itsConsent, vdoConsent pro karty řidičů. */
-  const [driverCardStateByTemplateId, setDriverCardStateByTemplateId] = useState<Record<string, { isFirstInsertion: boolean; itsConsent?: boolean; vdoConsent?: boolean }>>({})
+  const [driverCardStateByTemplateId, setDriverCardStateByTemplateId] = useState(loadVirtualCardConsents)
+  useEffect(() => {
+    saveVirtualCardConsents(driverCardStateByTemplateId)
+  }, [driverCardStateByTemplateId])
   /** Uložené 1M záznamy pro řidiče 1 (pro výtisk) – uloží se při dokončení průvodce. */
   const [driver1ManualEntryBuffer, setDriver1ManualEntryBuffer] = useState<ManualEntrySegment[]>(() => loadCard1ManualEntryBuffer())
   /** Uložené 1M záznamy pro řidiče 2 (pro výtisk). */
@@ -953,8 +957,12 @@ export default function App() {
   const currentMenu = menusById[currentMenuId]
   const items = currentMenu?.items ?? []
   const visibleItems = useMemo(
-    () => visibleMenuItems(items, tachoState),
-    [items, tachoState],
+    () => visibleMenuItems(items, tachoState).filter(item => {
+      if (!item.sub_menu?.endsWith('_CONSENT')) return true
+      const card = currentMenuId === 'SUB_INPUT_D1_SETTINGS' ? card1Data : card2Data
+      return Boolean(card?.templateId && driverCardStateByTemplateId[card.templateId])
+    }),
+    [items, tachoState, currentMenuId, card1Data, card2Data, driverCardStateByTemplateId],
   )
   const selectedItem = visibleItems[selectedIndex] ?? visibleItems[0]
   const canGoBack = currentMenuPath.length > 1
@@ -1469,6 +1477,27 @@ export default function App() {
       return
     }
     if (!selectedItem) return
+    const consentMenuId = selectedItem.sub_menu ?? currentMenuId
+    if (consentMenuId.endsWith('_CONSENT')) {
+      const firstSlot = consentMenuId.startsWith('D1_')
+      const card = firstSlot ? card1Data : card2Data
+      const id = card?.templateId
+      if (!id || !driverCardStateByTemplateId[id]) return
+      const field = consentMenuId.includes('_ITS_') ? 'itsConsent' : 'vdoConsent'
+      if (selectedItem.sub_menu) {
+        setCurrentMenuPath(path => enterSubmenu(path, consentMenuId).path)
+        setSelectedIndex(driverCardStateByTemplateId[id][field] ? 0 : 1)
+      } else if (selectedItem.action === 'SAVE_CONSENT') {
+        const allowed = selectedItem.id === 'CONSENT_YES'
+        setDriverCardStateByTemplateId(prev => ({ ...prev, [id]: { ...prev[id], [field]: allowed } }))
+        const updateCard = firstSlot ? setCard1Data : setCard2Data
+        updateCard(prev => prev?.templateId === id ? { ...prev, [field]: allowed } : prev)
+        addEntry(t.actions.stiskOk, t.cardWizard.inputSaved)
+        setCurrentMenuPath(path => leaveSubmenu(path).path)
+        setSelectedIndex(field === 'itsConsent' ? 0 : 1)
+      }
+      return
+    }
     if (selectedItem.sub_menu && menusById[selectedItem.sub_menu]) {
       addEntry(t.actions.stiskOk, `${t.actions.vstupDoPodmenu} ${selectedItem.line2 ?? selectedItem.sub_menu}`)
       const submenuId = selectedItem.sub_menu!
@@ -1585,7 +1614,7 @@ export default function App() {
     }
     setMenuComingSoonInfo({ id: `menu-coming-soon-${Date.now()}` })
     addEntry(t.actions.stiskOk, t.infoPanel.menuComingSoon)
-  }, [languagePage, languageDraft, languageCard, language, setLanguage, t, ignitionOn, wakeDisplayFromStandby, displayMode, currentSpeed, selectedItem, menusById, currentMenuPath, countries, spanishRegions, secondHistory, activityHistory, simulatedUtcTime, overrideWarningCode, drivingWithoutCardWarningActive, ignitionWarningActive, breakWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, cardInsertionState, cardWithdrawalState, printWizardState, menuCountryInputState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, openMenuCountryInput, confirmMenuLoadUnload, isPrintoutActive, printState, addEntry, getCardInsertionOkDetail])
+  }, [card1Data, card2Data, driverCardStateByTemplateId, currentMenuId, languagePage, languageDraft, languageCard, language, setLanguage, t, ignitionOn, wakeDisplayFromStandby, displayMode, currentSpeed, selectedItem, menusById, currentMenuPath, countries, spanishRegions, secondHistory, activityHistory, simulatedUtcTime, overrideWarningCode, drivingWithoutCardWarningActive, ignitionWarningActive, breakWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, cardInsertionState, cardWithdrawalState, printWizardState, menuCountryInputState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, openMenuCountryInput, confirmMenuLoadUnload, isPrintoutActive, printState, addEntry, getCardInsertionOkDetail])
 
   const handleBack = useCallback(() => {
     if (!ignitionOn) {

@@ -62,9 +62,39 @@
         {"id": "ID1_SETTINGS", "line2": "?(19) Nastavení", "sub_menu": "SUB_INPUT_D1_SETTINGS"}
       ]
     },
+    "D1_ITS_CONSENT": {
+      "header_line1": "ITS data?",
+      "items": [
+        {"id": "CONSENT_YES", "line2": "ano", "action": "SAVE_CONSENT"},
+        {"id": "CONSENT_NO", "line2": "ne", "action": "SAVE_CONSENT"}
+      ]
+    },
+    "D1_VDO_CONSENT": {
+      "header_line1": "VDO data?",
+      "items": [
+        {"id": "CONSENT_YES", "line2": "ano", "action": "SAVE_CONSENT"},
+        {"id": "CONSENT_NO", "line2": "ne", "action": "SAVE_CONSENT"}
+      ]
+    },
+    "D2_ITS_CONSENT": {
+      "header_line1": "ITS data?",
+      "items": [
+        {"id": "CONSENT_YES", "line2": "ano", "action": "SAVE_CONSENT"},
+        {"id": "CONSENT_NO", "line2": "ne", "action": "SAVE_CONSENT"}
+      ]
+    },
+    "D2_VDO_CONSENT": {
+      "header_line1": "VDO data?",
+      "items": [
+        {"id": "CONSENT_YES", "line2": "ano", "action": "SAVE_CONSENT"},
+        {"id": "CONSENT_NO", "line2": "ne", "action": "SAVE_CONSENT"}
+      ]
+    },
     "SUB_INPUT_D1_SETTINGS": {
       "header_line1": "?(19) Nastavení",
       "items": [
+        {"id": "ID1_ITS", "line2": "ITS data", "sub_menu": "D1_ITS_CONSENT"},
+        {"id": "ID1_VDO", "line2": "VDO data", "sub_menu": "D1_VDO_CONSENT"},
         {"id": "ID1_BT", "line2": "(1) Bluetooth", "action": "SET_BT_D1"},
         {"id": "ID1_MISC", "line2": "Různé", "action": "SET_MISC_D1"}
       ]
@@ -80,6 +110,8 @@
     "SUB_INPUT_D2_SETTINGS": {
       "header_line1": "?(19) Nastavení",
       "items": [
+        {"id": "ID2_ITS", "line2": "ITS data", "sub_menu": "D2_ITS_CONSENT"},
+        {"id": "ID2_VDO", "line2": "VDO data", "sub_menu": "D2_VDO_CONSENT"},
         {"id": "ID2_BT", "line2": "(1) Bluetooth", "action": "SET_BT_D2"},
         {"id": "ID2_MISC", "line2": "Různé", "action": "SET_MISC_D2"}
       ]

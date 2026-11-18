@@ -146,17 +146,14 @@ export function useCardWizard2(params: UseCardWizard2Params) {
         const s = cardInsertionStateRef.current
         if (s?.phase === 'finalizeStep4') {
           const tid = s.slot === 1 ? card1DataRef.current?.templateId : card2DataRef.current?.templateId
-          if (tid && s.showItsVdoQuestions) {
+          if (tid && s.consentConfirmed) {
             setDriverCardStateByTemplateId((prev) => ({
               ...prev,
               [tid]: { isFirstInsertion: false, itsConsent: s.itsYes, vdoConsent: s.vdoYes },
             }))
             if (s.slot === 1) setCard1Data((p) => (p ? { ...p, isFirstInsertion: false, itsConsent: s.itsYes, vdoConsent: s.vdoYes } : null))
             else setCard2Data((p) => (p ? { ...p, isFirstInsertion: false, itsConsent: s.itsYes, vdoConsent: s.vdoYes } : null))
-          } else if (tid) {
-            setDriverCardStateByTemplateId((prev) => ({ ...prev, [tid]: { isFirstInsertion: false } }))
-            if (s.slot === 1) setCard1Data((p) => (p ? { ...p, isFirstInsertion: false } : null))
-            else setCard2Data((p) => (p ? { ...p, isFirstInsertion: false } : null))
+
           }
         }
         setCardInsertionState(null)
@@ -323,7 +320,7 @@ export function useCardWizard2(params: UseCardWizard2Params) {
         if (action === 'up' || action === 'down') return { ...prev, decisionSupplement: !prev.decisionSupplement }
         if (action === 'ok') {
           if (!prev.decisionSupplement) {
-            return { ...prev, phase: 'finalizeStep1', phaseStartTime: Date.now(), showItsVdoQuestions: false }
+            return { ...prev, phase: prev.showItsVdoQuestions ? 'itsQuestion' : 'finalizeStep1', phaseStartTime: Date.now() }
           }
           const offset = timeOffsetMsRef.current
           const insertionTimeFixed = floorToMinute(prev.cardInsertionTime)
@@ -536,7 +533,7 @@ export function useCardWizard2(params: UseCardWizard2Params) {
           if (prev.selectingSpanishRegion) {
             return { ...prev, selectingSpanishRegion: false }
           }
-          return { ...prev, phase: 'itsVdoConfirmSaved' as CardInsertionPhase, phaseStartTime: Date.now(), finalConfirmSkippedEditor: true, selectingSpanishRegion: false }
+          return { ...prev, phase: prev.showItsVdoQuestions ? 'itsQuestion' : 'itsVdoConfirmSaved', phaseStartTime: Date.now(), finalConfirmSkippedEditor: true, selectingSpanishRegion: false }
         }
         const regionsList = spanishRegionsRef.current
         const countriesList = countriesRef.current
@@ -589,7 +586,7 @@ export function useCardWizard2(params: UseCardWizard2Params) {
       }
       if (prev.phase === 'vdoQuestion') {
         if (action === 'up' || action === 'down') return { ...prev, vdoYes: !prev.vdoYes }
-        if (action === 'ok') return { ...prev, phase: 'itsVdoConfirmSaved', phaseStartTime: Date.now() }
+        if (action === 'ok') return { ...prev, phase: 'itsVdoConfirmSaved', consentConfirmed: true, phaseStartTime: Date.now() }
       }
       if (['finalizeStep1', 'finalizeStep2', 'finalizeStep3', 'finalizeStep4'].includes(prev.phase) && (action === 'ok' || action === 'up' || action === 'down' || action === 'back')) {
         if (pleaseWaitTimeoutRef.current) clearTimeout(pleaseWaitTimeoutRef.current)

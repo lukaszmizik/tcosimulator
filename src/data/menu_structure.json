@@ -29,7 +29,7 @@
       "items": [
         {"id": "PD1_24H", "line2": "24h(14)(18) den-tisk", "action": "PRINT_24H_D1", "requiresDate": true, "requiresUtcConfirm": true},
         {"id": "PD1_EVENT", "line2": "(27)(34)(14)(18) událost", "action": "PRINT_EVENT_D1"},
-        {"id": "PD1_ACT", "line2": "(44)(14)(18) aktivity", "action": "PRINT_ACT_D1"}
+        {"id": "PD1_ACT", "line2": "(44)(14)(18) aktivity", "action": "PRINT_ACT_D1", "requiresDate": true, "requiresUtcConfirm": true}
       ]
     },
     "SUB_PRINT_D2": {
@@ -37,7 +37,7 @@
       "items": [
         {"id": "PD2_24H", "line2": "24h(14)(18) den-tisk", "action": "PRINT_24H_D2", "requiresDate": true, "requiresUtcConfirm": true},
         {"id": "PD2_EVENT", "line2": "(27)(34)(14)(18) událost", "action": "PRINT_EVENT_D2"},
-        {"id": "PD2_ACT", "line2": "(44)(14)(18) aktivity", "action": "PRINT_ACT_D2"}
+        {"id": "PD2_ACT", "line2": "(44)(14)(18) aktivity", "action": "PRINT_ACT_D2", "requiresDate": true, "requiresUtcConfirm": true}
       ]
     },
     "SUB_PRINT_VEHICLE": {

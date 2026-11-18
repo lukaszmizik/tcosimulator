@@ -6,10 +6,17 @@
 import type { PrintWizardState } from '../TachoTypes'
 import { utcDaysIntersectingCardActivities } from './prepareDriver1Print24h'
 
+export function driverPrintSlot(action: string): 1 | 2 | null {
+  if (action === 'PRINT_24H_D1' || action === 'PRINT_ACT_D1') return 1
+  if (action === 'PRINT_24H_D2' || action === 'PRINT_ACT_D2') return 2
+  return null
+}
+
 export type PrintWizardKeyAction = 'up' | 'down' | 'ok' | 'back'
 
 export type PrintWizardKeyEffects = {
   setCurrentMenuPath: (path: string[]) => void
+  openPrintDriverActivities?: (dayUtc: number, isUtc: boolean, slot: 1 | 2) => void
   openPrintVehicleEvents?: (isUtc: boolean) => void
   openPrintVDiagram: (dayUtc: number) => void
   openPrintDriverCard: (dayUtc: number, isUtc: boolean, slot: 1 | 2) => void
@@ -22,7 +29,9 @@ export function applyPrintWizardKey(
   effects: PrintWizardKeyEffects,
 ): PrintWizardState | null {
   if (!prev) return null
-  const driverSlot = prev.action === 'PRINT_24H_D1' ? 1 : prev.action === 'PRINT_24H_D2' ? 2 : null
+  const driverSlot = driverPrintSlot(prev.action)
+  const openDriver = prev.action.startsWith('PRINT_ACT_')
+    ? effects.openPrintDriverActivities : effects.openPrintDriverCard
   if (action === 'back') {
     if (prev.action === 'PRINT_EVENT_V') return null
     if (prev.step === 'utc') return { ...prev, step: 'date' }
@@ -56,7 +65,7 @@ export function applyPrintWizardKey(
       if (prev.action === 'PRINT_V_DIAGRAM') {
         effects.openPrintVDiagram(dayUtc)
       } else if (driverSlot) {
-        effects.openPrintDriverCard(dayUtc, true, driverSlot)
+        openDriver?.(dayUtc, true, driverSlot)
       } else if (prev.action === 'PRINT_24H_V') {
         effects.openPrintVehicle24h(dayUtc, true)
       }
@@ -66,7 +75,7 @@ export function applyPrintWizardKey(
     if (dayUtc == null) return prev
     effects.setCurrentMenuPath(prev.returnMenuPath)
     if (driverSlot) {
-      effects.openPrintDriverCard(dayUtc, prev.utcYes, driverSlot)
+      openDriver?.(dayUtc, prev.utcYes, driverSlot)
     } else if (prev.action === 'PRINT_24H_V') {
       effects.openPrintVehicle24h(dayUtc, prev.utcYes)
     }
@@ -107,14 +116,18 @@ export function resolvePrintMenuAction(input: PrintMenuActionInput): PrintMenuAc
       },
     }
   }
-  if (requiresDate && ['PRINT_24H_D1', 'PRINT_24H_D2', 'PRINT_V_DIAGRAM', 'PRINT_24H_V'].includes(action)) {
+  const slot = driverPrintSlot(action)
+  const activityDiagram = action.startsWith('PRINT_ACT_')
+  if (requiresDate && (slot || action === 'PRINT_V_DIAGRAM' || action === 'PRINT_24H_V')) {
     const dayStarts = new Set<number>()
-    for (const s of secondHistory) {
+    for (const s of activityDiagram ? [] : secondHistory) {
       const d = new Date(s.timestampUtc)
       dayStarts.add(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
     }
-    if (action === 'PRINT_24H_D1' || action === 'PRINT_24H_D2') {
-      for (const day of utcDaysIntersectingCardActivities(input.cardActivities ?? [])) {
+    if (slot) {
+      const activities = input.cardActivities ?? []
+      for (const day of utcDaysIntersectingCardActivities(activityDiagram
+        ? activities.map(({ startUtc, endUtc }) => ({ startUtc, endUtc })) : activities)) {
         dayStarts.add(day)
       }
     }
@@ -143,7 +156,7 @@ export function resolvePrintMenuAction(input: PrintMenuActionInput): PrintMenuAc
       },
     }
   }
-  if (['PRINT_24H_D1', 'PRINT_EVENT_D1', 'PRINT_ACT_D1'].includes(action)) {
+  if (['PRINT_24H_D1', 'PRINT_EVENT_D1'].includes(action)) {
     return { type: 'openDriver1' }
   }
   if (action === 'PRINT_V_DIAGRAM') {

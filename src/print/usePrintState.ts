@@ -5,7 +5,12 @@
 
 import { useState, useCallback, useRef } from 'react'
 
+type DriverActivitiesPrint = { dayUtc: number; isUtc: boolean; slot: 1 | 2 }
+
 export type UsePrintStateReturn = {
+  driverActivitiesPrint: DriverActivitiesPrint | null
+  openPrintDriverActivities: (dayUtc: number, isUtc: boolean, slot: 1 | 2) => void
+  onCloseDriverActivities: () => void
   // Stav
   printDriver1Open: boolean
   printDriver1SelectedDate: number | null
@@ -42,6 +47,7 @@ export type UsePrintStateReturn = {
 }
 
 export function usePrintState(): UsePrintStateReturn {
+  const [driverActivitiesPrint, setDriverActivitiesPrint] = useState<DriverActivitiesPrint | null>(null)
   const [printDriver1Open, setPrintDriver1Open] = useState(false)
   const [printDriver1SelectedDate, setPrintDriver1SelectedDate] = useState<number | null>(null)
   const [printDriver1IsUtc, setPrintDriver1IsUtc] = useState(true)
@@ -118,7 +124,14 @@ export function usePrintState(): UsePrintStateReturn {
   }, [])
   const onCloseSpeedVehicle = useCallback(() => setPrintSpeedVehicleOpen(false), [])
 
+  const openPrintDriverActivities = useCallback((dayUtc: number, isUtc: boolean, slot: 1 | 2) => {
+    setDriverActivitiesPrint({ dayUtc, isUtc, slot })
+    showPrintStartedToast()
+  }, [showPrintStartedToast])
+  const onCloseDriverActivities = useCallback(() => setDriverActivitiesPrint(null), [])
+
   const closeAll = useCallback(() => {
+    setDriverActivitiesPrint(null)
     setPrintDriver1Open(false)
     setPrintDriver1SelectedDate(null)
     setPrintVDiagramOpen(false)
@@ -130,9 +143,12 @@ export function usePrintState(): UsePrintStateReturn {
   }, [])
 
   const isPrintoutActive =
-    printVehicleEventsUtc !== null || printDriver1Open || printVDiagramOpen || printVehicle24hOpen || printSpeedVehicleOpen
+    driverActivitiesPrint !== null || printVehicleEventsUtc !== null || printDriver1Open || printVDiagramOpen || printVehicle24hOpen || printSpeedVehicleOpen
 
   return {
+    driverActivitiesPrint,
+    openPrintDriverActivities,
+    onCloseDriverActivities,
     printVehicleEventsUtc,
     openPrintVehicleEvents,
     onCloseVehicleEvents,

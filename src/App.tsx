@@ -115,7 +115,7 @@ import { DriverCardVisual } from './DriverCardVisual'
 import { CardPrepMenu, type CardPrep } from './CardPrepMenu'
 import { usePrintState } from './print/usePrintState'
 import { PrintOverlays } from './print/PrintOverlays'
-import { applyPrintWizardKey, resolvePrintMenuAction } from './print/printWizardHandling'
+import { driverPrintSlot, applyPrintWizardKey, resolvePrintMenuAction } from './print/printWizardHandling'
 import { driver1PrintCardActivities, simulatedPrintCardActivities, ongoingPrintCardActivity } from './print/prepareDriver1Print24h'
 import { useMenuCountryInput } from './useMenuCountryInput'
 import { useMenuLoadUnload } from './useMenuLoadUnload'
@@ -1137,6 +1137,7 @@ export default function App() {
       setCurrentMenuPath,
       openPrintVDiagram: printState.openPrintVDiagram,
       openPrintDriverCard: printState.openPrintDriverCard,
+      openPrintDriverActivities: printState.openPrintDriverActivities,
       openPrintVehicleEvents: printState.openPrintVehicleEvents,
       openPrintVehicle24h: printState.openPrintVehicle24h,
     }))
@@ -1438,7 +1439,7 @@ export default function App() {
     }
     if (selectedItem.action) {
       const item = selectedItem as import('./MenuStructure').MenuItem & { requiresDate?: boolean; requiresUtcConfirm?: boolean }
-      const printSlot = selectedItem.action === 'PRINT_24H_D1' ? 1 : selectedItem.action === 'PRINT_24H_D2' ? 2 : null
+      const printSlot = driverPrintSlot(selectedItem.action)
       const printCard = printSlot === 1 && card1InsertedRef.current ? card1DataRef.current
         : printSlot === 2 && card2InsertedRef.current ? card2DataRef.current : null
       const printDdd = printCard?.cardNumber ? dddCardsRef.current[printCard.cardNumber] : undefined

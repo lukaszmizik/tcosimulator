@@ -1,3 +1,4 @@
+import { PrintDriverActivities } from '../components/overlays/PrintDriverActivities'
 /**
  * Jedna komponenta, která rendruje všechny výtiskové overlaye podle stavu z usePrintState.
  */
@@ -73,8 +74,19 @@ export function PrintOverlays({
     onCloseSpeedVehicle,
   } = printState
 
+  const activitiesPrint = printState.driverActivitiesPrint
+
   return (
     <>
+      {activitiesPrint && (
+        <PrintDriverActivities
+          input={() => ({ ...dailyDriverCard(activitiesPrint.slot), selectedDayUtc: activitiesPrint.dayUtc, isUtc: activitiesPrint.isUtc })}
+          symbols={symbolMap}
+          onClose={printState.onCloseDriverActivities}
+          closeLabel={t.printOverlay.close}
+          title={`Aktivity řidiče ${activitiesPrint.slot}`}
+        />
+      )}
       {printDriver1Open && printDriver1SelectedDate != null && (
         <DailyDriverCardPrint
           input={() => ({ ...dailyDriverCard(printDriverSlot), selectedDayUtc: printDriver1SelectedDate, isUtc: printDriver1IsUtc })}

@@ -68,7 +68,7 @@ function kilometers(km: number): string {
   return `${String(Math.trunc(km)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} km`
 }
 
-function holder(card: CardData | null, imported?: DddParsedCard | null) {
+export function printCardHolder(card: CardData | null, imported?: DddParsedCard | null) {
   if (imported) return imported
   if (card?.templateId) return card.templateId === 'zmizik' ? getCard1StoredData() : getCard2StoredData()
   return { firstName: card?.name, surname: card?.surname, cardNumber: card?.cardNumber, issuingCountry: '', dateOfExpiry: undefined }
@@ -103,7 +103,7 @@ export function buildDriverCardPrintRows(input: DailyCardPrintInput): PrintRow[]
   const stamp = (at: number) => printTimeUtc(at + offset)
   const { rows, add, separator, addLocalTimeWarning } = createPrintRows()
 
-  function addHolder(data: ReturnType<typeof holder>, icon: number) {
+  function addHolder(data: ReturnType<typeof printCardHolder>, icon: number) {
     separator(icon)
     if (data.surname) add(icon, ' ', data.surname)
     if (data.firstName) add('  ', data.firstName)
@@ -124,8 +124,8 @@ export function buildDriverCardPrintRows(input: DailyCardPrintInput): PrintRow[]
   const generation = imported ? imported.generation : 'GEN2 v2'
   if (generation) add('         ', generation)
   add('24h', 14, 18, ...(input.isUtc ? [] : [17]))
-  addHolder(holder(input.card, imported), 14)
-  if (input.secondCard) addHolder(holder(input.secondCard, input.secondImported), 2)
+  addHolder(printCardHolder(input.card, imported), 14)
+  if (input.secondCard) addHolder(printCardHolder(input.secondCard, input.secondImported), 2)
 
   separator(24)
   if (profile.vin) add(24, ' ', profile.vin)

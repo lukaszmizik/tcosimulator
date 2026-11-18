@@ -1,0 +1,163 @@
+@font-face {
+  font-family: VT323;
+  src: url('/fonts/VT323-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+
+.print-vehicle-settings {
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 8px;
+  color: #e5e7eb;
+  font-size: 13px;
+}
+
+.print-vehicle-settings summary {
+  cursor: pointer;
+}
+
+.print-vehicle-settings form {
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid #647080;
+  border-radius: 6px;
+  background: #282e35;
+}
+
+.print-vehicle-settings h2 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
+.print-vehicle-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.print-vehicle-fields label {
+  display: grid;
+  gap: 3px;
+}
+
+.print-vehicle-fields input,
+.print-vehicle-fields select {
+  min-width: 0;
+  width: 100%;
+  padding: 4px 7px;
+  color: #fff;
+  background: #191d22;
+  border: 1px solid #778391;
+  border-radius: 4px;
+}
+
+.print-vehicle-settings button,
+.daily-card-print-toolbar button {
+  padding: 4px 10px;
+  color: inherit;
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.print-vehicle-settings [role='status'] {
+  margin-left: 8px;
+}
+
+.daily-card-print-panel {
+  display: flex;
+  flex-direction: column;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  max-height: 82vh;
+  color: #252320;
+  background: #f8f6f1;
+  box-shadow: 0 10px 40px #0007;
+}
+
+.daily-card-print-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #d2cec4;
+  font-size: 13px;
+}
+
+.daily-card-print-scroll {
+  overflow: auto;
+}
+
+.daily-card-print-paper {
+  width: max-content;
+  min-width: 100%;
+  padding: 14px 17px 12px;
+  background: #fffefa;
+  color: #141310;
+  font: 400 24px / 0.91 VT323, monospace;
+}
+
+.daily-card-print-row {
+  display: grid;
+  grid-template-columns: repeat(24, 1ch);
+  min-height: 0.91em;
+  white-space: pre;
+  break-inside: avoid;
+}
+
+.daily-card-print-symbol {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: SymbolTacho1;
+  font-size: 0.68em;
+  line-height: 1;
+}
+
+.daily-card-print-note {
+  margin-top: 5px;
+  font-size: 0.82em;
+}
+
+@media print {
+  body:has(> .daily-card-print) > :not(.daily-card-print) {
+    display: none !important;
+  }
+
+  .daily-card-print.print-driver1-overlay {
+    position: static;
+    display: block;
+    background: #fff;
+  }
+
+  .daily-card-print .print-overlay-close,
+  .daily-card-print-toolbar {
+    display: none;
+  }
+
+  .daily-card-print-panel,
+  .daily-card-print-scroll {
+    display: block;
+    max-height: none;
+    max-width: none;
+    overflow: visible;
+    background: #fff;
+    box-shadow: none;
+  }
+
+  .daily-card-print-paper {
+    box-sizing: border-box;
+    width: 56.5mm;
+    min-width: 0;
+    margin: 0;
+    padding: 3mm 0 3mm 5mm;
+    background: #fff;
+    color: #000;
+    font-size: 4.8mm;
+  }
+}

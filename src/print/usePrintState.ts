@@ -9,6 +9,8 @@ export type UsePrintStateReturn = {
   // Stav
   printDriver1Open: boolean
   printDriver1SelectedDate: number | null
+  printDriver1IsUtc: boolean
+  printDriverSlot: 1 | 2
   printVDiagramOpen: boolean
   printVDiagramSelectedDate: number | null
   printVehicle24hOpen: boolean
@@ -21,7 +23,7 @@ export type UsePrintStateReturn = {
   isPrintoutActive: boolean
 
   // Otevření konkrétního výtisku (volá se z menu nebo z průvodce)
-  openPrintDriver1: (dayUtc: number | null) => void
+  openPrintDriverCard: (dayUtc: number | null, isUtc?: boolean, slot?: 1 | 2) => void
   openPrintVDiagram: (dayUtc?: number | null) => void
   openPrintVehicle24h: (dayUtc: number, isUtc: boolean) => void
   openPrintSpeedVehicle: () => void
@@ -39,6 +41,8 @@ export type UsePrintStateReturn = {
 export function usePrintState(): UsePrintStateReturn {
   const [printDriver1Open, setPrintDriver1Open] = useState(false)
   const [printDriver1SelectedDate, setPrintDriver1SelectedDate] = useState<number | null>(null)
+  const [printDriver1IsUtc, setPrintDriver1IsUtc] = useState(true)
+  const [printDriverSlot, setPrintDriverSlot] = useState<1 | 2>(1)
   const [printVDiagramOpen, setPrintVDiagramOpen] = useState(false)
   const [printVDiagramSelectedDate, setPrintVDiagramSelectedDate] = useState<number | null>(null)
   const [printVehicle24hSelectedDate, setPrintVehicle24hSelectedDate] = useState<number | null>(null)
@@ -58,9 +62,11 @@ export function usePrintState(): UsePrintStateReturn {
     }, 1000)
   }, [])
 
-  const openPrintDriver1 = useCallback(
-    (dayUtc: number | null) => {
+  const openPrintDriverCard = useCallback(
+    (dayUtc: number | null, isUtc = true, slot: 1 | 2 = 1) => {
       setPrintDriver1SelectedDate(dayUtc)
+      setPrintDriver1IsUtc(isUtc)
+      setPrintDriverSlot(slot)
       setPrintDriver1Open(true)
       showPrintStartedToast()
     },
@@ -118,6 +124,8 @@ export function usePrintState(): UsePrintStateReturn {
   return {
     printDriver1Open,
     printDriver1SelectedDate,
+    printDriver1IsUtc,
+    printDriverSlot,
     printVDiagramOpen,
     printVDiagramSelectedDate,
     printVehicle24hOpen,
@@ -126,7 +134,7 @@ export function usePrintState(): UsePrintStateReturn {
     printSpeedVehicleOpen,
     printStartedToastUntil,
     isPrintoutActive,
-    openPrintDriver1,
+    openPrintDriverCard,
     openPrintVDiagram,
     openPrintVehicle24h,
     openPrintSpeedVehicle,

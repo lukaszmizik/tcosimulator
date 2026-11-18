@@ -4,7 +4,9 @@
  */
 import assert from 'node:assert/strict'
 import type { ManualEntrySegment } from '../src/TachoTypes.ts'
-import { resolvePrintMenuAction } from '../src/print/printWizardHandling.ts'
+import { buildDriverCardPrintRows } from '../src/print/driverCardPrintRows.ts'
+import { extractDddPrintFields } from '../src/loadDddCard.ts'
+import { applyPrintWizardKey, resolvePrintMenuAction } from '../src/print/printWizardHandling.ts'
 import {
   driver1PrintCardActivities,
   prepareDriver1Print24hUtc,
@@ -183,4 +185,65 @@ export function main(): void {
   if (vehicleDates?.type === 'dateWizard') {
     assert.deepEqual(vehicleDates.state.availableDatesUtc, [at(2026, 11, 20, 0, 0)])
   }
+
+  const cardFields = extractDddPrintFields({
+    driver_card_application_identification_v2: { length_of_following_data: 10 },
+    card_driver_activity_2: { decoded_activity_daily_records: [{
+      activity_record_date: '2026-11-16T00:00:00Z', activity_daily_presence_counter: 317, activity_day_distance: 41,
+    }] },
+  })
+  assert.equal(cardFields.generation, 'GEN2 v2')
+  assert.deepEqual(cardFields.printDays?.['2026-11-16'], { presence: 317, distance: 41 })
+  const rows = buildDriverCardPrintRows({
+    selectedDayUtc: dayUtc,
+    printedAtUtc: dayUtc + 26 * 60 * MINUTE,
+    localOffsetMs: 60 * MINUTE,
+    isUtc: false,
+    profile: {
+      companyName: 'Přeprava Říha', companyAddress: '', companyId: '',
+      vin: 'WBADT43452G123456', registration: '1TL0280', registrationNation: 'CZ', load: 'passengers',
+    },
+    card: null, secondCard: null, manual: [], simulated: [], vehicleEvents: [],
+    imported: {
+      ...cardFields,
+      cardNumber: '1111111111111111', firstName: 'Jiří', surname: 'Říha', lastWithdrawalUtc: null,
+      locations: [],
+      activities: [
+        { kind: 'driving', slot: 1, startUtc: dayUtc + 60 * MINUTE, endUtc: dayUtc + 90 * MINUTE, registration: 'FIRST' },
+        { kind: 'rest', slot: 2, isCrew: true, startUtc: dayUtc + 120 * MINUTE, endUtc: dayUtc + 140 * MINUTE, registration: 'SECOND' },
+      ],
+      vehicleUses: [
+        { fromUtc: dayUtc + 60 * MINUTE, toUtc: dayUtc + 90 * MINUTE, registration: 'FIRST', odometerBeginKm: 10123, odometerEndKm: 10164, kilometers: 41 },
+        { fromUtc: dayUtc + 120 * MINUTE, toUtc: dayUtc + 140 * MINUTE, registration: 'SECOND', kilometers: 0 },
+      ],
+    },
+  })
+  assert.ok(rows.every((row) => row.length <= 24))
+  const textRows = rows.map((row) => row.filter((cell) => typeof cell === 'string').join(''))
+  assert.ok(textRows.includes('!!! No legal printout!!!'))
+  assert.ok(textRows.some((row) => row.includes('16.11.2026 01:00')))
+  assert.ok(textRows.some((row) => row.includes('17.11.2026 01:00')))
+  assert.ok(textRows.some((row) => row.includes('16.11.2026 317')))
+  assert.ok(textRows.some((row) => row.includes('10 164 km')))
+  assert.ok(textRows.some((row) => row.includes('00h30 41 km')))
+  assert.ok(textRows.some((row) => row.includes('FIRST')))
+  assert.ok(textRows.some((row) => row.includes('SECOND')))
+  assert.ok(textRows.includes('Přeprava Říha'))
+  for (const slot of [1, 2] as const) {
+    const wizard = resolvePrintMenuAction({
+      action: `PRINT_24H_D${slot}`, requiresDate: true, requiresUtcConfirm: true, line2: '',
+      secondHistory: [], simulatedUtcTime: dayUtc, currentMenuPath: [],
+    })
+    if (wizard?.type !== 'dateWizard') assert.fail('Průvodce výtiskem se neotevřel')
+    let confirmed: [number, boolean, number] | undefined
+    applyPrintWizardKey({ ...wizard.state, step: 'utc', utcYes: false }, 'ok', {
+      setCurrentMenuPath: () => {},
+      openPrintVDiagram: () => {},
+      openPrintVehicle24h: () => {},
+      openPrintDriverCard: (...args) => { confirmed = args },
+    })
+    assert.deepEqual(confirmed, [dayUtc, false, slot])
+  }
+  console.log('Termopáska karty: formát, DDD, historie vozidel a oba průvodce UTC/LOC v pořádku.')
+
 }

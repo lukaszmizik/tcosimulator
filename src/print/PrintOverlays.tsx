@@ -2,6 +2,9 @@
  * Jedna komponenta, která rendruje všechny výtiskové overlaye podle stavu z usePrintState.
  */
 
+import './dailyDriverCardPrint.css'
+import { DailyDriverCardPrint } from '../components/overlays/DailyDriverCardPrint'
+import type { DailyCardPrintInput } from './driverCardPrintRows'
 import type { UsePrintStateReturn } from './usePrintState'
 import type { SymbolMap } from '../TachoTypes'
 import type { CardData, EventLogEntry, ManualEntrySegment } from '../TachoTypes'
@@ -27,6 +30,7 @@ export type PrintOverlaysProps = {
   slot1CardActivities?: readonly Driver1PrintCardActivity[]
   eventLog: EventLogEntry[]
   odometerKm: number
+  dailyDriverCard: (slot: 1 | 2) => Omit<DailyCardPrintInput, 'selectedDayUtc' | 'isUtc'>
 }
 
 export function PrintOverlays({
@@ -41,10 +45,13 @@ export function PrintOverlays({
   slot1CardActivities = [],
   eventLog,
   odometerKm,
+  dailyDriverCard,
 }: PrintOverlaysProps) {
   const {
     printDriver1Open,
     printDriver1SelectedDate,
+    printDriver1IsUtc,
+    printDriverSlot,
     printVDiagramOpen,
     printVDiagramSelectedDate,
     printVehicle24hOpen,
@@ -71,8 +78,18 @@ export function PrintOverlays({
 
   return (
     <>
+      {printDriver1Open && printDriver1SelectedDate != null && (
+        <DailyDriverCardPrint
+          input={() => ({ ...dailyDriverCard(printDriverSlot), selectedDayUtc: printDriver1SelectedDate, isUtc: printDriver1IsUtc })}
+          symbols={symbolMap}
+          onClose={onCloseDriver1}
+          closeLabel={t.printOverlay.close}
+          title={t.printOverlay.driver1Title.replace(/1$/, String(printDriverSlot))}
+        />
+      )}
+
       <PrintDriver1Overlay
-        open={printDriver1Open}
+        open={printDriver1Open && printDriver1SelectedDate == null}
         onClose={onCloseDriver1}
         t={t}
         printDriver1SelectedDate={printDriver1SelectedDate}

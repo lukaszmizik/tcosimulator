@@ -11,7 +11,7 @@ export type PrintWizardKeyAction = 'up' | 'down' | 'ok' | 'back'
 export type PrintWizardKeyEffects = {
   setCurrentMenuPath: (path: string[]) => void
   openPrintVDiagram: (dayUtc: number) => void
-  openPrintDriver1: (dayUtc: number | null) => void
+  openPrintDriverCard: (dayUtc: number, isUtc: boolean, slot: 1 | 2) => void
   openPrintVehicle24h: (dayUtc: number, isUtc: boolean) => void
 }
 
@@ -21,6 +21,7 @@ export function applyPrintWizardKey(
   effects: PrintWizardKeyEffects,
 ): PrintWizardState | null {
   if (!prev) return null
+  const driverSlot = prev.action === 'PRINT_24H_D1' ? 1 : prev.action === 'PRINT_24H_D2' ? 2 : null
   if (action === 'back') {
     if (prev.step === 'utc') return { ...prev, step: 'date' }
     return null
@@ -47,17 +48,18 @@ export function applyPrintWizardKey(
       effects.setCurrentMenuPath(prev.returnMenuPath)
       if (prev.action === 'PRINT_V_DIAGRAM') {
         effects.openPrintVDiagram(dayUtc)
-      } else if (prev.action === 'PRINT_24H_D1') {
-        effects.openPrintDriver1(dayUtc)
+      } else if (driverSlot) {
+        effects.openPrintDriverCard(dayUtc, true, driverSlot)
       } else if (prev.action === 'PRINT_24H_V') {
         effects.openPrintVehicle24h(dayUtc, true)
       }
       return null
     }
     const dayUtc = prev.availableDatesUtc[prev.dateIndex]
+    if (dayUtc == null) return prev
     effects.setCurrentMenuPath(prev.returnMenuPath)
-    if (prev.action === 'PRINT_24H_D1') {
-      effects.openPrintDriver1(prev.utcYes ? dayUtc : null)
+    if (driverSlot) {
+      effects.openPrintDriverCard(dayUtc, prev.utcYes, driverSlot)
     } else if (prev.action === 'PRINT_24H_V') {
       effects.openPrintVehicle24h(dayUtc, prev.utcYes)
     }
@@ -87,13 +89,13 @@ export type PrintMenuActionResult =
 /** Vrátí obsluhu známé tiskové akce. Neznámá nebo nedokončená akce vrací null. */
 export function resolvePrintMenuAction(input: PrintMenuActionInput): PrintMenuActionResult | null {
   const { action, line2, requiresDate, requiresUtcConfirm, secondHistory, simulatedUtcTime, currentMenuPath } = input
-  if (requiresDate && ['PRINT_24H_D1', 'PRINT_V_DIAGRAM', 'PRINT_24H_V'].includes(action)) {
+  if (requiresDate && ['PRINT_24H_D1', 'PRINT_24H_D2', 'PRINT_V_DIAGRAM', 'PRINT_24H_V'].includes(action)) {
     const dayStarts = new Set<number>()
     for (const s of secondHistory) {
       const d = new Date(s.timestampUtc)
       dayStarts.add(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
     }
-    if (action === 'PRINT_24H_D1') {
+    if (action === 'PRINT_24H_D1' || action === 'PRINT_24H_D2') {
       for (const day of utcDaysIntersectingCardActivities(input.cardActivities ?? [])) {
         dayStarts.add(day)
       }

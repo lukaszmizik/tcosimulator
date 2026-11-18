@@ -8,10 +8,12 @@ import { PrintPreview, PrintRows } from './PrintPreview'
 
 const HOUR = 3_600_000
 const DAY = 24 * HOUR
-const WIDTH = 240
-const AXIS_X = 23
+const WIDTH = 235
+const AXIS_X = 25
+const TIME_LABEL_X = 9
 const MAX_SPEED = 125
-const HOUR_HEIGHT = 67
+const HOUR_HEIGHT = 62
+const AXIS_END_PADDING = 30
 const BAND_HOURS = [0, 6.5, 12.5, 18.5, 24]
 const speedX = (speed: number) =>
   AXIS_X + Math.min(MAX_SPEED, Math.max(0, speed)) * (WIDTH - AXIS_X - 2) / MAX_SPEED
@@ -97,19 +99,20 @@ function SpeedBand({ band, path, title }: { band: number; path: string; title: s
   const first = start === 0
   const last = end === 24
   const top = first ? 73 : 0
+  const bottom = last ? AXIS_END_PADDING : 0
   const quarterCount = (end - start) * 4 + Number(last)
 
   return (
     <svg
       className="vdiagram-print-band"
-      viewBox={`0 ${-top} ${WIDTH} ${top + height}`}
+      viewBox={`0 ${-top} ${WIDTH} ${top + height + bottom}`}
       role="img"
       aria-label={`${title}, ${Math.floor(start)}:${start % 1 ? '30' : '00'}–${Math.floor(end)}:${end % 1 ? '30' : '00'} UTC`}
     >
       {first && (
         <>
-          <text x="9" y="-70" transform="rotate(90 9 -70)" dominantBaseline="central">UTC</text>
-          <text x="126" y="-51" textAnchor="middle">km/h</text>
+          <text x={TIME_LABEL_X} y="-70" transform={`rotate(90 ${TIME_LABEL_X} -70)`} dominantBaseline="central">UTC</text>
+          <text x={(AXIS_X + WIDTH) / 2} y="-51" textAnchor="middle">km/h</text>
           <line x1={AXIS_X - 5} x2={WIDTH - 1} y1="0" y2="0" className="vdiagram-axis" />
         </>
       )}
@@ -137,16 +140,15 @@ function SpeedBand({ band, path, title }: { band: number; path: string; title: s
         const y = quarter * HOUR_HEIGHT / 4
         const hour = start + quarter / 4
         const major = Number.isInteger(hour)
-        const labelY = hour === 24 ? y - 2 : y
         return (
           <g key={quarter}>
             <line x1={AXIS_X - (major ? 6 : 4)} x2={AXIS_X} y1={y} y2={y} className="vdiagram-axis" />
             {major && (
               <text
-                x="9"
-                y={labelY}
-                transform={`rotate(90 9 ${labelY})`}
-                textAnchor={hour === 24 ? 'end' : 'middle'}
+                x={TIME_LABEL_X}
+                y={y}
+                transform={`rotate(90 ${TIME_LABEL_X} ${y})`}
+                textAnchor="middle"
                 dominantBaseline="central"
               >
                 {String(hour).padStart(2, '0')}:00

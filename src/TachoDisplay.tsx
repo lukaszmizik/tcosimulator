@@ -636,7 +636,7 @@ function OperatingDisplay(props: TachoDisplayProps) {
     const labels = languageLabels[props.languageDraft ?? language]
     let rows: string[]
     if (operatingScreenIndex === LANGUAGE_PAGE) {
-      if (props.languageDraft) rows = ['(42) ' + labels.title, labels.name]
+      if (props.languageDraft) rows = ['(20) ' + labels.title, labels.name]
       else if (props.languageSaved) rows = [labels.title, t.ui.saved]
       else rows = labels.prompt
     } else if (operatingScreenIndex === MAIN_MENU_PAGE) {
@@ -645,7 +645,13 @@ function OperatingDisplay(props: TachoDisplayProps) {
       rows = utcRows(props.simulatedUtcTime ?? props.localTime.getTime(), props.localTime)
     }
     return <div className="lcd-two-rows lcd-card-insertion">
-      {rows.map((row, index) => <div className="lcd-row" key={index}>{parseSymbols(row, symbolMap)}</div>)}
+      {rows.map((row, index) => (
+        <div className="lcd-row" key={index}>
+          {operatingScreenIndex === LANGUAGE_PAGE
+            ? <span>{parseSymbols(row, symbolMap)}</span>
+            : parseSymbols(row, symbolMap)}
+        </div>
+      ))}
     </div>
   }
 

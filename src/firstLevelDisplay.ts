@@ -5,7 +5,7 @@ export const LANGUAGE_PAGE = 3
 export const MAIN_MENU_PAGE = 4
 export const languages: SupportedLanguage[] = ['cs', 'en', 'ru']
 export const languageLabels = {
-  cs: { prompt: ['zvolit', 'jazyk?'], title: 'jazyk', name: 'čeština', menu: ['vyvolat hlavní', 'menu?'] },
+  cs: { prompt: ['výběr', 'jazyka?'], title: 'jazyk', name: 'česky', menu: ['vyvolat hlavní', 'menu?'] },
   en: { prompt: ['select', 'language?'], title: 'language', name: 'english', menu: ['call main menu?', ''] },
   ru: { prompt: ['Выбрать язык?', ''], title: 'Язык', name: 'русский', menu: ['Вызвать главное', 'меню?'] },
 }

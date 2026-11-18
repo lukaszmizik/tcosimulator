@@ -103,12 +103,10 @@ export function buildVehicleDayPrintRows(input: VehicleDayPrintData & {
     entries.set(currentMinute, { ...recent, minuteStartUtc: currentMinute, isCrew: input.isCrew })
   }
   const day = [...entries.values()].sort((a, b) => a.minuteStartUtc - b.minuteStartUtc)
-  const { rows, add, separator } = createPrintRows()
+  const { rows, add, separator, addLocalTimeWarning } = createPrintRows()
 
   if (!isUtc) {
-    separator()
-    add('!!! No legal printout!!!')
-    separator()
+    addLocalTimeWarning()
     add(17, 59, ' ', printDateUtc(from + offset), ' ', stamp(from))
     add(59, 17, ' ', printDateUtc(dayEnd + offset), ' ', stamp(dayEnd))
     add(`UTC ${offset < 0 ? '-' : '+'}${duration(Math.abs(offset))}`)

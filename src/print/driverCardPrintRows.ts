@@ -55,7 +55,13 @@ export function createPrintRows() {
   }
   const separator = (...parts: PrintCell[]) => rows.push(divider(...parts))
 
-  return { rows, add, separator }
+  const addLocalTimeWarning = () => {
+    separator()
+    add('!!! No legal printout!!!')
+    separator()
+  }
+
+  return { rows, add, separator, addLocalTimeWarning }
 }
 
 function kilometers(km: number): string {
@@ -95,7 +101,7 @@ export function buildDriverCardPrintRows(input: DailyCardPrintInput): PrintRow[]
   const to = Math.min(day.dayEndMs, printedAtUtc)
   const inDay = (at: number) => at >= from && at < to
   const stamp = (at: number) => printTimeUtc(at + offset)
-  const { rows, add, separator } = createPrintRows()
+  const { rows, add, separator, addLocalTimeWarning } = createPrintRows()
 
   function addHolder(data: ReturnType<typeof holder>, icon: number) {
     separator(icon)
@@ -106,8 +112,7 @@ export function buildDriverCardPrintRows(input: DailyCardPrintInput): PrintRow[]
   }
 
   if (!input.isUtc) {
-    separator()
-    add('!!! No legal printout!!!')
+    addLocalTimeWarning()
     const end = day.dayEndMs
     add(36, ' ', printDateUtc(from + offset), ' ', stamp(from))
     add(41, ' ', printDateUtc(end + offset), ' ', stamp(end))

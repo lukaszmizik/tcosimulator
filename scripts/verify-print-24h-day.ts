@@ -220,7 +220,7 @@ export function main(): void {
   })
   assert.ok(rows.every((row) => row.length <= 24))
   const textRows = rows.map((row) => row.filter((cell) => typeof cell === 'string').join(''))
-  assert.ok(textRows.includes('!!! No legal printout!!!'))
+  assert.deepEqual(textRows.slice(0, 3), ['-'.repeat(24), '!!! No legal printout!!!', '-'.repeat(24)])
   assert.ok(textRows.some((row) => row.includes('16.11.2026 01:00')))
   assert.ok(textRows.some((row) => row.includes('17.11.2026 01:00')))
   assert.ok(textRows.some((row) => row.includes('16.11.2026 317')))

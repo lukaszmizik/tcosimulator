@@ -60,7 +60,14 @@ export function loadTachographFaultsAndEvents(): FaultOrEvent[] {
     const raw = window.localStorage.getItem(FAULTS_AND_EVENTS_KEY)
     if (!raw) return []
     const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? (parsed as FaultOrEvent[]) : []
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter(row => row && Number.isFinite(row.timestampUtc) && typeof row.type === 'string')
+      .map(row => ({
+        ...row,
+        kind: row.kind ?? 'event',
+        // After a session ends, an unobserved stop has no known time.
+        endUtc: row.endUtc ?? undefined,
+      }))
   } catch {
     return []
   }

@@ -185,6 +185,12 @@ export type Translations = {
     manualEntryLabel: string
     resetLoadUnloadTitle: string
     warningsPanelTitle: string
+    eventKind: string
+    faultKind: string
+    recordEnd: string
+    recordDuration: string
+    recordActive: string
+    recordUnknown: string
     workShiftDuration: string
     workShiftRest: string
     recordedLocationsTitle: string

@@ -1099,10 +1099,17 @@ export function WorkWeekGraphView({ days, countryMarkers, manualEntryBuffer, las
               <ul className="work-week-warnings-list">
               {faultsAndEvents.map((f) => (
                 <li key={f.id} className="work-week-warnings-item">
-                  <span className="work-week-warnings-time">{formatFaultTime(f.timestampUtc)}</span>
+                  <span className="work-week-warnings-time">{formatFaultTime(f.timestampUtc)} UTC</span>
                   <span className="work-week-warnings-label">
+                    {f.kind === 'fault' ? t.workWeek.faultKind : t.workWeek.eventKind} ·
                     {(f.type === 'DRIVING_WITHOUT_CARD_WARNING' ? t.workWeek.faultDrivingWithoutCard : f.type === 'DRIVING_WITHOUT_VALID_CARD_WARNING' ? t.workWeek.faultDrivingWithoutValidCard : f.type === 'EXCESS_SPEED_WARNING' ? t.workWeek.faultExcessSpeed : null) ?? f.type}
                   </span>
+                  {f.type === 'DRIVING_WITHOUT_CARD_WARNING' && (
+                    <span>
+                      {t.workWeek.recordEnd} {typeof f.endUtc === 'number' ? formatFaultTime(f.endUtc) + ' UTC' : f.endUtc === null ? t.workWeek.recordActive : t.workWeek.recordUnknown}
+                      {' · '}{t.workWeek.recordDuration} {typeof f.endUtc === 'number' ? Math.floor((f.endUtc - f.timestampUtc) / 1000) + ' s' : t.workWeek.recordUnknown}
+                    </span>
+                  )}
                 </li>
               ))}
               </ul>

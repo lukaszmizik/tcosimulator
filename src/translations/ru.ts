@@ -202,7 +202,13 @@ export const ru: Translations = {
     card2: 'Карта 2', // 77
     manualEntryLabel: 'ручной ввод', // 78
     resetLoadUnloadTitle: 'Сбросить погрузку/разгрузку', // 79
-    warningsPanelTitle: 'Предупреждения в памяти тахографа',
+    warningsPanelTitle: 'События и неисправности',
+    eventKind: 'Событие',
+    faultKind: 'Неисправность',
+    recordEnd: 'Конец',
+    recordDuration: 'Длительность',
+    recordActive: 'продолжается',
+    recordUnknown: 'неизвестно',
     workShiftDuration: 'Длина рабочей смены',
     workShiftRest: 'Отдых',
     recordedLocationsTitle: 'Записанные местоположения',

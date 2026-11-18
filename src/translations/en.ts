@@ -202,7 +202,13 @@ export const en: Translations = {
     card2: 'Card 2', // 77
     manualEntryLabel: 'manual entry', // 78
     resetLoadUnloadTitle: 'Reset load/unload', // 79
-    warningsPanelTitle: 'Warnings in tachograph memory',
+    warningsPanelTitle: 'Events and faults',
+    eventKind: 'Event',
+    faultKind: 'Fault',
+    recordEnd: 'End',
+    recordDuration: 'Duration',
+    recordActive: 'ongoing',
+    recordUnknown: 'unknown',
     workShiftDuration: 'Work shift duration',
     workShiftRest: 'Rest',
     recordedLocationsTitle: 'Recorded locations',

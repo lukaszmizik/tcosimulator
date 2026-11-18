@@ -1037,7 +1037,7 @@ export function useCardWizard(params: UseCardWizardParams) {
       setDrivingWithoutValidCardWarningActive(true)
       setFaultsAndEvents((prev) => [
         ...prev,
-        { id: Date.now(), timestampUtc: ts, type: 'DRIVING_WITHOUT_VALID_CARD_WARNING', duringIncompleteManualEntry: true },
+        { id: Date.now(), timestampUtc: ts, kind: 'event', type: 'DRIVING_WITHOUT_VALID_CARD_WARNING', duringIncompleteManualEntry: true },
       ])
       setEventLog((prev) => [
         ...prev,

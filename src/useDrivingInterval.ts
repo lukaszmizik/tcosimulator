@@ -28,7 +28,7 @@ import { SPLIT_REST_FIRST_MS, SPLIT_REST_SECOND_MS } from './VDOCounter'
 
 type UseDrivingIntervalParams = {
   outModeActiveRef: MutableRefObject<boolean>
-  drivingWithoutCardEventAddedRef: MutableRefObject<boolean>
+  activeNoCardIdRef: MutableRefObject<string | null>
   ignitionOnRef: MutableRefObject<boolean>
   targetSpeedRef: MutableRefObject<number>
   currentSpeedRef: MutableRefObject<number>
@@ -66,7 +66,7 @@ type UseDrivingIntervalParams = {
 export function useDrivingInterval(params: UseDrivingIntervalParams) {
   const {
     outModeActiveRef,
-    drivingWithoutCardEventAddedRef,
+    activeNoCardIdRef,
     ignitionOnRef,
     targetSpeedRef,
     currentSpeedRef,
@@ -109,7 +109,6 @@ export function useDrivingInterval(params: UseDrivingIntervalParams) {
       /** V režimu OUT se výstraha „jízda bez karty“ nesmí zobrazovat – každý tick ji zrušíme. */
       if (outModeActiveRef.current) {
         setDrivingWithoutCardWarningActive(false)
-        drivingWithoutCardEventAddedRef.current = false
       }
 
       const ignition = ignitionOnRef.current
@@ -150,7 +149,7 @@ export function useDrivingInterval(params: UseDrivingIntervalParams) {
         if (excessSpeedAbove90MsRef.current >= 60000) {
           const ts = simulatedUtcTimeRef.current
           setExcessSpeedWarningActive(true)
-          setFaultsAndEvents((prev) => [...prev, { id: Date.now(), timestampUtc: ts, type: 'EXCESS_SPEED_WARNING' }])
+          setFaultsAndEvents((prev) => [...prev, { id: Date.now(), timestampUtc: ts, kind: 'event', type: 'EXCESS_SPEED_WARNING' }])
           excessSpeedAbove90MsRef.current = 0
         }
       } else if (curr < EXCESS_SPEED_RESET_BELOW_KMH) {
@@ -171,19 +170,26 @@ export function useDrivingInterval(params: UseDrivingIntervalParams) {
           ferryDrivingMsRef.current = 0
         }
       }
-      const noCardSlot1 = !card1InsertedRef.current
-      if (isDriving && noCardSlot1 && !outModeActiveRef.current && !drivingWithoutCardEventAddedRef.current) {
-        drivingWithoutCardEventAddedRef.current = true
-        const ts = simulatedUtcTimeRef.current
+      const activeId = activeNoCardIdRef.current
+      const hasDriverCard = card1InsertedRef.current
+      if (activeId !== null && (!isDriving || hasDriverCard)) {
+        const endUtc = simulatedUtcTimeRef.current
+        activeNoCardIdRef.current = null
+        setFaultsAndEvents(prev => prev.map(record =>
+          record.id === activeId ? { ...record, endUtc } : record
+        ))
+        setEventLog(prev => prev.map(record =>
+          record.id === activeId ? { ...record, endTime: endUtc } : record
+        ))
+      } else if (activeId === null && isDriving && !hasDriverCard && !outModeActiveRef.current) {
+        const id = crypto.randomUUID()
+        const startUtc = simulatedUtcTimeRef.current
+        activeNoCardIdRef.current = id
         setDrivingWithoutCardWarningActive(true)
-        setFaultsAndEvents((prev) => [
-          ...prev,
-          { id: Date.now(), timestampUtc: ts, type: 'DRIVING_WITHOUT_CARD_WARNING' },
-        ])
-        setEventLog((prev) => [
-          ...prev,
-          { id: Date.now(), type: 'DRIVING_WITHOUT_CARD', startTime: ts },
-        ])
+        setFaultsAndEvents(prev => [...prev, {
+          id, timestampUtc: startUtc, endUtc: null, kind: 'event', type: 'DRIVING_WITHOUT_CARD_WARNING',
+        }])
+        setEventLog(prev => [...prev, { id, type: 'DRIVING_WITHOUT_CARD', startTime: startUtc }])
       }
 
       const leftChar = isDriving ? DRIVING_SYMBOL : getActivityCode(leftActivityIdRef.current)

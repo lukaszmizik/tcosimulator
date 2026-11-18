@@ -294,7 +294,7 @@ export default function App() {
   const [overrideWarningCode, setOverrideWarningCode] = useState<string | null>(null)
   /** Výstraha „výhoz není možný“ – zobrazí se jen po pokusu o vyjmutí karty během jízdy, zruší se po zastavení */
   const [ejectionBlockedWarningActive, setEjectionBlockedWarningActive] = useState(false)
-  const drivingWithoutCardEventAddedRef = useRef(false)
+  const activeNoCardIdRef = useRef<string | null>(null)
   const [dragOverSlot, setDragOverSlot] = useState<1 | 2 | null>(null)
   /** Čas posledního vyjmutí karty (pro „Posled. vyjmutí“ v sekvenci vložení). */
   const [lastEjectionTimeBySlot, setLastEjectionTimeBySlot] = useState<{ 1: number | null; 2: number | null }>({ 1: null, 2: null })
@@ -1008,7 +1008,6 @@ export default function App() {
   useEffect(() => {
     if (outModeActive) {
       setDrivingWithoutCardWarningActive(false)
-      drivingWithoutCardEventAddedRef.current = false
     }
   }, [outModeActive])
 
@@ -1059,7 +1058,7 @@ export default function App() {
 
   useDrivingInterval({
     outModeActiveRef,
-    drivingWithoutCardEventAddedRef,
+    activeNoCardIdRef,
     ignitionOnRef,
     targetSpeedRef,
     currentSpeedRef,
@@ -1503,7 +1502,6 @@ export default function App() {
         setOutModeActive(true)
         setHasDrivenSinceOutActivation(false)
         setDrivingWithoutCardWarningActive(false)
-        drivingWithoutCardEventAddedRef.current = false
         if (currentSpeedRef.current <= SPEED_STOPPED_THRESHOLD_KMH) {
           leftActivityIdRef.current = 'WORK'
           setLeftActivityId('WORK')
@@ -1918,7 +1916,7 @@ export default function App() {
           if (excessSpeedAbove90MsRef.current >= 60000) {
             const ts = Math.floor(targetMsUtc / 60000) * 60000
             setExcessSpeedWarningActive(true)
-            setFaultsAndEvents((prev) => [...prev, { id: Date.now(), timestampUtc: ts, type: 'EXCESS_SPEED_WARNING' }])
+            setFaultsAndEvents((prev) => [...prev, { id: Date.now(), timestampUtc: ts, kind: 'event', type: 'EXCESS_SPEED_WARNING' }])
             excessSpeedAbove90MsRef.current = 0
           }
         } else if (speedNow < EXCESS_SPEED_RESET_BELOW_KMH) {
@@ -2339,7 +2337,7 @@ export default function App() {
     setCard2InsertedAt(null)
     setCrewRuleInterruptedByCard2Exit(false)
     deferredEndCountryInCrewModeRef.current = {}
-    drivingWithoutCardEventAddedRef.current = false
+    activeNoCardIdRef.current = null
     drivingSinceLastBreakMsByDriverRef.current = { 1: 0, 2: 0 }
     restSinceLastBreakMsByDriverRef.current = { 1: 0, 2: 0 }
     splitFirstPartTakenByDriverRef.current = { 1: false, 2: false }

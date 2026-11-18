@@ -202,7 +202,13 @@ export const cs: Translations = {
     card2: 'Karta 2', // 77
     manualEntryLabel: 'manuální zadání', // 78
     resetLoadUnloadTitle: 'Resetovat nakládky/vykládky', // 79
-    warningsPanelTitle: 'Výstrahy v paměti tachografu',
+    warningsPanelTitle: 'Události a poruchy',
+    eventKind: 'Událost',
+    faultKind: 'Porucha',
+    recordEnd: 'Konec',
+    recordDuration: 'Délka',
+    recordActive: 'probíhá',
+    recordUnknown: 'neurčeno',
     workShiftDuration: 'Délka pracovní směny',
     workShiftRest: 'Odpočinek',
     recordedLocationsTitle: 'Zaznamenané lokace',
@@ -223,7 +229,7 @@ export const cs: Translations = {
     shiftSumLabel: 'Součet aktivit v probíhající směně:',
     shiftSumRestPlaceholder: '----',
     shiftLengthLabel: 'Délka aktuální směny:',
-    faultDrivingWithoutCard: 'Jízda bez karty',
+    faultDrivingWithoutCard: 'Jízda bez vložené karty',
     faultDrivingWithoutValidCard: 'Jízda bez platné karty',
     faultExcessSpeed: '(39)(39) Příliš vysoká rychlost',
     recordedLocationTypes: {

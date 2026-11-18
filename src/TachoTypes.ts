@@ -46,15 +46,19 @@ export type ActivityHistoryEntry = {
 }
 
 export type FaultOrEvent = {
-  id: number
+  id: number | string
   timestampUtc: number
-  type: 'DRIVING_WITHOUT_CARD_WARNING' | 'DRIVING_WITHOUT_VALID_CARD_WARNING' | 'EXCESS_SPEED_WARNING'
+  /** null while observed, absent when the end is unknown */
+  endUtc?: number | null
   /** Událost během nedokončeného manuálního zadávání (přerušení rozjezdem). */
   duringIncompleteManualEntry?: boolean
-}
+} & (
+  | { kind: 'event'; type: 'DRIVING_WITHOUT_CARD_WARNING' | 'DRIVING_WITHOUT_VALID_CARD_WARNING' | 'EXCESS_SPEED_WARNING' }
+  | { kind: 'fault'; type: string }
+)
 
 export type EventLogEntry = {
-  id: number
+  id: number | string
   type: 'DRIVING_WITHOUT_CARD' | 'DRIVING_WITHOUT_VALID_CARD'
   startTime: number
   endTime?: number

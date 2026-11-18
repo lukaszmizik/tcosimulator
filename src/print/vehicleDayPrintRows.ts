@@ -108,8 +108,9 @@ export function buildVehicleDayPrintRows(input: VehicleDayPrintData & {
   if (!isUtc) {
     separator()
     add('!!! No legal printout!!!')
-    add(36, ' ', printDateUtc(from + offset), ' ', stamp(from))
-    add(41, ' ', printDateUtc(dayEnd + offset), ' ', stamp(dayEnd))
+    separator()
+    add(17, 59, ' ', printDateUtc(from + offset), ' ', stamp(from))
+    add(59, 17, ' ', printDateUtc(dayEnd + offset), ' ', stamp(dayEnd))
     add(`UTC ${offset < 0 ? '-' : '+'}${duration(Math.abs(offset))}`)
   }
   separator()

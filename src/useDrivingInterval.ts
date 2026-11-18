@@ -34,7 +34,7 @@ type UseDrivingIntervalParams = {
   currentSpeedRef: MutableRefObject<number>
   odometerKmRef: MutableRefObject<number>
   virtualLocationRef: MutableRefObject<VirtualRoutePoint | null>
-  excessSpeedAbove90MsRef: MutableRefObject<number>
+  trackOverspeed: (speed: number, atUtc: number, elapsedMs: number) => void
   simulatedUtcTimeRef: MutableRefObject<number>
   ferryTrainModeActiveRef: MutableRefObject<boolean>
   ferryDrivingMsRef: MutableRefObject<number>
@@ -52,7 +52,6 @@ type UseDrivingIntervalParams = {
   setDrivingWithoutCardWarningActive: Dispatch<SetStateAction<boolean>>
   setCurrentSpeed: Dispatch<SetStateAction<number>>
   setOdometerKm: Dispatch<SetStateAction<number>>
-  setExcessSpeedWarningActive: Dispatch<SetStateAction<boolean>>
   setFaultsAndEvents: Dispatch<SetStateAction<FaultOrEvent[]>>
   setFerryTrainEvents: Dispatch<SetStateAction<FerryTrainEvent[]>>
   setEventLog: Dispatch<SetStateAction<EventLogEntry[]>>
@@ -72,7 +71,7 @@ export function useDrivingInterval(params: UseDrivingIntervalParams) {
     currentSpeedRef,
     odometerKmRef,
     virtualLocationRef,
-    excessSpeedAbove90MsRef,
+    trackOverspeed,
     simulatedUtcTimeRef,
     ferryTrainModeActiveRef,
     ferryDrivingMsRef,
@@ -90,7 +89,6 @@ export function useDrivingInterval(params: UseDrivingIntervalParams) {
     setDrivingWithoutCardWarningActive,
     setCurrentSpeed,
     setOdometerKm,
-    setExcessSpeedWarningActive,
     setFaultsAndEvents,
     setFerryTrainEvents,
     setEventLog,
@@ -140,21 +138,7 @@ export function useDrivingInterval(params: UseDrivingIntervalParams) {
 
       /** Rychlost pod prahem = v klidu → použij manuální aktivitu (REST), aby L1 vpravo správně odečítal přestávku */
       const isDriving = curr > SPEED_STOPPED_THRESHOLD_KMH
-      // Hlídání rychlosti: nad 90 km/h déle než 1 min → varování.
-      // Hystereze: reset jen při poklesu pod 85 km/h, aby krátké propady (oscilace kolem 90) neresetovaly akumulovaný čas.
-      const EXCESS_SPEED_THRESHOLD_KMH = 90
-      const EXCESS_SPEED_RESET_BELOW_KMH = 85
-      if (curr >= EXCESS_SPEED_THRESHOLD_KMH && ignition) {
-        excessSpeedAbove90MsRef.current += SIM_DT_MS
-        if (excessSpeedAbove90MsRef.current >= 60000) {
-          const ts = simulatedUtcTimeRef.current
-          setExcessSpeedWarningActive(true)
-          setFaultsAndEvents((prev) => [...prev, { id: Date.now(), timestampUtc: ts, kind: 'event', type: 'EXCESS_SPEED_WARNING' }])
-          excessSpeedAbove90MsRef.current = 0
-        }
-      } else if (curr < EXCESS_SPEED_RESET_BELOW_KMH) {
-        excessSpeedAbove90MsRef.current = 0
-      }
+      trackOverspeed(ignition ? curr : 0, simulatedUtcTimeRef.current, SIM_DT_MS)
       // Režim trajekt: konec při 1 min jízdy – ferryDrivingMsRef navázán na stejnou detekci jízdy jako aktivity
       if (ferryTrainModeActiveRef.current) {
         if (isDriving) {

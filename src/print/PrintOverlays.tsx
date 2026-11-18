@@ -73,18 +73,6 @@ export function PrintOverlays({
     onCloseSpeedVehicle,
   } = printState
 
-  const speedVehicleDriverData =
-    card1Inserted && card1Data
-      ? (() => {
-          const s = getCard1StoredData()
-          return { surname: s.surname, firstName: s.firstName, cardNumber: s.cardNumber, dateOfExpiry: s.dateOfExpiry }
-        })()
-      : null
-  const speedVehicleDataBlock = {
-    vin: vehicleProfile.vin,
-    registrationNumber: vehicleProfile.registration,
-  }
-
   return (
     <>
       {printDriver1Open && printDriver1SelectedDate != null && (
@@ -155,15 +143,15 @@ export function PrintOverlays({
         />
       )}
 
-      <PrintSpeedVehicleOverlay
-        open={printSpeedVehicleOpen}
+      {printSpeedVehicleOpen && <PrintSpeedVehicleOverlay
         onClose={onCloseSpeedVehicle}
         t={t}
         simulatedUtcTime={simulatedUtcTime}
         symbolMap={symbolMap}
-        driverDataBlock={speedVehicleDriverData}
-        vehicleDataBlock={speedVehicleDataBlock}
-      />
+        profile={vehicleProfile}
+        records={vehicleEvents}
+        card={card1Inserted ? card1Data : null}
+      />}
     </>
   )
 }

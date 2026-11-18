@@ -52,6 +52,12 @@ export type FaultOrEvent = {
   endUtc?: number | null
   /** Událost během nedokončeného manuálního zadávání (přerušení rozjezdem). */
   duringIncompleteManualEntry?: boolean
+  overspeed?: {
+    durationMs: number
+    maxKmh: number
+    averageKmh: number
+    driver: Pick<CardData, 'name' | 'surname' | 'cardNumber'> | null
+  }
 } & (
   | { kind: 'event'; type: 'DRIVING_WITHOUT_CARD_WARNING' | 'DRIVING_WITHOUT_VALID_CARD_WARNING' | 'EXCESS_SPEED_WARNING' }
   | { kind: 'fault'; type: string }

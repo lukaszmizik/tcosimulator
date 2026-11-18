@@ -1,3 +1,4 @@
+import { advanceOverspeed, qualifiesAsOverspeed, type OverspeedRun } from './overspeed'
 import { useMemo, useState, useCallback, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { loadCountries, type CountryEntry } from './data/countriesLoader'
@@ -384,7 +385,7 @@ export default function App() {
   /** Doba jízdy během režimu trajekt – reset při startu trajektu, používá se pro ukončení po 1 min */
   const ferryDrivingMsRef = useRef(0)
   /** Čas nad 90 km/h – po 1 min zobrazí varování překročení rychlosti */
-  const excessSpeedAbove90MsRef = useRef(0)
+  const overspeedRunRef = useRef<OverspeedRun | null>(null)
   setCard1InsertedRef.current = setCard1Inserted
   setCard2InsertedRef.current = setCard2Inserted
   card1DataRef.current = card1Data
@@ -1056,6 +1057,25 @@ export default function App() {
     }
   }, [odometerKm])
 
+  const trackOverspeed = useCallback((speed: number, atUtc: number, elapsedMs: number) => {
+    const previous = overspeedRunRef.current
+    const next = advanceOverspeed(previous, speed, atUtc, elapsedMs,
+      card1InsertedRef.current ? card1DataRef.current : null)
+    overspeedRunRef.current = next
+
+    if (qualifiesAsOverspeed(next) && !qualifiesAsOverspeed(previous)) {
+      setExcessSpeedWarningActive(true)
+    }
+    if (!next && qualifiesAsOverspeed(previous)) {
+      const { startUtc, elapsedMs: durationMs, speedTime, maxKmh, driver } = previous
+      const id = crypto.randomUUID()
+      setFaultsAndEvents(records => [...records, {
+        id, timestampUtc: startUtc, endUtc: atUtc, kind: 'event', type: 'EXCESS_SPEED_WARNING',
+        overspeed: { durationMs, maxKmh, averageKmh: speedTime / durationMs, driver },
+      }])
+    }
+  }, [])
+
   useDrivingInterval({
     outModeActiveRef,
     activeNoCardIdRef,
@@ -1064,7 +1084,7 @@ export default function App() {
     currentSpeedRef,
     odometerKmRef,
     virtualLocationRef,
-    excessSpeedAbove90MsRef,
+    trackOverspeed,
     simulatedUtcTimeRef,
     ferryTrainModeActiveRef,
     ferryDrivingMsRef,
@@ -1082,7 +1102,6 @@ export default function App() {
     setDrivingWithoutCardWarningActive,
     setCurrentSpeed,
     setOdometerKm,
-    setExcessSpeedWarningActive,
     setFaultsAndEvents,
     setFerryTrainEvents,
     setEventLog,
@@ -1100,7 +1119,6 @@ export default function App() {
       setCardWithdrawalState(null)
       cancelMenuCountryInput()
       setExcessSpeedWarningActive(false)
-      excessSpeedAbove90MsRef.current = 0
       drivingSinceLastBreakMsByDriverRef.current = { 1: 0, 2: 0 }
       restSinceLastBreakMsByDriverRef.current = { 1: 0, 2: 0 }
       splitFirstPartTakenByDriverRef.current = { 1: false, 2: false }
@@ -1908,22 +1926,7 @@ export default function App() {
 
       const driverForJump = leftCharNow === DRIVING_SYMBOL ? 1 : rightCharNow === DRIVING_SYMBOL ? 2 : null
       const restDriver = leftCharNow === getActivityCode('REST') ? 1 : rightCharNow === getActivityCode('REST') ? 2 : null
-      // Výstraha vysoké rychlosti: při přetočení času o ≥60 s s rychlostí ≥90 km/h – stejná pravidla jako v reálném čase
-      const EXCESS_SPEED_THRESHOLD_KMH = 90
-      const EXCESS_SPEED_RESET_BELOW_KMH = 85
-      if (deltaMs >= 60000 && ignitionOnRef.current) {
-        if (speedNow >= EXCESS_SPEED_THRESHOLD_KMH) {
-          excessSpeedAbove90MsRef.current += deltaMs
-          if (excessSpeedAbove90MsRef.current >= 60000) {
-            const ts = Math.floor(targetMsUtc / 60000) * 60000
-            setExcessSpeedWarningActive(true)
-            setFaultsAndEvents((prev) => [...prev, { id: Date.now(), timestampUtc: ts, kind: 'event', type: 'EXCESS_SPEED_WARNING' }])
-            excessSpeedAbove90MsRef.current = 0
-          }
-        } else if (speedNow < EXCESS_SPEED_RESET_BELOW_KMH) {
-          excessSpeedAbove90MsRef.current = 0
-        }
-      }
+      trackOverspeed(ignitionOnRef.current ? speedNow : 0, simulatedUtcTime, deltaMs)
       // Ujetá vzdálenost za přeskočený čas (pokud byla rychlost > 0)
       if (isDrivingNow && driverForJump) {
         const distanceDeltaKm = (speedNow * deltaMinutes) / 60 // v km
@@ -2095,6 +2098,7 @@ export default function App() {
     setDrivingSinceLastBreakMsByDriver((p) => ({ ...p, 1: d }))
     setRestSinceLastBreakMsByDriver((p) => ({ ...p, 1: 0 }))
 
+    trackOverspeed(0, simulatedUtcTimeRef.current, 0)
     setSimulatedUtcTime(startMs + SIMULATE_4H10M_MS)
     setTargetSpeed(0)
     setCurrentSpeed(0)
@@ -2172,6 +2176,7 @@ export default function App() {
     setDriver1ManualEntryBuffer(manualEntryBuffer)
     setCardActivityHistoryByTemplateId((prev) => ({ ...prev, [templateId]: generated }))
     saveCard1ActivityHistory(generated)
+    trackOverspeed(0, simulatedUtcTimeRef.current, 0)
     setSimulatedUtcTime(nowUtc)
     setPanelDateTime(new Date(nowUtc))
     setTimeOffsetMs(0)
@@ -2351,7 +2356,7 @@ export default function App() {
     setExcessSpeedWarningActive(false)
     setEjectionBlockedWarningActive(false)
     setOverrideWarningCode(null)
-    excessSpeedAbove90MsRef.current = 0
+    overspeedRunRef.current = null
     const now = Date.now()
     setSimulatedUtcTime(now)
     setPanelDateTime(new Date(now))

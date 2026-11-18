@@ -60,7 +60,8 @@ export function generateRandomWorkWeek(
   slotIndex: 1 | 2,
   startTimeUtc: number,
   templateId: string,
-  nowUtc?: number
+  nowUtc?: number,
+  includeVehicleSamples = true,
 ): GenerateResult {
   const history: ActivityHistoryEntry[] = []
   const manualBuffer: ManualEntrySegment[] = []
@@ -213,6 +214,10 @@ export function generateRandomWorkWeek(
     const shiftedManual = manualBuffer.map(shiftSegment)
     manualBuffer.length = 0
     manualBuffer.push(...shiftedManual)
+  }
+
+  if (!includeVehicleSamples) {
+    return { activityHistory: filledHistory, manualEntryBuffer: manualBuffer, secondHistory: [] }
   }
 
   /** Vygenerovat secondHistory pro paměť vozidla (V-diagram) – z activityHistory */

@@ -14,6 +14,12 @@ const labels = {
   ru: { title: 'Имена виртуальных карт', card: 'Карта', save: 'Сохранить имена', saved: 'Имена сохранены.', error: 'Не удалось сохранить имена в браузере.' },
 }
 
+const preparationLabels = {
+  cs: { empty: 'Nepoužitá karta', week: 'Karta s modelovým týdnem', confirm: 'Připravit kartu? Přepíše historii vybrané karty.', done: 'Karta připravena.' },
+  en: { empty: 'Unused card', week: 'Card with a sample week', confirm: 'Prepare the card? This replaces the selected card’s history.', done: 'Card prepared.' },
+  ru: { empty: 'Неиспользованная карта', week: 'Карта с примером недели', confirm: 'Подготовить карту? История выбранной карты будет заменена.', done: 'Карта подготовлена.' },
+}
+
 function normalizeName(value: unknown, cardId: CardId): string {
   const name = typeof value === 'string' ? value.trim().replace(/\s+/g, ' ').slice(0, MAX_NAME_LENGTH).trimEnd() : ''
   return name || TEST_CARDS[cardId].name
@@ -33,14 +39,23 @@ export function virtualCardTemplate(cardId: CardId, names: CardNames) {
   return { ...TEST_CARDS[cardId], name, surname: name.slice(name.lastIndexOf(' ') + 1) }
 }
 
-export function VirtualCardNameSettings({ names, onSave, language }: {
+export function VirtualCardNameSettings({ names, onSave, language, onPrepare, insertedIds }: {
   names: CardNames
   onSave: (names: CardNames) => void
   language: SupportedLanguage
+  onPrepare: (cardId: CardId, withWeek: boolean) => void
+  insertedIds: (CardId | undefined)[]
 }) {
   const [draft, setDraft] = useState(names)
   const [status, setStatus] = useState('')
   const copy = labels[language]
+
+  const preparation = preparationLabels[language]
+  const prepare = (id: CardId, withWeek: boolean) => {
+    if (!window.confirm(preparation.confirm)) return
+    onPrepare(id, withWeek)
+    setStatus(preparation.done)
+  }
 
   return (
     <form className="virtual-card-names" onSubmit={(event) => {
@@ -59,7 +74,8 @@ export function VirtualCardNameSettings({ names, onSave, language }: {
       <fieldset>
         <legend>{copy.title}</legend>
         {CARD_IDS.map((cardId, index) => (
-          <label key={cardId}>
+          <div key={cardId}>
+          <label>
             {copy.card} {index + 1}
             <input
               type="text"
@@ -73,6 +89,9 @@ export function VirtualCardNameSettings({ names, onSave, language }: {
               }}
             />
           </label>
+          <button type="button" disabled={insertedIds.includes(cardId)} onClick={() => prepare(cardId, false)}>{preparation.empty}</button>
+          <button type="button" disabled={insertedIds.includes(cardId)} onClick={() => prepare(cardId, true)}>{preparation.week}</button>
+          </div>
         ))}
         <button type="submit">{copy.save}</button>
         <span role="status">{status}</span>

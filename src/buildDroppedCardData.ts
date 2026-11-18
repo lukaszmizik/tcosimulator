@@ -1,6 +1,6 @@
 /**
  * Sestavení CardData při vložení šablony zmizik nebo novak.
- * Pořadí: šablona, uložené vyjmutí, výchozí vyjmutí zmizik, protější šachta.
+ * Uložené vyjmutí patří identitě karty. U starší nepřipravené šablony zůstává výchozí čas.
  */
 
 import { FIRST_INSERTION_OFFSET_MS } from './Constants'
@@ -19,7 +19,7 @@ export type BuildDroppedCardDataInput = {
   card2StoredLastWithdrawal: number | null
   /** Okamžik, který handler dřív četl jako new Date() pro výchozí vyjmutí. */
   now: Date
-  otherCard: CardData | null
+  prepared?: boolean
   driverState: DroppedCardDriverState | undefined
 }
 
@@ -30,7 +30,7 @@ export function buildDroppedCardData(input: BuildDroppedCardDataInput): CardData
     card1StoredLastWithdrawal,
     card2StoredLastWithdrawal,
     now,
-    otherCard,
+    prepared,
     driverState,
   } = input
 
@@ -41,14 +41,11 @@ export function buildDroppedCardData(input: BuildDroppedCardDataInput): CardData
       : templateId === 'novak'
         ? card2StoredLastWithdrawal
         : null
-  if (lastWithdrawal == null && cardId === 'zmizik') {
+  if (!prepared && lastWithdrawal == null && cardId === 'zmizik') {
     const raw = now.getTime() - FIRST_INSERTION_OFFSET_MS
     const d = new Date(raw)
     d.setSeconds(0, 0)
     lastWithdrawal = d.getTime()
-  }
-  if (otherCard) {
-    lastWithdrawal = otherCard.lastWithdrawal
   }
 
   return {

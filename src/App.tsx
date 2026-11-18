@@ -352,9 +352,12 @@ export default function App() {
     saveVirtualCardConsents(driverCardStateByTemplateId)
   }, [driverCardStateByTemplateId])
   /** Uložené 1M záznamy pro řidiče 1 (pro výtisk) – uloží se při dokončení průvodce. */
-  const [driver1ManualEntryBuffer, setDriver1ManualEntryBuffer] = useState<ManualEntrySegment[]>(() => loadCard1ManualEntryBuffer())
+  const [card1Manual, setDriver1ManualEntryBuffer] = useState<ManualEntrySegment[]>(() => loadCard1ManualEntryBuffer())
   /** Uložené 1M záznamy pro řidiče 2 (pro výtisk). */
-  const [driver2ManualEntryBuffer, setDriver2ManualEntryBuffer] = useState<ManualEntrySegment[]>(() => loadCard2ManualEntryBuffer())
+  const [card2Manual, setDriver2ManualEntryBuffer] = useState<ManualEntrySegment[]>(() => loadCard2ManualEntryBuffer())
+  const [preparedTrainingCards, setPreparedTrainingCards] = useState<Partial<Record<'zmizik' | 'novak', true>>>({})
+  const driver1ManualEntryBuffer = card1Data?.templateId === CARD2_TEMPLATE_ID ? card2Manual : card1Manual
+  const driver2ManualEntryBuffer = card2Data?.templateId === CARD1_TEMPLATE_ID ? card1Manual : card2Manual
   /** Stav a logika výtisků – overlaye, otevření/zavření, toast. */
   const printState = usePrintState()
   /** Graf pracovního týdne – načtená data z TXT. null = okno zavřeno. */
@@ -459,7 +462,7 @@ export default function App() {
 
   const [crewRuleInterruptedByCard2Exit, setCrewRuleInterruptedByCard2Exit] = useState(false)
   /** V režimu osádky: odložené razítko cílové země (slot → { čas, countryCode }). Propíše se při skončení režimu. */
-  const deferredEndCountryInCrewModeRef = useRef<Partial<Record<1 | 2, { withdrawalTime: number; countryCode: string }>>>({})
+  const deferredEndCountryInCrewModeRef = useRef<Partial<Record<1 | 2, { withdrawalTime: number; countryCode: string; templateId?: CardData['templateId'] }>>>({})
   const prevSpeedRef = useRef(currentSpeed)
   const prevCard2InsertedRef = useRef(card2Inserted)
 
@@ -620,7 +623,8 @@ export default function App() {
       })
       return
     }
-    if (slot === 1) setDriver1ManualEntryBuffer(update)
+    const templateId = (slot === 1 ? card1DataRef.current : card2DataRef.current)?.templateId
+    if (templateId ? templateId === CARD1_TEMPLATE_ID : slot === 1) setDriver1ManualEntryBuffer(update)
     else setDriver2ManualEntryBuffer(update)
   }, [])
 
@@ -727,7 +731,8 @@ export default function App() {
     const deferred = deferredEndCountryInCrewModeRef.current
     const alreadyAddedForCurrentSlot = Boolean(deferred[prev.slot])
     if (deferred[1]) {
-      setDriver1ManualEntryBuffer((buf) =>
+      const commit = deferred[1].templateId === CARD2_TEMPLATE_ID ? setDriver2ManualEntryBuffer : setDriver1ManualEntryBuffer
+      commit((buf) =>
         isDuplicateEndCountry(buf, deferred[1]!.withdrawalTime, deferred[1]!.countryCode)
           ? buf
           : [...buf, makeEndCountrySegment(deferred[1]!.withdrawalTime, deferred[1]!.countryCode)]
@@ -735,7 +740,8 @@ export default function App() {
       setRecordedGpsLocations((r) => [...r, { minuteStartUtc: deferred[1]!.withdrawalTime, gpsLocation: '—', recordType: 'end_country_card' }])
     }
     if (deferred[2]) {
-      setDriver2ManualEntryBuffer((buf) =>
+      const commit = deferred[2].templateId === CARD1_TEMPLATE_ID ? setDriver1ManualEntryBuffer : setDriver2ManualEntryBuffer
+      commit((buf) =>
         isDuplicateEndCountry(buf, deferred[2]!.withdrawalTime, deferred[2]!.countryCode)
           ? buf
           : [...buf, makeEndCountrySegment(deferred[2]!.withdrawalTime, deferred[2]!.countryCode)]
@@ -744,7 +750,7 @@ export default function App() {
     }
     deferredEndCountryInCrewModeRef.current = {}
     if (isMultiManning) {
-      deferredEndCountryInCrewModeRef.current = { [prev.slot]: { withdrawalTime, countryCode } }
+      deferredEndCountryInCrewModeRef.current = { [prev.slot]: { withdrawalTime, countryCode, templateId } }
     } else if (!alreadyAddedForCurrentSlot) {
       commitSlotManual(prev.slot, (buf) =>
         isDuplicateEndCountry(buf, withdrawalTime, countryCode) ? buf : [...buf, makeEndCountrySegment(withdrawalTime, countryCode)]
@@ -825,8 +831,8 @@ export default function App() {
     detectedBorderCountryCodeRef,
     setCurrentMenuPath,
     setSelectedIndex,
-    setDriver1ManualEntryBuffer,
-    setDriver2ManualEntryBuffer,
+    setDriver1ManualEntryBuffer: commitDriver1Manual,
+    setDriver2ManualEntryBuffer: commitDriver2Manual,
     setRecordedGpsLocations,
   })
 
@@ -1861,8 +1867,8 @@ export default function App() {
       template,
       card1StoredLastWithdrawal: loadCard1LastWithdrawal(),
       card2StoredLastWithdrawal: loadCard2LastWithdrawal(),
-      now: new Date(),
-      otherCard: slot === 1 ? card2Data : card1Data,
+      now: new Date(simulatedUtcTime),
+      prepared: preparedTrainingCards[templateId],
       driverState: (templateId && driverCardStateByTemplateId[templateId]) ?? undefined,
     })
     lastCardInsertionKeyPressRef.current = Date.now()
@@ -1873,18 +1879,18 @@ export default function App() {
       setCard1Inserted(true)
       setDriverCardInsertedAtUtc(simulatedUtcTimeRef.current)
       setDrivingWithoutCardWarningActive(false)
-      setCardInsertionState(createInitialCardInsertionState(1, cardData, simulatedUtcTime, countries, { skipReadyToDriveScreen: skipReadyToDrive, initialCountryCode: gpsCountry, existingManualEntryBuffer: driver1ManualEntryBuffer }))
+      setCardInsertionState(createInitialCardInsertionState(1, cardData, simulatedUtcTime, countries, { skipReadyToDriveScreen: skipReadyToDrive, initialCountryCode: gpsCountry, existingManualEntryBuffer: templateId === CARD1_TEMPLATE_ID ? card1Manual : card2Manual }))
     }
     if (slot === 2) {
       setCard2Data(cardData)
       setCard2Inserted(true)
       setCard2InsertedAt(Date.now())
-      setCardInsertionState(createInitialCardInsertionState(2, cardData, simulatedUtcTime, countries, { skipReadyToDriveScreen: skipReadyToDrive, initialCountryCode: gpsCountry, existingManualEntryBuffer: driver2ManualEntryBuffer }))
+      setCardInsertionState(createInitialCardInsertionState(2, cardData, simulatedUtcTime, countries, { skipReadyToDriveScreen: skipReadyToDrive, initialCountryCode: gpsCountry, existingManualEntryBuffer: templateId === CARD1_TEMPLATE_ID ? card1Manual : card2Manual }))
     }
     setDragOverSlot(null)
     setCardsOpen(false)
     setCardPickerSlot(null)
-  }, [ignitionOn, displayAwakeFromStandby, simulatedUtcTime, timeOffsetMs, countries, card1Data, card2Data, driverCardStateByTemplateId, driver1ManualEntryBuffer, driver2ManualEntryBuffer, addEntry, setCardInsertionState, virtualLocation, virtualCardNames])
+  }, [ignitionOn, displayAwakeFromStandby, simulatedUtcTime, timeOffsetMs, countries, card1Data, card2Data, driverCardStateByTemplateId, preparedTrainingCards, card1Manual, card2Manual, addEntry, setCardInsertionState, virtualLocation, virtualCardNames])
 
   const handleSlotDrop = (e: React.DragEvent, slot: 1 | 2) => {
     e.preventDefault()
@@ -2188,7 +2194,7 @@ export default function App() {
     const combinedHistory = c1Inserted && tid1
       ? [...(cardActivityHistoryByTemplateIdRef.current[tid1] ?? []), ...activityEntries]
       : [...(activityHistoryRef.current ?? []), ...activityEntries]
-    const manualBuf = driver1ManualEntryBuffer
+    const manualBuf = card1Manual
     try {
       const { activities, countryMarkers } = simulatorToGraphData(combinedHistory, manualBuf, 1, {
         lastWithdrawalMs: loadCard1LastWithdrawal(),
@@ -2212,7 +2218,29 @@ export default function App() {
         setWorkWeekGraphData({ days: expandToWeeksContainingData([], startMs + SIMULATE_4H10M_MS), countryMarkers: [], manualEntryBuffer: manualBuf, lastWithdrawalUtc: null, card2Data: undefined })
       }
     }
-  }, [driver1ManualEntryBuffer])
+  }, [card1Manual])
+
+  const prepareTrainingCard = (id: 'zmizik' | 'novak', withWeek: boolean) => {
+    if (card1Data?.templateId === id || card2Data?.templateId === id) return
+    const first = id === CARD1_TEMPLATE_ID
+    const now = simulatedUtcTimeRef.current
+    const generated = withWeek ? generateRandomWorkWeek(first ? 1 : 2, now, id, now, false) : null
+    const manual = generated?.manualEntryBuffer ?? []
+    const end = manual[manual.length - 1]
+    const withdrawal = end ? segmentToMsUtc(end) : null
+    const history = generated?.activityHistory.filter(entry => withdrawal != null && entry.minuteStartUtc < withdrawal) ?? []
+    setCardActivityHistoryByTemplateId(prev => ({ ...prev, [id]: history }))
+    if (first) {
+      setDriver1ManualEntryBuffer(manual)
+      if (withdrawal == null) clearCard1LastWithdrawal()
+      else saveCard1LastWithdrawal(withdrawal)
+    } else {
+      setDriver2ManualEntryBuffer(manual)
+      if (withdrawal == null) clearCard2LastWithdrawal()
+      else saveCard2LastWithdrawal(withdrawal)
+    }
+    setPreparedTrainingCards(prev => ({ ...prev, [id]: true }))
+  }
 
   const handleGenerateWorkWeek = useCallback(() => {
     const slotIndex: 1 | 2 = 1
@@ -2231,7 +2259,7 @@ export default function App() {
     const existingMinutes = new Set<number>([
       ...activityHistory.map((e) => e.minuteStartUtc),
       ...cardHistory.map((e) => e.minuteStartUtc),
-      ...driver1ManualEntryBuffer.map(segmentToMinuteMs),
+      ...card1Manual.map(segmentToMinuteMs),
     ])
     const hasOverlap = [...existingMinutes].some((m) => m >= genMin && m <= genMax)
 
@@ -2259,7 +2287,7 @@ export default function App() {
     const days = activitiesByDay(activities)
     const daysToShow = activities.length > 0 ? expandToWeeksContainingData(days, Math.min(...activities.map((a) => a.startMs))) : expandToWeeksContainingData([], nowUtc)
     setWorkWeekGraphData({ days: daysToShow, countryMarkers })
-  }, [activityHistory, driver1ManualEntryBuffer, cardActivityHistoryByTemplateId])
+  }, [activityHistory, card1Manual, cardActivityHistoryByTemplateId])
 
   const setPrepError = useCallback((index: 0 | 1, message: string | null) => {
     setCardPrepError((prev) => {
@@ -2377,6 +2405,7 @@ export default function App() {
     setCardWithdrawalState(null)
     setCardActivityHistoryByTemplateId({})
     setDriverCardStateByTemplateId({})
+    setPreparedTrainingCards({})
     setDriver1ManualEntryBuffer([])
     setDriver2ManualEntryBuffer([])
     setWorkWeekGraphData(null)
@@ -2508,19 +2537,19 @@ export default function App() {
   useEffect(() => {
     if (typeof window === 'undefined') return
     try {
-      saveCard1ManualEntryBuffer(driver1ManualEntryBuffer)
+      saveCard1ManualEntryBuffer(card1Manual)
     } catch {
       // ignore
     }
-  }, [driver1ManualEntryBuffer])
+  }, [card1Manual])
   useEffect(() => {
     if (typeof window === 'undefined') return
     try {
-      saveCard2ManualEntryBuffer(driver2ManualEntryBuffer)
+      saveCard2ManualEntryBuffer(card2Manual)
     } catch {
       // ignore
     }
-  }, [driver2ManualEntryBuffer])
+  }, [card2Manual])
 
   // Perzistence faultsAndEvents (tachograf)
   useEffect(() => {
@@ -3323,7 +3352,7 @@ export default function App() {
           isMultiManning={isMultiManning}
           onGenerateWorkWeek={handleGenerateWorkWeek}
           onShowCardData={handleShowCardData}
-          virtualCardSettings={<VirtualCardNameSettings names={virtualCardNames} onSave={setVirtualCardNames} language={language} />}
+          virtualCardSettings={<VirtualCardNameSettings names={virtualCardNames} onSave={setVirtualCardNames} language={language} onPrepare={prepareTrainingCard} insertedIds={[card1Data?.templateId, card2Data?.templateId]} />}
           printVehicleSettings={<PrintVehicleSettings profile={printVehicleProfile} onSave={setPrintVehicleProfile} />}
           infoPanels={(
             <div

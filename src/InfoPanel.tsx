@@ -8,12 +8,13 @@
 
 import { useState, useEffect, useLayoutEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
-import type { ActivityHistoryEntry, CardInsertionState, ManualEntrySegment, MenuCountryInputState } from './TachoTypes'
+import type { CardInsertionState, ManualEntrySegment, MenuCountryInputState } from './TachoTypes'
 import type { VdoNamedScreen } from './slot1DddCounter'
 import type { Translations } from './translations/types'
 import type { SymbolMap } from './TachoTypes'
 import { ACTIVITY_SYMBOLS } from './TachoTypes'
 import { segmentToMsUtc } from './CardLogic'
+import type { VehicleCheckResult } from './vehiclePreDepartureCheck'
 import { parseSymbols, ACTIVITY_ID_TO_BG } from './Symbols'
 
 const INFO_PANEL_SYMBOL_BG_DEFAULT = '#888'
@@ -185,55 +186,6 @@ function formatLastWithdrawal(ts: number): string {
   return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} v ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-const WORK_MIN_MS = 4 * 60 * 1000
-
-type VehicleCheckResult = 'none' | 'warning' | 'info'
-
-/**
- * Kontrola: mezi výchozí zemí a první minutou jízdy musí být WORK (kontrola vozidla, symbol 9).
- * - Žádná WORK → warning
- * - WORK < 4 min → info
- * - WORK >= 4 min → none
- */
-function checkVehicleWorkBeforeDriving(
-  buffer: ManualEntrySegment[],
-  activityHistory: ActivityHistoryEntry[],
-  driverSlot: 1 | 2,
-): VehicleCheckResult {
-  const lastStartIdx = buffer.map((s, i) => (s.activityId === 'START_COUNTRY' ? i : -1)).filter((i) => i >= 0).pop()
-  if (lastStartIdx == null) return 'none'
-  const startMs = segmentToMsUtc(buffer[lastStartIdx]!)
-
-  const driverKey = driverSlot === 1 ? 'driver1' : 'driver2'
-  // První jízda po posledním START_COUNTRY (nikoli první jízda v celé historii)
-  const firstDrivingEntry = activityHistory.find((e) => e[driverKey] === 'driving' && e.minuteStartUtc > startMs)
-  // Výstraha jen když řidič již zahájil řízení – před tím nelze kontrolovat „aktivitu před řízením“
-  if (firstDrivingEntry == null) return 'none'
-  const endMs = firstDrivingEntry.minuteStartUtc
-
-  let workMs = 0
-
-  for (let j = 0; j < buffer.length - 1; j++) {
-    const seg = buffer[j]!
-    if (seg.activityId !== 'WORK') continue
-    const next = buffer[j + 1]!
-    const blockStart = segmentToMsUtc(seg)
-    const blockEnd = segmentToMsUtc(next)
-    const overlapStart = Math.max(blockStart, startMs)
-    const overlapEnd = Math.min(blockEnd, endMs)
-    if (overlapEnd > overlapStart) workMs += overlapEnd - overlapStart
-  }
-
-  for (const e of activityHistory) {
-    if (e[driverKey] !== 'otherWork') continue
-    const minuteMs = e.minuteStartUtc
-    if (minuteMs >= startMs && minuteMs < endMs) workMs += 60000
-  }
-
-  if (workMs === 0) return 'warning'
-  if (workMs < WORK_MIN_MS) return 'info'
-  return 'none'
-}
 
 function ManualEntryBufferDisplay({ buffer, label }: { buffer: ManualEntrySegment[]; label: string }) {
   const pad = (n: number) => String(n).padStart(2, '0')
@@ -417,7 +369,7 @@ export function useInfoPanelItems(props: {
   crewRuleInterruptedByCard2Exit?: boolean
   driver1ManualEntryBuffer?: ManualEntrySegment[]
   driver2ManualEntryBuffer?: ManualEntrySegment[]
-  activityHistory?: ActivityHistoryEntry[]
+  vehicleCheck?: VehicleCheckResult
   /** Zobrazit infobox „Tato položka zatím není aktivní. Coming soon“ – při OK na neimplementované menu položce */
   menuComingSoonInfo?: { id: string } | null
   /** Režim OUT aktivní – zobrazí infobox o průběhu jízdy jako jiné práce */
@@ -438,7 +390,7 @@ export function useInfoPanelItems(props: {
     crewRuleInterruptedByCard2Exit = false,
     driver1ManualEntryBuffer = [],
     driver2ManualEntryBuffer = [],
-    activityHistory = [],
+    vehicleCheck = 'none',
     menuComingSoonInfo = null,
     outModeActive = false,
   } = props
@@ -568,17 +520,17 @@ export function useInfoPanelItems(props: {
 
   const bufferD1 = cardInsertionState?.slot === 1 ? cardInsertionState.manualEntryBuffer : driver1ManualEntryBuffer
   const bufferD2 = cardInsertionState?.slot === 2 ? cardInsertionState.manualEntryBuffer : driver2ManualEntryBuffer
-  const vehicleCheckD1 = card1Inserted ? checkVehicleWorkBeforeDriving(bufferD1, activityHistory, 1) : 'none'
-  const vehicleCheckD2 = card2Inserted ? checkVehicleWorkBeforeDriving(bufferD2, activityHistory, 2) : 'none'
-  if (vehicleCheckD1 === 'warning' || vehicleCheckD2 === 'warning') {
+  if (vehicleCheck === 'warning') {
     items.push({
       id: 'vehicle-check-before-driving-warning',
+      activeOnly: true,
       type: 'warning',
       message: t.infoPanel.vehicleCheckBeforeDrivingWarning,
     })
-  } else if (vehicleCheckD1 === 'info' || vehicleCheckD2 === 'info') {
+  } else if (vehicleCheck === 'info') {
     items.push({
       id: 'vehicle-check-before-driving-short',
+      activeOnly: true,
       type: 'info',
       message: t.infoPanel.vehicleCheckBeforeDrivingShort,
     })

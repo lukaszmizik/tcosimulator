@@ -97,6 +97,7 @@ import { parseWorkWeekTxt, activitiesByDay, expandToWeeksContainingData, type Da
 import { WorkWeekGraphView } from './WorkWeekGraphView'
 import { InsertedCardsHistory } from './InsertedCardsHistory'
 import { InfoPanel, useInfoPanelItems, useNr165Warning, Nr165WarningBox, lcdTeachInfoItem, visibleLcdTeachScreen, type InfoItem } from './InfoPanel'
+import { useVehiclePreDepartureCheck } from './useVehiclePreDepartureCheck'
 import { REDUCED_DAILY_REST_MIN_MS, SPLIT_REST_SECOND_MS, formatDurationHhMm } from './VDOCounter'
 import { drivingBreakDisplay, drivingRestTotals } from './drivingBreakDisplay'
 import { drivingRemainderUndocumented, evaluateRecordedOut, undeterminedOverlaps } from './outDrivingEvaluation'
@@ -230,6 +231,7 @@ export default function App() {
   const displayAwakeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [stopDisabledMessage, setStopDisabledMessage] = useState(false)
   const [card1Inserted, setCard1Inserted] = useState(false)
+  const [driverCardInsertedAtUtc, setDriverCardInsertedAtUtc] = useState(0)
   const [card2Inserted, setCard2Inserted] = useState(false)
   useEffect(() => {
     const next = counterIndexAfterCardRemoval({
@@ -1765,6 +1767,7 @@ export default function App() {
       if (slot === 1) {
         setCard1Data(cardData)
         setCard1Inserted(true)
+        setDriverCardInsertedAtUtc(simulatedUtcTimeRef.current)
         setDrivingWithoutCardWarningActive(false)
         setCardInsertionState(createInitialCardInsertionState(1, cardData, simulatedUtcTimeRef.current, countries, wizardOptions))
       }
@@ -1804,6 +1807,7 @@ export default function App() {
     if (slot === 1) {
       setCard1Data(cardData)
       setCard1Inserted(true)
+      setDriverCardInsertedAtUtc(simulatedUtcTimeRef.current)
       setDrivingWithoutCardWarningActive(false)
       setCardInsertionState(createInitialCardInsertionState(1, cardData, simulatedUtcTime, countries, { skipReadyToDriveScreen: skipReadyToDrive, initialCountryCode: gpsCountry, existingManualEntryBuffer: driver1ManualEntryBuffer }))
     }
@@ -2610,6 +2614,15 @@ export default function App() {
   }
 
   const isDriving = currentSpeed > 0
+  const vehicleCheck = useVehiclePreDepartureCheck({
+    card: card1Inserted ? card1Data : null,
+    insertedAtUtc: driverCardInsertedAtUtc,
+    driverCardWizardOpen: cardInsertionState?.slot === 1,
+    isDriving,
+    simulatedUtcTime,
+    manualEntries: driver1ManualEntryBuffer,
+    secondHistory,
+  })
   const infoPanelItems = useInfoPanelItems({
     ignitionOn,
     card1Inserted,
@@ -2625,7 +2638,7 @@ export default function App() {
     isMultiManning,
     driver1ManualEntryBuffer,
     driver2ManualEntryBuffer,
-    activityHistory,
+    vehicleCheck,
     menuComingSoonInfo,
     outModeActive,
   })

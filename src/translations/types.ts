@@ -41,13 +41,10 @@ export type Translations = {
     cardRoman: string
     cardRomanSlot1: string
     cardRomanSlot2: string
-    hoursLabel: string
-    minutesLabel: string
     cannotDecrementTime: string
     decrementHours: string
     decrementMinutes: string
     applyTimeTitle: string
-    selectedDateTimeLabel: string
     remoteDataDownloadActive: string
     ignitionLabel: string
     stopIgnition: string
@@ -229,7 +226,16 @@ export type Translations = {
     loadCardFromDddTitle: string
     loadVirtualCard: string
     simulationControlsTitle: string
-    simulationControlsHint: string
+    ignitionOn: string
+    ignitionOff: string
+    simulationTime: string
+    applyTime: string
+    incrementHours: string
+    incrementMinutes: string
+    hourUnit: string
+    minuteUnit: string
+    practiceScenarios: string
+    dataAndRecords: string
   }
   printOverlay: {
     driverCard24hTitle: string

@@ -49,7 +49,6 @@ export type TachoDisplayProps = {
   printStartedToastUntil?: number | null
   displayMode: 'operating' | 'menu'
   /** Pro výběr prioritního zobrazení */
-  isBlinking: boolean
   isMultiManning: boolean
   timeStr: string
   currentSpeed: number
@@ -205,7 +204,6 @@ export function TachoDisplay(props: TachoDisplayProps) {
       <CardInsertionDisplay2
         symbolMap={symbolMap}
         cardInsertionState={cardInsertionState}
-        isBlinking={props.isBlinking}
         isMultiManning={props.isMultiManning}
         countries={props.countries}
         spanishRegions={props.spanishRegions}
@@ -340,7 +338,7 @@ function DrivingWithoutValidCardWarningDisplay({ symbolMap }: { symbolMap: Symbo
 }
 
 function PrintWizardDisplay(props: TachoDisplayProps) {
-  const { symbolMap, printWizardState, isBlinking } = props
+  const { symbolMap, printWizardState } = props
   const { t } = useLanguage()
   const pw = printWizardState!
 
@@ -367,7 +365,7 @@ function PrintWizardDisplay(props: TachoDisplayProps) {
     <div className="lcd-two-rows lcd-card-insertion">
       <div className="lcd-row lcd-row-left"><span className="lcd-inline-symbols">{l1}</span></div>
       <div className="lcd-row lcd-row-left">
-        <span className={isBlinking ? 'lcd-blink-hide' : ''}>{String(day).padStart(2, '0')}</span>
+        <span className="lcd-field-blink">{String(day).padStart(2, '0')}</span>
         <span>.</span>
         <span>{String(month).padStart(2, '0')}</span>
         <span>.</span>
@@ -390,7 +388,7 @@ function PrintStartedDisplay(props: { symbolMap: SymbolMap | null }) {
 }
 
 function MenuCountryInputDisplay(props: TachoDisplayProps) {
-  const { symbolMap, menuCountryInputState, isBlinking, countries } = props
+  const { symbolMap, menuCountryInputState, countries } = props
   const { t } = useLanguage()
   const mc = menuCountryInputState!
   if (mc.phase === 'confirmSaved') {
@@ -408,7 +406,7 @@ function MenuCountryInputDisplay(props: TachoDisplayProps) {
   return (
     <div className="lcd-two-rows lcd-card-insertion">
       <div className="lcd-row lcd-row-left">{l1}</div>
-      <div className={`lcd-row lcd-row-left lcd-country-code-blink ${isBlinking ? 'lcd-blink-hide' : ''}`}>:{code}</div>
+      <div className="lcd-row lcd-row-left lcd-country-code-blink">:{code}</div>
     </div>
   )
 }

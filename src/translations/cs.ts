@@ -39,27 +39,24 @@ export const cs: Translations = {
     cardRoman: 'Karta Roman',
     cardRomanSlot1: 'Karta Roman (slot 1)',
     cardRomanSlot2: 'Karta Roman (slot 2)',
-    hoursLabel: 'Hodiny',
-    minutesLabel: 'Minuty',
     cannotDecrementTime: 'Čas nemůže být menší než simulovaný čas',
     decrementHours: 'Zmenšit hodiny',
     decrementMinutes: 'Zmenšit minuty',
     applyTimeTitle: 'Přenést nastavený čas na displej tachografu',
-    selectedDateTimeLabel: 'Zvolený datum a čas:',
-    remoteDataDownloadActive: 'Vzdálené stahování dat aktivní',
+    remoteDataDownloadActive: 'Vzdálené stahování dat',
     ignitionLabel: 'Zapalování',
     stopIgnition: 'Vypnout zapalování',
     drivingCannotStop: 'V režimu jízdy nelze vozidlo vypnout',
     resetTitle: 'Vynulovat časy činností, vysunout karty, nastavit hodiny na aktuální čas a vypnout zařízení (STOP)',
     simulate4h10mTitle: 'Zapsat 4h10m jízdy s krátkými zastávkami (do paměti) a posunout čas dopředu',
     simulate4h10mDisabledNoCardTitle: 'Vyžaduje vloženou kartu řidiče',
-    generate4h10mDriving: 'Generovat 4h10m jízdy',
+    generate4h10mDriving: 'Generovat 4 h 10 min jízdy',
     printoutTitle: 'Výtisk tachografu',
     vDiagramTitle: 'V-diagram rychlosti',
   },
   infoPanel: {
     standbyModeInfo: 'Zařízení je v režimu Stand-by. Zapni zapalování tlačítkem Start.\nVše je ve vývoji, případné chyby mi nahlaš na lukas@zmizik.com',
-    insertCardToSlot1: 'Pokud chceš zahájit řízení, vlož kteroukoli kartu přetáhnutím do slotu č. 1.', // 1
+    insertCardToSlot1: 'Pro zahájení řízení klepni na slot 1 a vyber kartu, nebo ji do slotu přetáhni.', // 1
     drivingWithoutCard: 'Jízda bez karty – vlož kartu řidiče do slotu 1. Tato výstraha se zapisuje do paměti tachografu.', // 2
     break415: 'Výstraha 4:15 – proveď pauzu 15 minut nebo 30 minut (pokud jsi už měl 15m).', // 3
     break430: 'Výstraha 4:30 – Překročil jsi dobu řízení! Neprodleně udělej přestávku 45 minut. Tato událost se zapíše do paměti jako (27)(38) Porušení bezpečnosti.', // 4
@@ -248,15 +245,24 @@ export const cs: Translations = {
     generateWorkWeekDisabledIgnitionTitle: 'Generovat pracovní týden lze jen v režimu standby (vypnuté zapalování)',
     openFromFile: 'Otevřít data ze souboru', // 82
     openFromFileTitle: 'Vybrat TXT soubor s daty pracovního týdne a zobrazit graf', // 83
-    saveDataToFile: 'Ulož data do souboru', // 84
+    saveDataToFile: 'Uložit data do souboru', // 84
     saveDataToFileTitle: 'Uložit obsah karty 1 do TXT souboru', // 85
-    showCardData: 'Zobraz data z karty', // 86
+    showCardData: 'Zobrazit data z karty', // 86
     showCardDataTitle: 'Zobrazit graf s daty aktuálně v simulátoru', // 87
     loadCardFromDdd: 'Načíst z DDD souboru',
     loadCardFromDddTitle: 'Načíst výpis karty řidiče a zobrazit jeho historii v náhledu',
     loadVirtualCard: 'Načíst virtuální kartu',
     simulationControlsTitle: 'Ovládání simulace',
-    simulationControlsHint: 'Tímto panelem nastavuješ podmínky cvičení.',
+    ignitionOn: 'Zapnuto',
+    ignitionOff: 'Vypnuto',
+    simulationTime: 'Simulační čas',
+    applyTime: 'Nastavit čas',
+    incrementHours: 'Přidat hodinu',
+    incrementMinutes: 'Přidat minutu',
+    hourUnit: 'h',
+    minuteUnit: 'min',
+    practiceScenarios: 'Cvičné scénáře',
+    dataAndRecords: 'Data a záznamy',
   },
   printOverlay: {
     driverCard24hTitle: '24h výtisk karty řidiče',

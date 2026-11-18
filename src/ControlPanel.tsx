@@ -1,20 +1,14 @@
-/**
- * Ovládací panel simulátoru – karty, rychlost, čas, zapalování, tlačítka.
- * Extrahováno z App.tsx pro zlepšení udržovatelnosti.
- */
-
-import { useState, type ReactNode } from 'react'
-import type { Translations } from './translations/types'
-
+import type { ReactNode } from 'react'
+import type { SupportedLanguage, Translations } from './translations/types'
+import { Speedometer } from './Speedometer'
 export type ControlPanelProps = {
   t: Translations
+  language: SupportedLanguage
   ignitionOn: boolean
   onIgnitionStart: () => void
   targetSpeed: number
   onTargetSpeedChange: (value: number) => void
   currentSpeed: number
-  panelHours: number
-  panelMinutes: number
   /** Datum a čas, které se nastaví po stisknutí potvrzovacího tlačítka */
   panelDateTime: Date
   canDecrementHours: boolean
@@ -43,234 +37,47 @@ export type ControlPanelProps = {
   infoPanels?: ReactNode
 }
 
-export function ControlPanel({
-  t,
-  ignitionOn,
-  onIgnitionStart,
-  targetSpeed,
-  onTargetSpeedChange,
-  currentSpeed,
-  panelHours,
-  panelMinutes,
-  panelDateTime,
-  canDecrementHours,
-  canDecrementMinutes,
-  onAdjustHours,
-  onAdjustMinutes,
-  onApplyTime,
-  remoteDataDownloadActive,
-  onRemoteDataDownloadActiveChange,
-  isDriving,
-  onStopIgnition,
-  onStopDisabledClick,
-  stopDisabledMessage,
-  onReset,
-  onSimulate4h10m,
-  cardInserted,
-  isMultiManning,
-  onGenerateWorkWeek,
-  workWeekFileInputRef,
-  onWorkWeekFileChange,
-  onOpenWorkWeekData,
-  onSaveCard1ToFile,
-  onShowCardData,
-  printVehicleSettings,
-  infoPanels,
-}: ControlPanelProps) {
-  const [generateWorkWeekFlash, setGenerateWorkWeekFlash] = useState(false)
-  const handleGenerateWorkWeekClick = () => {
-    if (isMultiManning || ignitionOn) return
-    onGenerateWorkWeek()
-    setGenerateWorkWeekFlash(true)
-    setTimeout(() => setGenerateWorkWeekFlash(false), 400)
-  }
-  return (
-    <div className="control-panel">
-      <header className="control-panel-intro">
-        <h2 className="control-panel-heading">{t.controls.simulationControlsTitle}</h2>
-        <p className="control-panel-subtitle">{t.controls.simulationControlsHint}</p>
-      </header>
-      <div className="control-panel-row-main">
-        <div className="control-panel-section">
-          <div className="control-panel-label">{t.ui.speedLabel}: {Math.round(currentSpeed)} km/h</div>
-          <input
-            type="range"
-            min={0}
-            max={125}
-            value={targetSpeed}
-            onChange={(e) => onTargetSpeedChange(Number(e.target.value))}
-            className={`control-slider ${!ignitionOn ? 'control-slider-disabled' : ''} ${currentSpeed > 90 ? 'control-slider-over-90' : ''}`}
-            disabled={!ignitionOn}
-          />
-        </div>
-        <div className="control-panel-time-block">
-          <div className="control-panel-row-time-apply">
-            <div className="control-panel-section control-panel-section-time">
-              <div className="time-block">
-                <div className="control-panel-label">{t.ui.hoursLabel}</div>
-                <div className="time-display-box" aria-label={t.ui.hoursLabel}>
-                  {panelHours.toString().padStart(2, '0')}
-                </div>
-              </div>
-              <div className="time-buttons-col">
-                <button type="button" className="control-btn control-btn-time" disabled={false} onClick={() => onAdjustHours(1)}>+</button>
-                <button
-                  type="button"
-                  className={`control-btn control-btn-time ${!canDecrementHours ? 'control-btn-time-disabled' : ''}`}
-                  onClick={() => canDecrementHours && onAdjustHours(-1)}
-                  disabled={!canDecrementHours}
-                  title={!canDecrementHours ? t.ui.cannotDecrementTime : t.ui.decrementHours}
-                >
-                  −
-                </button>
-              </div>
-            </div>
-            <div className="control-panel-section control-panel-section-time">
-              <div className="time-block">
-                <div className="control-panel-label">{t.ui.minutesLabel}</div>
-                <div className="time-display-box" aria-label={t.ui.minutesLabel}>
-                  {panelMinutes.toString().padStart(2, '0')}
-                </div>
-              </div>
-              <div className="time-buttons-col">
-                <button type="button" className="control-btn control-btn-time" onClick={() => onAdjustMinutes(1)}>+</button>
-                <button
-                  type="button"
-                  className={`control-btn control-btn-time ${!canDecrementMinutes ? 'control-btn-time-disabled' : ''}`}
-                  onClick={() => canDecrementMinutes && onAdjustMinutes(-1)}
-                  disabled={!canDecrementMinutes}
-                  title={!canDecrementMinutes ? t.ui.cannotDecrementTime : t.ui.decrementMinutes}
-                >
-                  −
-                </button>
-              </div>
-            </div>
-            <div className="control-panel-section time-apply-section">
-              <button type="button" className="control-btn control-btn-apply" onClick={onApplyTime} title={t.ui.applyTimeTitle}>
-                ✓
-              </button>
-            </div>
-          </div>
-          <div className="control-panel-apply-preview" title={t.ui.applyTimeTitle}>
-            {t.ui.selectedDateTimeLabel}{' '}
-            {panelDateTime.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric', year: 'numeric' })}
-            {' · '}
-            {panelDateTime.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })}
-          </div>
-        </div>
-      </div>
 
-      <div className="control-panel-section ignition-section">
-        <div className="control-panel-label">{t.ui.ignitionLabel}</div>
-        <div className="ignition-buttons">
-          <button
-            type="button"
-            className={`ignition-btn ignition-start ${ignitionOn ? 'ignition-active' : ''}`}
-            onClick={onIgnitionStart}
-          >
-            START
-          </button>
-          <div className="ignition-stop-wrapper">
-            <button
-              type="button"
-              className={`ignition-btn ignition-stop ${!ignitionOn ? 'ignition-active' : ''}`}
-              disabled={isDriving}
-              onClick={onStopIgnition}
-              title={isDriving ? t.ui.drivingCannotStop : t.ui.stopIgnition}
-            >
-              STOP
-            </button>
-            {isDriving && (
-              <div
-                className="ignition-stop-overlay"
-                onClick={onStopDisabledClick}
-                onKeyDown={(e) => e.key === 'Enter' && onStopDisabledClick()}
-                role="button"
-                tabIndex={0}
-                aria-label={t.ui.drivingCannotStop}
-              />
-            )}
-            {stopDisabledMessage && (
-              <span className="ignition-stop-toast">{t.ui.drivingCannotStop}</span>
-            )}
-          </div>
-          <button
-            type="button"
-            className="control-btn control-btn-reset"
-            onClick={onReset}
-            title={t.ui.resetTitle}
-          >
-            {t.ui.reset}
-          </button>
+export function ControlPanel(p: ControlPanelProps) {
+  const { t } = p
+  return <section className="dashboard" data-running={p.ignitionOn} aria-label={t.controls.simulationControlsTitle}>
+    <div className="dashboard-grid">
+      <section className="dash-module mode-module">
+        <h2>Simulační režim</h2>
+        <p className="mode-status"><i />{p.ignitionOn ? t.controls.ignitionOn : t.controls.ignitionOff}</p>
+        <div className="mode-keys">
+          <button className="start-key" aria-pressed={p.ignitionOn} onClick={p.onIgnitionStart}>▶︎ START</button>
+          <button className="stop-key" aria-pressed={!p.ignitionOn} aria-disabled={p.isDriving} title={p.isDriving ? t.ui.drivingCannotStop : t.ui.stopIgnition} onClick={p.isDriving ? p.onStopDisabledClick : p.onStopIgnition}>■ STOP</button>
         </div>
-      </div>
-      {infoPanels}
-      <details className="control-panel-extras" onKeyDown={(event) => event.stopPropagation()}>
-        <summary>{t.controls.dataScenariosSettings}</summary>
-        <div className="control-panel-section">
-          <label className="control-panel-checkbox-label">
-            <input
-              type="checkbox"
-              checked={remoteDataDownloadActive}
-              onChange={(e) => onRemoteDataDownloadActiveChange(e.target.checked)}
-            />
-            <span>{t.ui.remoteDataDownloadActive}</span>
-          </label>
-        </div>
-        <div className="control-panel-extra-actions">
-          <button
-            type="button"
-            className={`control-btn control-btn-simulate ${!ignitionOn || !cardInserted ? 'control-slider-disabled' : ''}`}
-            onClick={onSimulate4h10m}
-            disabled={!ignitionOn || !cardInserted}
-            title={!cardInserted ? t.ui.simulate4h10mDisabledNoCardTitle : t.ui.simulate4h10mTitle}
-          >
-            {t.ui.generate4h10mDriving}
-          </button>
-          <button
-            type="button"
-            className={`control-btn control-btn-simulate control-btn-generate-work-week ${isMultiManning || ignitionOn ? 'control-slider-disabled' : ''} ${generateWorkWeekFlash ? 'control-btn-generate-work-week-flash' : ''}`}
-            onClick={handleGenerateWorkWeekClick}
-            disabled={isMultiManning || ignitionOn}
-            title={ignitionOn ? t.controls.generateWorkWeekDisabledIgnitionTitle : isMultiManning ? t.controls.generateWorkWeekDisabledTitle : t.controls.generateWorkWeekTitle}
-          >
-            {t.controls.generateWorkWeek}
-          </button>
-          <input
-            ref={workWeekFileInputRef}
-            type="file"
-            accept=".txt"
-            className="work-week-file-input-hidden"
-            onChange={onWorkWeekFileChange}
-            aria-hidden="true"
-          />
-          <button
-            type="button"
-            className="control-btn control-btn-simulate"
-            onClick={onOpenWorkWeekData}
-            title={t.controls.openFromFileTitle}
-          >
-            {t.controls.openFromFile}
-          </button>
-          <button
-            type="button"
-            className="control-btn control-btn-simulate"
-            onClick={onSaveCard1ToFile}
-            title={t.controls.saveDataToFileTitle}
-          >
-            {t.controls.saveDataToFile}
-          </button>
-          <button
-            type="button"
-            className="control-btn control-btn-simulate"
-            onClick={onShowCardData}
-            title={t.controls.showCardDataTitle}
-          >
-            {t.controls.showCardData}
-          </button>
-        </div>
-        {printVehicleSettings}
-      </details>
+        {p.stopDisabledMessage && <p role="status" className="dash-warning">{t.ui.drivingCannotStop}</p>}
+      </section>
+      <section className="dash-module clock-module">
+        <h2>{t.controls.simulationTime}</h2>
+        <div className="dash-clock"><b>{p.panelDateTime.toLocaleTimeString(p.language, {hour:'2-digit', minute:'2-digit', second:'2-digit'})}</b><time>{p.panelDateTime.toLocaleDateString(p.language)}</time></div>
+        <div className="clock-adjust"><button disabled={!p.canDecrementHours} onClick={()=>p.onAdjustHours(-1)}>−1 h</button><button onClick={()=>p.onAdjustHours(1)}>+1 h</button><button disabled={!p.canDecrementMinutes} onClick={()=>p.onAdjustMinutes(-1)}>−1 min</button><button onClick={()=>p.onAdjustMinutes(1)}>+1 min</button></div>
+        <div className="clock-presets">{[15,30,45].map(m=><button key={m} onClick={()=>p.onAdjustMinutes(m)}>+{m}m</button>)}</div>
+        <button className="apply-time" onClick={p.onApplyTime} title={t.ui.applyTimeTitle}>✓ {t.controls.applyTime}</button>
+      </section>
+      <section className="dash-module speed-module">
+        <h2>{t.ui.speedLabel}</h2>
+        <Speedometer speed={p.currentSpeed}/>
+        <div className="speed-keys"><button aria-label="Snížit rychlost o 5 km/h" disabled={!p.ignitionOn || p.targetSpeed <= 0} onClick={()=>p.onTargetSpeedChange(Math.max(0,p.targetSpeed-5))}>−</button><span>Cíl {p.targetSpeed} km/h</span><button aria-label="Zvýšit rychlost o 5 km/h" disabled={!p.ignitionOn || p.targetSpeed >= 125} onClick={()=>p.onTargetSpeedChange(Math.min(125,p.targetSpeed+5))}>+</button></div>
+        <input aria-label="Cílová rychlost" type="range" min="0" max="125" value={p.targetSpeed} disabled={!p.ignitionOn} onChange={e=>p.onTargetSpeedChange(Number(e.target.value))}/>
+      </section>
+      <section className="dash-module reset-module"><button className="reset-key" onClick={p.onReset} title={t.ui.resetTitle}><span>⟲</span>{t.ui.reset}</button></section>
     </div>
-  )
+    {p.infoPanels}
+    <details className="dash-extras" onKeyDown={(event) => event.stopPropagation()}><summary>{t.controls.dataScenariosSettings}</summary>
+      <label className="dash-check"><input type="checkbox" checked={p.remoteDataDownloadActive} onChange={e=>p.onRemoteDataDownloadActiveChange(e.target.checked)}/>{t.ui.remoteDataDownloadActive}</label>
+      <div className="dash-tool-buttons">
+        <button onClick={p.onSimulate4h10m} disabled={!p.ignitionOn || !p.cardInserted}>{t.ui.generate4h10mDriving}</button>
+        <button onClick={p.onGenerateWorkWeek} disabled={p.isMultiManning || p.ignitionOn}>{t.controls.generateWorkWeek}</button>
+        <button onClick={p.onOpenWorkWeekData}>{t.controls.openFromFile}</button>
+        <button onClick={p.onSaveCard1ToFile}>{t.controls.saveDataToFile}</button>
+        <button onClick={p.onShowCardData}>{t.controls.showCardData}</button>
+      </div>
+      <input ref={p.workWeekFileInputRef} type="file" accept=".txt" hidden onChange={p.onWorkWeekFileChange}/>
+      {p.printVehicleSettings}
+    </details>
+  </section>
 }

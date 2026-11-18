@@ -1433,6 +1433,7 @@ export default function App() {
         secondHistory,
         simulatedUtcTime,
         currentMenuPath,
+        vehicleActivities: activityHistory,
         cardActivities: printSlot && printCardId
           ? [
             ...(printDdd?.original.activities ?? []),
@@ -1527,7 +1528,7 @@ export default function App() {
     }
     setMenuComingSoonInfo({ id: `menu-coming-soon-${Date.now()}` })
     addEntry(t.actions.stiskOk, t.infoPanel.menuComingSoon)
-  }, [t, ignitionOn, wakeDisplayFromStandby, displayMode, currentSpeed, selectedItem, menusById, currentMenuPath, countries, spanishRegions, secondHistory, simulatedUtcTime, overrideWarningCode, drivingWithoutCardWarningActive, ignitionWarningActive, breakWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, cardInsertionState, cardWithdrawalState, printWizardState, menuCountryInputState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, openMenuCountryInput, confirmMenuLoadUnload, isPrintoutActive, printState, addEntry, getCardInsertionOkDetail])
+  }, [t, ignitionOn, wakeDisplayFromStandby, displayMode, currentSpeed, selectedItem, menusById, currentMenuPath, countries, spanishRegions, secondHistory, activityHistory, simulatedUtcTime, overrideWarningCode, drivingWithoutCardWarningActive, ignitionWarningActive, breakWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, cardInsertionState, cardWithdrawalState, printWizardState, menuCountryInputState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, openMenuCountryInput, confirmMenuLoadUnload, isPrintoutActive, printState, addEntry, getCardInsertionOkDetail])
 
   const handleBack = useCallback(() => {
     if (!ignitionOn) {
@@ -3308,7 +3309,18 @@ export default function App() {
           card1Inserted && card1Data?.cardNumber ? dddCards[card1Data.cardNumber]?.original.activities : null,
         )}
         eventLog={eventLog}
-        odometerKm={odometerKm}
+        vehicleDay={() => ({
+          profile: printVehicleProfile,
+          localOffsetMs: timeOffsetMs,
+          history: activityHistory,
+          seconds: secondHistory,
+          events: eventLog,
+          out: outModeEvents,
+          ferry: ferryTrainEvents,
+          places: recordedGpsLocations,
+          isCrew: isMultiManning,
+          resolveCard: (id) => dddCards[id]?.original,
+        })}
         vehicleProfile={printVehicleProfile}
         dailyDriverCard={(slot) => {
           const card = slot === 1 ? card1Data : card2Data

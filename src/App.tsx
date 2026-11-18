@@ -764,7 +764,6 @@ export default function App() {
     simulatedUtcTimeRef,
     setSimulatedUtcTime,
     currentSpeedRef,
-    odometerKmRef,
     leftActivityIdRef,
     rightActivityIdRef,
     minuteAccumulatorRef,
@@ -2051,7 +2050,6 @@ export default function App() {
       card1TemplateId: tid1,
       card2TemplateId: tid2,
       distanceFromStartKm: Math.max(0, odometerKmRef.current - ODOMETER_KM),
-      initialOdometerKm: odometerKmRef.current,
     })
 
     setActivityHistory((prev) => [...prev, ...activityEntries])

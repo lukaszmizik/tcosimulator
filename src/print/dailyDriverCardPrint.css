@@ -150,19 +150,8 @@
 }
 
 .vdiagram-print-band {
-  font-size: 15px;
+  font: 900 15px Doto, monospace;
   fill: currentColor;
-}
-
-.vdiagram-print-paper {
-  width: 26ch;
-  padding-inline: 1ch;
-  background: #fff;
-  font: 900 clamp(14px, 5.5vw, 21px) / 0.91 Doto, monospace;
-}
-
-.vdiagram-print-paper .daily-card-print-symbol {
-  font-size: 0.78em;
 }
 
 .vdiagram-axis,
@@ -220,10 +209,5 @@
     background: #fff;
     color: #000;
     font-size: 4.8mm;
-  }
-
-  .vdiagram-print-paper {
-    padding-inline: 1.75mm;
-    font-size: 3.68mm;
   }
 }

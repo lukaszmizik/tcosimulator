@@ -25,7 +25,6 @@ export type SecondActivitySnapshot = {
   driver1: ActivityKind
   driver2: ActivityKind
   speed: number
-  odometerKm?: number
   /** Karta ve šachtě v okamžiku vzorku. Podle ní zůstane činnost u karty i po prohození. */
   driver1CardId?: string | typeof NO_CARD
   driver2CardId?: string | typeof NO_CARD

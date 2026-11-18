@@ -20,7 +20,6 @@ export type BuildSimulated4h10mInput = {
   card1TemplateId: string | undefined
   card2TemplateId: string | undefined
   distanceFromStartKm: number
-  initialOdometerKm: number
 }
 
 export type BuildSimulated4h10mResult = {
@@ -41,7 +40,6 @@ export function buildSimulated4h10m(input: BuildSimulated4h10mInput): BuildSimul
     card1TemplateId,
     card2TemplateId,
     distanceFromStartKm,
-    initialOdometerKm,
   } = input
   const startMinute = Math.floor(startMs / 60000) * 60000
   const card1Id = card1Inserted && card1TemplateId ? card1TemplateId : NO_CARD
@@ -180,11 +178,11 @@ export function buildSimulated4h10m(input: BuildSimulated4h10mInput): BuildSimul
     const driver2Activity = isMultiManning && targetActivity === 'driving' ? 'availability' : 'none'
     if (targetActivity === 'otherWork') {
       simSpeed = stepSpeed(simSpeed, 0)
-      secondEntries.push({ timestampUtc, driver1: 'otherWork', driver2: 'none', speed: simSpeed, odometerKm: initialOdometerKm + totalDrivingDistance, driver1CardId: card1Id, driver2CardId: card2Id })
+      secondEntries.push({ timestampUtc, driver1: 'otherWork', driver2: 'none', speed: simSpeed, driver1CardId: card1Id, driver2CardId: card2Id })
     } else {
       simSpeed = stepSpeed(simSpeed, targetSpeed)
-      totalDrivingDistance += simSpeed / 3600
-      secondEntries.push({ timestampUtc, driver1: 'driving', driver2: driver2Activity, speed: simSpeed, odometerKm: initialOdometerKm + totalDrivingDistance, driver1CardId: card1Id, driver2CardId: card2Id })
+      secondEntries.push({ timestampUtc, driver1: 'driving', driver2: driver2Activity, speed: simSpeed, driver1CardId: card1Id, driver2CardId: card2Id })
+      totalDrivingDistance += (simSpeed / 3600) * 1
     }
   }
 

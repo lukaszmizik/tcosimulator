@@ -16,13 +16,6 @@ const BAND_HOURS = [0, 6.5, 12.5, 18.5, 24]
 const speedX = (speed: number) =>
   AXIS_X + Math.min(MAX_SPEED, Math.max(0, speed)) * (WIDTH - AXIS_X - 2) / MAX_SPEED
 
-function odometerLabel(sample: SecondActivitySnapshot | undefined): string {
-  const km = sample?.odometerKm
-  return km != null && Number.isFinite(km)
-    ? String(Math.trunc(km)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
-    : '---'
-}
-
 export function PrintVDiagramOverlay(props: {
   onClose: () => void
   t: Translations
@@ -62,42 +55,32 @@ export function PrintVDiagramOverlay(props: {
       previous = sample
     }
 
-    const { tachographGeneration, generationVersion, tachographManufacturer, dtcoNumber, unitGeneration } = VEHICLE_TECHNICAL_DATA
     const { rows, add, separator } = createPrintRows()
     separator()
     add(18, ' ', printDateUtc(simulatedUtcTime), ' ', printTimeUtc(simulatedUtcTime), ' (UTC)')
     separator(18)
-    add('         ', tachographGeneration, ' ', generationVersion)
+    add('         GEN2 v2')
     add(44, 'v', 18)
     separator(24)
-    add(24, ' ', profile.vin)
-    add('  ', profile.registrationNation, '  /', profile.registration)
-    add(profile.load ? (profile.load === 'passengers' ? 50 : 51) : ' ')
+    if (profile.vin) add(24, ' ', profile.vin)
+    if (profile.registration) add('  ', profile.registrationNation, ' /', profile.registration)
+    if (profile.load) add(profile.load === 'passengers' ? 50 : 51)
     separator(6)
-    const [brand, division, ...manufacturer] = tachographManufacturer.replace(/ GmbH$/, '').split(' ')
-    add(6, ' ', brand, ' ', division ?? '')
-    add('   ', manufacturer.join(' '))
-    add('  ', dtcoNumber)
-    add(unitGeneration.replace('GEN', 'GEN '))
+    add(6, ' ', VEHICLE_TECHNICAL_DATA.tachographManufacturer)
+    add('  ', VEHICLE_TECHNICAL_DATA.dtcoNumber)
+    add(VEHICLE_TECHNICAL_DATA.unitGeneration)
     separator(17)
     add('       ', printDateUtc(dayStart))
-    add(`${odometerLabel(samples[0])} -   ${odometerLabel(samples[samples.length - 1])} km`.padStart(24))
-    separator(44, 'v', 18)
+    separator()
 
     const footer = createPrintRows()
     footer.separator()
-    footer.add(17, ' ', '.'.repeat(22))
+    footer.add(2, ' ', '.'.repeat(20))
     return { rows, footer: footer.rows, paths: paths.map((path) => path.join(' ')) }
   })
 
   return (
-    <PrintPreview
-      title={t.ui.printVDiagramTitle}
-      closeLabel={t.printOverlay.close}
-      onClose={onClose}
-      ready={[6, 17, 18, 24, 44].every((id) => !!symbolMap?.[id])}
-      paperClassName="vdiagram-print-paper"
-    >
+    <PrintPreview title={t.ui.printVDiagramTitle} closeLabel={t.printOverlay.close} onClose={onClose} ready={!!symbolMap?.[18]}>
       <PrintRows rows={printout.rows} symbols={symbolMap} />
       {printout.paths.map((path, band) => (
         <SpeedBand key={band} path={path} band={band} title={t.ui.vDiagramTitle} />

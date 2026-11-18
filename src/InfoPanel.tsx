@@ -99,7 +99,10 @@ export function InfoPanel({ items, resetTrigger, symbolMap, collapsed = false, m
         resurfaced.length > 0 ||
         toAdd.length > 0 ||
         languageChanged ||
-        kept.some((p, i) => updated[i]?.message !== p.message || updated[i]?.title !== p.title || (updated[i]?.content != null) !== (p.content != null))
+        kept.some((item, index) => {
+          const next = updated[index]!
+          return next.message !== item.message || next.title !== item.title || next.content !== item.content
+        })
       if (!hasChanges && kept.length === prev.length) return prev
       return [...toAdd, ...resurfaced, ...updated.filter((item) => !resurfaced.includes(item))]
     })
@@ -567,7 +570,6 @@ export function useInfoPanelItems(props: {
     if (buffer.length > 0) {
       items.push({
         id: 'manual-entry-data',
-        activeOnly: true,
         type: 'info',
         message: t.infoPanel.manualEntryData,
         content: <ManualEntryBufferDisplay buffer={buffer} label={t.infoPanel.manualEntryData} />,

@@ -2,6 +2,10 @@
  * Jedna komponenta, která rendruje všechny výtiskové overlaye podle stavu z usePrintState.
  */
 
+import { useState } from 'react'
+import { PrintPreview, PrintRows } from '../components/overlays/PrintPreview'
+import { buildVehicleEventPrintRows } from './vehicleEventPrintRows'
+import type { FaultOrEvent } from '../TachoTypes'
 import './dailyDriverCardPrint.css'
 import { DailyDriverCardPrint } from '../components/overlays/DailyDriverCardPrint'
 import type { PrintVehicleProfile } from '../data/printVehicleProfile'
@@ -30,6 +34,7 @@ export type PrintOverlaysProps = {
   driver1ManualEntryBuffer: ManualEntrySegment[]
   slot1CardActivities?: readonly Driver1PrintCardActivity[]
   eventLog: EventLogEntry[]
+  vehicleEvents: readonly FaultOrEvent[]
   vehicleDay: () => VehicleDayPrintData
   vehicleProfile: PrintVehicleProfile
   dailyDriverCard: (slot: 1 | 2) => Omit<DailyCardPrintInput, 'selectedDayUtc' | 'isUtc'>
@@ -46,6 +51,7 @@ export function PrintOverlays({
   driver1ManualEntryBuffer,
   slot1CardActivities = [],
   eventLog,
+  vehicleEvents,
   vehicleDay,
   vehicleProfile,
   dailyDriverCard,
@@ -129,6 +135,26 @@ export function PrintOverlays({
         />
       )}
 
+      {printState.printVehicleEventsUtc !== null && (
+        <VehicleEventsPreview
+          input={() => ({
+            records: vehicleEvents,
+            profile: vehicleProfile,
+            card: card1Inserted && card1Data
+              ? dailyDriverCard(1).imported ?? (card1Data.templateId ? getCard1StoredData() : {
+                firstName: card1Data.name, surname: card1Data.surname, cardNumber: card1Data.cardNumber,
+              })
+              : null,
+            printedAtUtc: simulatedUtcTime,
+            localOffsetMs: vehicleDay().localOffsetMs,
+            isUtc: printState.printVehicleEventsUtc ?? true,
+          })}
+          symbols={symbolMap}
+          closeLabel={t.printOverlay.close}
+          onClose={printState.onCloseVehicleEvents}
+        />
+      )}
+
       <PrintSpeedVehicleOverlay
         open={printSpeedVehicleOpen}
         onClose={onCloseSpeedVehicle}
@@ -139,5 +165,19 @@ export function PrintOverlays({
         vehicleDataBlock={speedVehicleDataBlock}
       />
     </>
+  )
+}
+
+function VehicleEventsPreview({ input, symbols, closeLabel, onClose }: {
+  input: () => Parameters<typeof buildVehicleEventPrintRows>[0]
+  symbols: SymbolMap | null
+  closeLabel: string
+  onClose: () => void
+}) {
+  const [rows] = useState(() => buildVehicleEventPrintRows(input()))
+  return (
+    <PrintPreview title="Události a poruchy vozidla" closeLabel={closeLabel} onClose={onClose} ready={!!symbols?.[18]}>
+      <PrintRows rows={rows} symbols={symbols} />
+    </PrintPreview>
   )
 }

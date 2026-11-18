@@ -10,6 +10,7 @@ export type PrintWizardKeyAction = 'up' | 'down' | 'ok' | 'back'
 
 export type PrintWizardKeyEffects = {
   setCurrentMenuPath: (path: string[]) => void
+  openPrintVehicleEvents?: (isUtc: boolean) => void
   openPrintVDiagram: (dayUtc: number) => void
   openPrintDriverCard: (dayUtc: number, isUtc: boolean, slot: 1 | 2) => void
   openPrintVehicle24h: (dayUtc: number, isUtc: boolean) => void
@@ -23,6 +24,7 @@ export function applyPrintWizardKey(
   if (!prev) return null
   const driverSlot = prev.action === 'PRINT_24H_D1' ? 1 : prev.action === 'PRINT_24H_D2' ? 2 : null
   if (action === 'back') {
+    if (prev.action === 'PRINT_EVENT_V') return null
     if (prev.step === 'utc') return { ...prev, step: 'date' }
     return null
   }
@@ -41,6 +43,11 @@ export function applyPrintWizardKey(
     return { ...prev, utcYes: false }
   }
   if (action === 'ok') {
+    if (prev.action === 'PRINT_EVENT_V') {
+      effects.setCurrentMenuPath(prev.returnMenuPath)
+      effects.openPrintVehicleEvents?.(prev.utcYes)
+      return null
+    }
     if (prev.step === 'date') {
       const dayUtc = prev.availableDatesUtc[prev.dateIndex]
       if (dayUtc == null) return prev
@@ -90,6 +97,16 @@ export type PrintMenuActionResult =
 /** Vrátí obsluhu známé tiskové akce. Neznámá nebo nedokončená akce vrací null. */
 export function resolvePrintMenuAction(input: PrintMenuActionInput): PrintMenuActionResult | null {
   const { action, line2, requiresDate, requiresUtcConfirm, secondHistory, simulatedUtcTime, currentMenuPath } = input
+  if (action === 'PRINT_EVENT_V') {
+    return {
+      type: 'dateWizard',
+      state: {
+        action, step: 'utc', menuItemLine2: line2, utcYes: true,
+        availableDatesUtc: [], dateIndex: 0, returnMenuPath: [...currentMenuPath],
+        requiresUtcConfirm: true,
+      },
+    }
+  }
   if (requiresDate && ['PRINT_24H_D1', 'PRINT_24H_D2', 'PRINT_V_DIAGRAM', 'PRINT_24H_V'].includes(action)) {
     const dayStarts = new Set<number>()
     for (const s of secondHistory) {

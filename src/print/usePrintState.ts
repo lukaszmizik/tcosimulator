@@ -16,6 +16,9 @@ export type UsePrintStateReturn = {
   printVehicle24hOpen: boolean
   printVehicle24hSelectedDate: number | null
   printVehicle24hIsUtc: boolean
+  printVehicleEventsUtc: boolean | null
+  openPrintVehicleEvents: (isUtc: boolean) => void
+  onCloseVehicleEvents: () => void
   printSpeedVehicleOpen: boolean
   printStartedToastUntil: number | null
 
@@ -48,6 +51,7 @@ export function usePrintState(): UsePrintStateReturn {
   const [printVehicle24hSelectedDate, setPrintVehicle24hSelectedDate] = useState<number | null>(null)
   const [printVehicle24hIsUtc, setPrintVehicle24hIsUtc] = useState(true)
   const [printVehicle24hOpen, setPrintVehicle24hOpen] = useState(false)
+  const [printVehicleEventsUtc, setPrintVehicleEventsUtc] = useState<boolean | null>(null)
   const [printSpeedVehicleOpen, setPrintSpeedVehicleOpen] = useState(false)
   const [printStartedToastUntil, setPrintStartedToastUntil] = useState<number | null>(null)
   const printStartedToastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -94,6 +98,12 @@ export function usePrintState(): UsePrintStateReturn {
     showPrintStartedToast()
   }, [showPrintStartedToast])
 
+  const openPrintVehicleEvents = useCallback((isUtc: boolean) => {
+    setPrintVehicleEventsUtc(isUtc)
+    showPrintStartedToast()
+  }, [showPrintStartedToast])
+  const onCloseVehicleEvents = useCallback(() => setPrintVehicleEventsUtc(null), [])
+
   const onCloseDriver1 = useCallback(() => {
     setPrintDriver1Open(false)
     setPrintDriver1SelectedDate(null)
@@ -116,12 +126,16 @@ export function usePrintState(): UsePrintStateReturn {
     setPrintVehicle24hOpen(false)
     setPrintVehicle24hSelectedDate(null)
     setPrintSpeedVehicleOpen(false)
+    setPrintVehicleEventsUtc(null)
   }, [])
 
   const isPrintoutActive =
-    printDriver1Open || printVDiagramOpen || printVehicle24hOpen || printSpeedVehicleOpen
+    printVehicleEventsUtc !== null || printDriver1Open || printVDiagramOpen || printVehicle24hOpen || printSpeedVehicleOpen
 
   return {
+    printVehicleEventsUtc,
+    openPrintVehicleEvents,
+    onCloseVehicleEvents,
     printDriver1Open,
     printDriver1SelectedDate,
     printDriver1IsUtc,

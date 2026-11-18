@@ -1119,6 +1119,7 @@ export default function App() {
       setCurrentMenuPath,
       openPrintVDiagram: printState.openPrintVDiagram,
       openPrintDriverCard: printState.openPrintDriverCard,
+      openPrintVehicleEvents: printState.openPrintVehicleEvents,
       openPrintVehicle24h: printState.openPrintVehicle24h,
     }))
   }, [printState])
@@ -3307,6 +3308,7 @@ export default function App() {
           card1Inserted && card1Data?.cardNumber ? dddCards[card1Data.cardNumber]?.original.activities : null,
         )}
         eventLog={eventLog}
+        vehicleEvents={faultsAndEvents}
         vehicleDay={() => ({
           profile: printVehicleProfile,
           localOffsetMs: timeOffsetMs,

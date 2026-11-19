@@ -103,7 +103,7 @@ export function CardInsertionDisplay2(props: CardInsertionDisplay2Props) {
   }
 
   if (cs.phase === 'lastRemoval') {
-    const last = cs.lastWithdrawal ?? (cs.slot === 1 ? lastEjectionTimeBySlot[1] : lastEjectionTimeBySlot[2])
+    const last = cs.lastWithdrawal ?? cs.firstManualEntryStartUtc ?? (cs.slot === 1 ? lastEjectionTimeBySlot[1] : lastEjectionTimeBySlot[2])
     const shown = utcMsToSegment(last != null ? last + timeOffsetMs : localTime.getTime())
     const dateStr = `${String(shown.day).padStart(2, '0')}.${String(shown.month).padStart(2, '0')}.${shown.year}`
     const timeStrLast = `${String(shown.hour).padStart(2, '0')}:${String(shown.minute).padStart(2, '0')}`

@@ -5,7 +5,7 @@
 import type { CountryEntry } from './data/countriesLoader'
 import type { ActivityId, CardData, CardInsertionState, EditorActivityId, ManualEntrySegment } from './TachoTypes'
 import { ACTIVITY_SYMBOLS, MANUAL_ACTIVITIES, UNKNOWN_ACTIVITY_SYMBOL } from './TachoTypes'
-import { FIRST_INSERTION_OFFSET_MS } from './Constants'
+import { FIRST_INSERTION_OFFSET_MS, VIRTUAL_CARD_VALIDITY_DATES } from './Constants'
 
 const lcdOdometerFormat = new Intl.NumberFormat('cs-CZ', {
   minimumFractionDigits: 1,
@@ -68,13 +68,21 @@ export function createInitialCardInsertionState(
   cardData: CardData,
   simulatedUtcTime: number,
   countries: CountryEntry[],
-  options?: { skipReadyToDriveScreen?: boolean; initialCountryCode?: string; existingManualEntryBuffer?: ManualEntrySegment[] },
+  options?: { skipReadyToDriveScreen?: boolean; initialCountryCode?: string; existingManualEntryBuffer?: ManualEntrySegment[]; timeOffsetMs?: number },
 ): CardInsertionState {
   const firstInsertion = cardData.lastWithdrawal === null
   const showItsVdoQuestions = cardData.isFirstInsertion !== false
-  const utcMs = firstInsertion
-    ? simulatedUtcTime - FIRST_INSERTION_OFFSET_MS
-    : cardData.lastWithdrawal!
+  const offset = options?.timeOffsetMs ?? 0
+  const dayMs = 86_400_000
+  const currentLocalDay = Math.floor((simulatedUtcTime + offset) / dayMs)
+  const controlStartUtc = (currentLocalDay - 56) * dayMs - offset
+  const validityStartUtc = firstInsertion && cardData.templateId
+    ? Date.parse(VIRTUAL_CARD_VALIDITY_DATES[cardData.templateId].from) - offset
+    : undefined
+  const firstManualEntryStartUtc = validityStartUtc == null
+    ? undefined
+    : Math.max(validityStartUtc, controlStartUtc)
+  const utcMs = cardData.lastWithdrawal ?? firstManualEntryStartUtc ?? simulatedUtcTime - FIRST_INSERTION_OFFSET_MS
   const seg = utcMsToSegment(utcMs)
   const requestedCode = options?.initialCountryCode ? (ROUTE_TO_TACHOGRAPH_CODE[options.initialCountryCode] ?? options.initialCountryCode) : 'CZ'
   const countryIndex = Math.max(0, countries.findIndex((c) => c.code === requestedCode))
@@ -103,6 +111,8 @@ export function createInitialCardInsertionState(
     cardName: cardData.name,
     cardSurname: cardData.surname,
     lastWithdrawal: cardData.lastWithdrawal,
+    firstManualEntryStartUtc,
+    showFirstManualEntryBoundary: validityStartUtc != null && validityStartUtc < controlStartUtc,
     firstInsertion,
     selectingCountryForStamp: false,
     stampActivityId: null,

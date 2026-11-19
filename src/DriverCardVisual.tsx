@@ -5,6 +5,7 @@
  */
 
 import { useMemo } from 'react'
+import { VIRTUAL_CARD_VALIDITY_DATES } from './Constants'
 import type { CardData } from './TachoTypes'
 
 export type DriverCardVisualProps = {
@@ -40,17 +41,10 @@ function getBirthDateForCard(cardId: 'zmizik' | 'novak'): string {
   return `${String(day).padStart(2, '0')}.${String(month).padStart(2, '0')}.${year}`
 }
 
-/** Začátek a konec platnosti karty (platnost 5 let).
- *  Rok 2026 je prvním rokem platnosti a aktuální datum (2026) spadá dovnitř intervalu.
- *  Pro každou kartu je zvolen jiné (lépe „náhodné“) datum v roce 2026, ne 1.1.
- */
 function getValidityDatesForCard(cardId: 'zmizik' | 'novak'): { from: string; to: string } {
-  if (cardId === 'zmizik') {
-    // Karta Lukáš: platnost 28.01.2026 – 28.01.2031
-    return { from: '28.01.2026', to: '28.01.2031' }
-  }
-  // Karta Roman: platnost 06.02.2026 – 06.02.2031
-  return { from: '06.02.2026', to: '06.02.2031' }
+  const { from, to } = VIRTUAL_CARD_VALIDITY_DATES[cardId]
+  const format = (date: string) => date.split('-').reverse().join('.')
+  return { from: format(from), to: format(to) }
 }
 
 function shown(value: string | undefined, fallback: string): string {

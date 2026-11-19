@@ -10,6 +10,11 @@ export const IDLE_WARNING_MS = 30 * 1000
 /** Po 10 min nečinnosti se průvodce přeruší a karta se vysune. */
 export const IDLE_CRITICAL_MS = 10 * 60 * 1000
 export const FIRST_INSERTION_OFFSET_MS = (3 * 24 + 6) * 3600 * 1000 + 8 * 60 * 1000
+export const VIRTUAL_CARD_VALIDITY_DATES = {
+  zmizik: { from: '2026-01-28', to: '2031-01-28' },
+  novak: { from: '2026-02-06', to: '2031-02-06' },
+} as const
+
 export const MULTI_MANNING_ONE_HOUR_MS = 60 * 60 * 1000
 
 export const FALLBACK_COUNTRY_LIST: CountryEntry[] = [

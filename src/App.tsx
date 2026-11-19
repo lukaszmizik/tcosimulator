@@ -1902,13 +1902,13 @@ export default function App() {
       setCard1Inserted(true)
       setDriverCardInsertedAtUtc(simulatedUtcTimeRef.current)
       setDrivingWithoutCardWarningActive(false)
-      startOrQueueInsertion(createInitialCardInsertionState(1, cardData, simulatedUtcTime, countries, { skipReadyToDriveScreen: skipReadyToDrive, initialCountryCode: gpsCountry, existingManualEntryBuffer: templateId === CARD1_TEMPLATE_ID ? card1Manual : card2Manual }))
+      startOrQueueInsertion(createInitialCardInsertionState(1, cardData, simulatedUtcTime, countries, { skipReadyToDriveScreen: skipReadyToDrive, initialCountryCode: gpsCountry, timeOffsetMs, existingManualEntryBuffer: templateId === CARD1_TEMPLATE_ID ? card1Manual : card2Manual }))
     }
     if (slot === 2) {
       setCard2Data(cardData)
       setCard2Inserted(true)
       setCard2InsertedAt(Date.now())
-      startOrQueueInsertion(createInitialCardInsertionState(2, cardData, simulatedUtcTime, countries, { skipReadyToDriveScreen: skipReadyToDrive, initialCountryCode: gpsCountry, existingManualEntryBuffer: templateId === CARD1_TEMPLATE_ID ? card1Manual : card2Manual }))
+      startOrQueueInsertion(createInitialCardInsertionState(2, cardData, simulatedUtcTime, countries, { skipReadyToDriveScreen: skipReadyToDrive, initialCountryCode: gpsCountry, timeOffsetMs, existingManualEntryBuffer: templateId === CARD1_TEMPLATE_ID ? card1Manual : card2Manual }))
     }
     setDragOverSlot(null)
     setCardsOpen(false)

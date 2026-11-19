@@ -179,6 +179,10 @@ export type CardInsertionState = {
   /** Příjmení – ve fázích načítání (welcome, loading) se zobrazuje pouze toto. */
   cardSurname?: string
   lastWithdrawal: number | null
+  /** Výuková hranice doplnění při prvním použití virtuální karty. */
+  firstManualEntryStartUtc?: number
+  /** Zobrazit hranici kontrolního období na obrazovce posledního vyjmutí. */
+  showFirstManualEntryBoundary?: boolean
   firstInsertion: boolean
   selectingCountryForStamp: boolean
   stampActivityId: 'START_COUNTRY' | 'END_COUNTRY' | null

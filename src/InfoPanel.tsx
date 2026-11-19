@@ -555,7 +555,9 @@ export function useInfoPanelItems(props: {
   if (cardInsertionState && MANUAL_ENTRY_PHASES.includes(cardInsertionState.phase)) {
     const lastWithdraw =
       cardInsertionState.lastWithdrawal ??
-      (cardInsertionState.slot === 1 ? lastEjectionTimeBySlot[1] : lastEjectionTimeBySlot[2])
+      (cardInsertionState.firstManualEntryStartUtc == null
+        ? (cardInsertionState.slot === 1 ? lastEjectionTimeBySlot[1] : lastEjectionTimeBySlot[2])
+        : null)
     if (lastWithdraw != null) {
       items.push({
         id: 'last-withdrawal',

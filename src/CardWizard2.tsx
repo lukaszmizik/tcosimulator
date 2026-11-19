@@ -195,8 +195,7 @@ export function useCardWizard2(params: UseCardWizard2Params) {
           const progress = Math.min(1, elapsed / LOADING_MS)
           if (progress >= 1) {
             if (prev.supplementDeclined) return { ...prev, phase: 'readyToDrive', phaseStartTime: Date.now(), loadingProgress: 1, supplementDeclined: false }
-            /* Při opětovném vložení karty nejdřív obrazovka „Poslední vyjmutí“, pak decision1M. Při prvním vložení rovnou decision1M. */
-            if (prev.firstInsertion) return { ...prev, phase: 'decision1M', phaseStartTime: Date.now(), loadingProgress: 1 }
+            if (prev.firstInsertion && !prev.showFirstManualEntryBoundary) return { ...prev, phase: 'decision1M', phaseStartTime: Date.now(), loadingProgress: 1 }
             return { ...prev, phase: 'lastRemoval', phaseStartTime: Date.now(), loadingProgress: 1 }
           }
           return { ...prev, loadingProgress: progress }
@@ -324,9 +323,11 @@ export function useCardWizard2(params: UseCardWizard2Params) {
           }
           const offset = timeOffsetMsRef.current
           const insertionTimeFixed = floorToMinute(prev.cardInsertionTime)
-          const l1Utc = prev.lastWithdrawal != null
-            ? floorToMinute(prev.lastWithdrawal)
-            : segmentToMsUtc({ ...prev.segmentStart, activityId: 'REST' })
+          const l1Utc = floorToMinute(prev.lastWithdrawal ?? prev.firstManualEntryStartUtc ??
+            segmentToMsUtc({ ...prev.segmentStart, activityId: 'REST' }))
+          if (prev.firstManualEntryStartUtc != null && l1Utc >= insertionTimeFixed) {
+            return { ...prev, phase: 'country', phaseStartTime: Date.now(), insertionTimeFixed }
+          }
           const l1FromLastWithdrawal = utcMsToTachographSegment(l1Utc, offset)
           const segmentStartFixed = { day: l1FromLastWithdrawal.day, month: l1FromLastWithdrawal.month, year: l1FromLastWithdrawal.year, hour: l1FromLastWithdrawal.hour, minute: l1FromLastWithdrawal.minute }
           const l2Clamped = clampTachographSegment(

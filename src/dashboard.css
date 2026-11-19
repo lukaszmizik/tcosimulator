@@ -5,9 +5,6 @@ body { min-width: 0; background: #071018; }
 .faceplate-frame { width:100%; position:relative; filter:drop-shadow(0 15px 12px #0008); }
 .vdo-labels { color:#6e899b; font-size:10px; margin:15px 0 24px; letter-spacing:1.8px; }
 .vdo-realistic-panel #main-display { background:#17222b; }
-.control-panel-lang-left { width:218px; min-width:0; color:#9eb4c3; }
-.control-panel-lang-left .control-panel-label { color:#9eb4c3; }
-.control-panel-lang-select { width:100%; background:#12232f; color:#e3edf5; border:1px solid #314653; border-radius:8px; }
 .info-panels-wrapper--attached { position:relative; right:auto; top:auto; margin-top:18px; width:100%; }
 .info-panels-toggle--at-tacho { right:0; top:-26px; }
 .dashboard, .dashboard * { box-sizing:border-box; }
@@ -55,9 +52,6 @@ body { min-width: 0; background: #071018; }
 @media(max-width:1100px) {
  .app-root { flex-direction:column !important; align-items:center !important;padding:20px !important; }
  .device-column { order:0; }
- .control-panel-lang-left { order:1; width:100%;max-width:1040px;flex-direction:row !important;flex-wrap:wrap;align-items:start; }
- .control-panel-lang-left > * { max-width:100%; }
- .control-panel-lang-select { width:160px; }
 }
 @media(max-width:680px) {
  .app-root { padding:12px !important; }
@@ -78,9 +72,6 @@ body { min-width: 0; background: #071018; }
  .dashboard button:where(:not(.info-panels-wrapper button)) { min-height:44px; }
 }
 @media(prefers-reduced-motion:reduce) { .speed-needle { transition:none; } }
-/* Card previews have a fixed physical-card layout; reserve their full width. */
-@media(min-width:1101px) { .control-panel-lang-left { width:352px; } }
-.control-panel-lang-left .driver-cards-column { max-width:100%; }
 .mode-keys button { font-variant-emoji:text; }
 /* The legacy stylesheet loads from lazy components too. Keep the viewport fluid. */
 html body { min-width:0 !important; width:100%; }
@@ -113,18 +104,41 @@ html body { min-width:0 !important; width:100%; }
 .dashboard .speed-keys button { min-height:32px;min-width:36px; }
 .dashboard .speed-module input { margin-top:5px; }
 .dashboard .dash-extras { margin-top:9px;padding:8px 12px;font-size:12px; }
-/* Card edges stay reachable; opening the drawer never shifts the instrument. */
-.cards-drawer { position:fixed;left:0;top:64px;width:min(370px,calc(100vw - 42px));z-index:80;transform:translateX(-100%);transition:transform .18s ease; }
+/* Card and language tabs share the left gutter. Short viewports shorten the card tabs. */
+.app-root {
+  --side-tabs-top: 64px;
+  --side-tabs-gap: 8px;
+  --card-tab-height: clamp(52px, calc((100dvh - var(--side-tabs-top) - 176px) / 2), 102px);
+}
+
+.cards-drawer { position:fixed;left:0;top:var(--side-tabs-top);width:min(370px,calc(100vw - 42px));z-index:80;transform:translateX(-100%);transition:transform .18s ease; }
 .cards-drawer.is-open { transform:translateX(0); }
 .cards-drawer-content { padding:14px 10px;background:#101e29;border:1px solid #3a5362;border-left:0;border-radius:0 15px 15px 0;box-shadow:12px 8px 35px #0008;max-height:calc(100dvh - 80px);overflow:auto; }
 .cards-drawer-content[hidden] { display:none; }
-.cards-drawer .control-panel-lang-left { width:100%;display:flex;flex-direction:column !important; }
 .cards-drawer .driver-cards-column { width:100%; }
 .cards-drawer .card-prep { box-sizing:border-box;width:100%;overflow:hidden; }
 .cards-drawer-heading { display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;color:#d3e4ec; }
 .cards-drawer-heading button { width:36px;height:36px;border:1px solid #405462;border-radius:8px;background:#223542;color:white;font-size:24px;cursor:pointer; }
-.card-edge-tabs { position:absolute;left:100%;top:0;display:flex;flex-direction:column;gap:10px; }
-.card-edge-tabs button { width:38px;height:102px;border:1px solid #8b9ba6;border-left:0;border-radius:0 9px 9px 0;background:linear-gradient(100deg,#8193a4,#d5dfe5);color:#21374a;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;box-shadow:3px 4px 9px #0005;cursor:pointer; }
+.card-edge-tabs { position:absolute;left:100%;top:0;display:flex;flex-direction:column;gap:var(--side-tabs-gap); }
+.card-edge-tabs button, .language-edge-tabs button { width:38px;border:1px solid #8b9ba6;border-left:0;border-radius:0 9px 9px 0;background:linear-gradient(100deg,#8193a4,#d5dfe5);color:#21374a;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;box-shadow:3px 4px 9px #0005;cursor:pointer; }
+.card-edge-tabs button { height:var(--card-tab-height); }
+.language-edge-tabs {
+  position:fixed;
+  left:0;
+  top:calc(var(--side-tabs-top) + 2 * var(--card-tab-height) + var(--side-tabs-gap) + 12px);
+  z-index:78;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+.language-edge-tabs button { width:44px;min-height:44px;font-size:12px;font-weight:700; }
+.language-edge-tabs button[aria-pressed="true"] {
+  border-color:#8dd5fe;
+  background:linear-gradient(100deg,#174569,#24658d);
+  box-shadow:3px 4px 9px #0005, inset 3px 0 #8dd5fe;
+  color:#fff;
+}
+.language-edge-tabs button:focus-visible { outline:2px solid #86d5ff;outline-offset:1px; }
 .card-edge-tabs button:nth-child(2) { background:linear-gradient(100deg,#baa6a3,#e8d4d1); }
 .card-edge-tabs b { font-size:19px; }.card-edge-tabs small { font-size:8px;writing-mode:vertical-rl;letter-spacing:1px; }
 .cards-dismiss { position:fixed;inset:0;z-index:79;background:transparent;border:0; }
@@ -139,7 +153,7 @@ html body { min-width:0 !important; width:100%; }
  .app-root .device-column { display:flex;flex-direction:column;gap:9px; }
  .device-column .info-panels-wrapper--attached { position:static;max-height:none;overflow:visible;margin:0; }
  .device-column .vdo-labels { order:5; }
- .cards-drawer { top:26px; }
+ .app-root { --side-tabs-top:26px; }
  .cards-drawer-content { max-height:calc(100dvh - 42px); }
  .slot-tap-controls button { min-height:42px; }
  .dashboard button:where(:not(.info-panels-wrapper button)),.dashboard .clock-adjust button,.dashboard .clock-presets button,.dashboard .apply-time { min-height:44px; }
@@ -147,6 +161,10 @@ html body { min-width:0 !important; width:100%; }
  .dashboard .dash-clock b { font-size:18px;letter-spacing:0; }
  .dashboard .clock-presets { gap:3px; }
  .dashboard .clock-presets button { font-size:11px; }
+}
+@media(max-height:360px) {
+ .app-root { --side-tabs-top:8px; }
+ .cards-drawer-content { max-height:calc(100dvh - 24px); }
 }
 @media(prefers-reduced-motion:reduce) { .cards-drawer { transition:none; } }
 .app-root .dashboard { display:block; }

@@ -677,13 +677,6 @@ body {
   opacity: 0.85;
 }
 
-.control-panel-label {
-  font-size: 12px;
-  color: #aaa;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
 .cards-row {
   display: flex;
   gap: 16px;
@@ -1676,33 +1669,6 @@ body {
   margin: 0;
   font-size: 14px;
   line-height: 1.45;
-}
-
-/* Volba jazyka vlevo od simulátoru */
-.control-panel-lang-left {
-  padding-top: 8px;
-}
-
-/* Kompaktní rozbalovací volba jazyka – nezabírá místo důležitých prvků */
-.control-panel-lang-wrap {
-  flex: 0 0 auto;
-  min-width: 0;
-  margin-left: 12px;
-}
-.control-panel-lang-select {
-  padding: 4px 8px;
-  font-size: 12px;
-  border: 1px solid #555;
-  border-radius: 4px;
-  background: #3a3a3a;
-  color: #e0e0e0;
-  cursor: pointer;
-  min-width: 90px;
-}
-.control-panel-lang-select:hover,
-.control-panel-lang-select:focus {
-  border-color: #1976d2;
-  outline: none;
 }
 
 /* Panel logování akcí – bílé okno vpravo vedle simulátoru */

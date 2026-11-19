@@ -144,6 +144,12 @@ import {
 export type { ActivityId, CardData, CardInsertionState, CardWithdrawalState, TachoState, ManualActivityEntry, ManualEntrySegment, ActivityHistoryEntry, EventLogEntry }
 export { TEST_CARDS }
 
+const languageTabs = [
+  { language: 'cs', code: 'CZ', name: 'Čeština' },
+  { language: 'en', code: 'EN', name: 'English' },
+  { language: 'ru', code: 'RU', name: 'Русский' },
+] as const
+
 export default function App() {
   const { addEntry } = useActionLog()
   const { t, language, setLanguage } = useLanguage()
@@ -3013,6 +3019,21 @@ export default function App() {
     <div>
     <div className="app-root" data-lang={language} style={{ minHeight: '100vh', background: '#444', display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-start', margin: 0, padding: 24, gap: 24 }}>
       {cardsOpen && <button className="cards-dismiss" aria-label="Zavřít nabídku karet" onClick={() => {setCardsOpen(false);setCardPickerSlot(null)}}/>}
+      {!cardsOpen && (
+        <div className="language-edge-tabs" role="group" aria-label={t.ui.language}>
+          {languageTabs.map(tab => (
+            <button
+              key={tab.language}
+              type="button"
+              aria-pressed={language === tab.language}
+              onClick={() => setLanguage(tab.language)}
+            >
+              <span>{tab.code}</span>
+              <span className="sr-only" lang={tab.language}> {tab.name}</span>
+            </button>
+          ))}
+        </div>
+      )}
       <aside className={`cards-drawer ${cardsOpen ? 'is-open' : ''} ${cardDragging ? 'is-dragging' : ''}`} aria-label="Karty řidičů"
         onKeyDown={e => {if(e.key === 'Escape'){setCardsOpen(false);setCardPickerSlot(null)}}}
         onDragStartCapture={() => setCardDragging(true)} onDragEndCapture={() => {setCardDragging(false);setCardsOpen(false)}}>
@@ -3020,19 +3041,6 @@ export default function App() {
         <div className="cards-drawer-content" hidden={!cardsOpen}>
         <div className="cards-drawer-heading"><strong>{cardPickerSlot ? `Vložit kartu do slotu ${cardPickerSlot}` : 'Karty řidičů'}</strong><button onClick={() => {setCardsOpen(false);setCardPickerSlot(null)}} aria-label="Zavřít karty">×</button></div>
         {!(ignitionOn || displayAwakeFromStandby) && <p className="cards-hint">Nejprve zapni zapalování tlačítkem START.</p>}
-      <div className="control-panel-lang-left" style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
-        <label htmlFor="lang-select" className="control-panel-label">{t.ui.language}</label>
-        <select
-          id="lang-select"
-          className="control-panel-lang-select"
-          value={language}
-          onChange={(e) => setLanguage(e.target.value as 'cs' | 'en' | 'ru')}
-          title={t.ui.selectLanguageTitle}
-        >
-          <option value="cs">Čeština</option>
-          <option value="en">English</option>
-          <option value="ru">Русский</option>
-        </select>
         <div className="driver-cards-column" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {([0, 1] as const).map((index) => {
             const prepared = cardPrep[index]
@@ -3109,7 +3117,6 @@ export default function App() {
           })}
           {dddInsertMessage && <p className="ddd-insert-message" role="alert">{dddInsertMessage}</p>}
         </div>
-      </div>
         </div>
       </aside>
       <div className="device-column">

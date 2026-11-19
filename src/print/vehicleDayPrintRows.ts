@@ -1,8 +1,9 @@
 import { VEHICLE_TECHNICAL_DATA } from '../data/vehicle_technical_data'
 import { getCard1StoredData, getCard2StoredData } from '../data/card_stored_data'
 import type { PrintVehicleProfile } from '../data/printVehicleProfile'
+import { dayKilometresForPrint } from '../dayOdometer'
 import {
-  NO_CARD, type ActivityHistoryEntry, type ActivityKind, type EventLogEntry,
+  NO_CARD, type ActivityHistoryEntry, type ActivityKind, type DayOdometerRecord, type EventLogEntry,
   type FerryTrainEvent, type OutModeEvent, type RecordedGpsLocation, type SecondActivitySnapshot,
 } from '../TachoTypes'
 import { createPrintRows, duration, printDateUtc, printTimeUtc } from './driverCardPrintRows'
@@ -20,6 +21,46 @@ export type VehiclePrintCard = {
   dateOfExpiry?: string
 }
 
+const cardGenerations = ['GEN1', 'GEN2', 'GEN2 v2'] as const
+export type VehicleCardGeneration = (typeof cardGenerations)[number]
+export type VehicleDayHolder = {
+  kind: 'driver' | 'company' | 'control' | 'workshop'
+  surname?: string
+  firstName?: string
+  cardNumber?: string
+  issuingCountry?: string
+  dateOfExpiry?: string
+  generation?: VehicleCardGeneration
+}
+
+const holderSymbols: Record<VehicleDayHolder['kind'], number> = {
+  driver: 2, company: 3, control: 4, workshop: 5,
+}
+
+/** Údaje bloku [3] z karty vložené v okamžiku tisku. Neznámá generace se nepřebírá. */
+export function vehiclePrintHolder(
+  kind: VehicleDayHolder['kind'],
+  source: {
+    surname?: string
+    firstName?: string
+    cardNumber?: string
+    issuingCountry?: string
+    dateOfExpiry?: string
+    generation?: string
+  },
+): VehicleDayHolder {
+  const generation = cardGenerations.find((item) => item === source.generation)
+  return {
+    kind,
+    ...(source.surname ? { surname: source.surname } : {}),
+    ...(source.firstName ? { firstName: source.firstName } : {}),
+    ...(source.cardNumber ? { cardNumber: source.cardNumber } : {}),
+    ...(source.issuingCountry ? { issuingCountry: source.issuingCountry } : {}),
+    ...(source.dateOfExpiry ? { dateOfExpiry: source.dateOfExpiry } : {}),
+    ...(generation ? { generation } : {}),
+  }
+}
+
 export type VehicleDayPrintData = {
   profile: PrintVehicleProfile
   localOffsetMs: number
@@ -31,6 +72,10 @@ export type VehicleDayPrintData = {
   places: readonly RecordedGpsLocation[]
   isCrew: boolean
   resolveCard: (id: string) => VehiclePrintCard | undefined
+  /** Karty vložené při vytvoření výtisku, šachta 1 a potom šachta 2. Prázdná šachta se vynechá. */
+  insertedHolders: readonly VehicleDayHolder[]
+  /** Denní stavy tachometru. Den bez záznamu se v bloku [9] tiskne jen jako datum. */
+  dayOdometers: readonly DayOdometerRecord[]
 }
 
 type Segment = {
@@ -116,6 +161,8 @@ export function buildVehicleDayPrintRows(input: VehicleDayPrintData & {
   separator(18)
   add('         GEN2 v2')
   add('24h', 24, 18, ...(isUtc ? [] : [17]))
+  // Blok [3] a případný [3a]: jen karty skutečně vložené při tisku, před identifikací vozidla.
+  for (const holder of input.insertedHolders) addInsertedHolder(holder)
   separator(24)
   if (profile.vin) add(24, ' ', profile.vin)
   if (profile.registration) add('  ', profile.registrationNation, ' /', profile.registration)
@@ -130,8 +177,52 @@ export function buildVehicleDayPrintRows(input: VehicleDayPrintData & {
   add(5, ' ', technical.lastCalibration.serviceName)
   add(5, 14, ' ', technical.lastCalibration.workshopCardId)
   add(5, ' ', technical.lastCalibration.date)
+  // Blok [7]: poslední kontrola, jen pokud už v čase tisku nastala. Druh (22) = stažení dat z tachografu.
+  if (technical.lastControl.atUtc <= printedAtUtc) {
+    const controlOperation = { vuDownload: 22 } as const
+    separator(4)
+    add(4, 14, ' ', technical.lastControl.controlCardId)
+    add(4, ' ', printDateUtc(technical.lastControl.atUtc + offset), ' ', stamp(technical.lastControl.atUtc),
+      ' ', controlOperation[technical.lastControl.operation])
+  }
   separator(17)
   add('       ', printDateUtc(from))
+  addDayKilometres()
+
+  function addDayKilometres() {
+    const reading = dayKilometresForPrint(input.dayOdometers, from, printedAtUtc)
+    if (!reading) return
+    const km = (value: number) => `${String(Math.trunc(value)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} km`
+    if (reading.startIsMidnight && reading.endIsEndOfDay) {
+      add('  ', km(reading.kmAtStart), '  ', km(reading.kmAtEnd))
+      return
+    }
+    const startLabel = reading.startIsMidnight ? '00:00' : stamp(reading.startAtUtc)
+    const endLabel = reading.endIsEndOfDay ? '23:59' : stamp(reading.endAtUtc)
+    add('  ', startLabel, '  ', km(reading.kmAtStart))
+    add('  ', endLabel, '  ', km(reading.kmAtEnd))
+  }
+
+  function addInsertedHolder(holder: VehicleDayHolder) {
+    const role = holderSymbols[holder.kind]
+    separator(role)
+    if (holder.surname) add(role, ' ', holder.surname)
+    if (holder.firstName) add('  ', holder.firstName)
+    if (holder.cardNumber) {
+      add(14, ' ', holder.issuingCountry ? `${holder.issuingCountry} /` : '', holder.cardNumber)
+    }
+    const expiry = holder.dateOfExpiry
+    const generation = holder.generation
+    if (expiry && generation) {
+      const combined = `  ${expiry} - ${generation}`
+      if ([...combined.normalize('NFC')].length <= 24) add(combined)
+      else {
+        add('  ', expiry)
+        add('  ', generation)
+      }
+    } else if (expiry) add('  ', expiry)
+    else if (generation) add('  ', generation)
+  }
 
   function cardHeader(id: string | undefined) {
     if (!id) {

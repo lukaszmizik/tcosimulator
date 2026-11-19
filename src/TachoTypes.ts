@@ -72,6 +72,27 @@ export type EventLogEntry = {
   duringIncompleteManualEntry?: boolean
 }
 
+/** Denní stav tachometru pro blok [9]. Nejde o vzorek každých 100 ms. */
+export type DayOdometerRecord = {
+  /** Půlnoc UTC dne, ke kterému záznam patří. */
+  dayStartUtc: number
+  /** Okamžik, od kterého je počáteční stav dne známý. */
+  startAtUtc: number
+  kmAtStart: number
+  /** Poslední okamžik, pro který platí kmAtLast. */
+  lastAtUtc: number
+  kmAtLast: number
+  /** Den byl uzavřen přesně o následující půlnoci UTC. */
+  closedAtMidnight: boolean
+  /**
+   * Počáteční stav je syntetická výchozí hodnota prvního dne simulace
+   * a startAtUtc není půlnoc. Nesmí se tisknout jako naměřená hodnota v 00:00.
+   */
+  syntheticStart: boolean
+  /** Skok zpět znemožnil jednoznačně určit stav tohoto dne. */
+  unavailable: boolean
+}
+
 export type TachoState = {
   targetSpeed: number
   currentSpeed: number

@@ -33,6 +33,8 @@ type UseDrivingIntervalParams = {
   targetSpeedRef: MutableRefObject<number>
   currentSpeedRef: MutableRefObject<number>
   odometerKmRef: MutableRefObject<number>
+  /** Zapíše už spočítaný přírůstek kilometrů do denní evidence. Počitadlo nemění. */
+  noteDayKmRef: MutableRefObject<(atUtc: number, deltaKm: number) => void>
   virtualLocationRef: MutableRefObject<VirtualRoutePoint | null>
   trackOverspeed: (speed: number, atUtc: number, elapsedMs: number) => void
   simulatedUtcTimeRef: MutableRefObject<number>
@@ -70,6 +72,7 @@ export function useDrivingInterval(params: UseDrivingIntervalParams) {
     targetSpeedRef,
     currentSpeedRef,
     odometerKmRef,
+    noteDayKmRef,
     virtualLocationRef,
     trackOverspeed,
     simulatedUtcTimeRef,
@@ -112,6 +115,7 @@ export function useDrivingInterval(params: UseDrivingIntervalParams) {
       const ignition = ignitionOnRef.current
       const target = targetSpeedRef.current
       let curr = currentSpeedRef.current
+      let deltaKm = 0
       if (!ignition) {
         curr = Math.max(0, curr - (ACCEL_KMH_PER_SEC * SIM_DT_MS) / 1000)
         currentSpeedRef.current = curr
@@ -129,12 +133,13 @@ export function useDrivingInterval(params: UseDrivingIntervalParams) {
         currentSpeedRef.current = curr
         /** Při rychlosti pod prahem považuj za zastavené → spustí setDrivingMode(false) a přepne na REST pro L1 vpravo */
         setCurrentSpeed(curr <= SPEED_STOPPED_THRESHOLD_KMH ? 0 : curr)
-        const deltaKm = (avgSpeed * SIM_DT_MS) / 3600000
+        deltaKm = (avgSpeed * SIM_DT_MS) / 3600000
         odometerKmRef.current += deltaKm
         setOdometerKm((prev) => prev + deltaKm)
         const distanceFromStartKm = Math.max(0, odometerKmRef.current - ODOMETER_KM)
         virtualLocationRef.current = getVirtualLocationForDistance(distanceFromStartKm)
       }
+      noteDayKmRef.current(simulatedUtcTimeRef.current, deltaKm)
 
       /** Rychlost pod prahem = v klidu → použij manuální aktivitu (REST), aby L1 vpravo správně odečítal přestávku */
       const isDriving = curr > SPEED_STOPPED_THRESHOLD_KMH

@@ -33,6 +33,12 @@ export type VehicleTechnicalData = {
     /** Datum kalibrace */
     date: string
   }
+  /** Poslední kontrola. Číslo karty má 16 znaků: 14 znaků těla, index náhrady a index obnovy. */
+  lastControl: {
+    atUtc: number
+    controlCardId: string
+    operation: 'vuDownload'
+  }
 }
 
 /** Technická data vozidla a tachografu – natvrdo */
@@ -50,5 +56,10 @@ export const VEHICLE_TECHNICAL_DATA: VehicleTechnicalData = {
     serviceName: 'Servis tachografů Praha s.r.o.',
     workshopCardId: 'CZE99887766554433',
     date: '15.03.2024',
+  },
+  lastControl: {
+    atUtc: Date.UTC(2026, 9, 15, 10, 30),
+    controlCardId: 'CZ00000000CTRL01',
+    operation: 'vuDownload',
   },
 }

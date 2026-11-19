@@ -16,6 +16,7 @@ import type {
   ActivityId,
   ActivityDurationsMs,
   ActivityHistoryEntry,
+  DayOdometerRecord,
   SecondActivitySnapshot,
   FaultOrEvent,
   EventLogEntry,
@@ -52,6 +53,14 @@ import {
 } from './TachoTypes'
 import { DRIVING_SYMBOL, segmentToMsUtc } from './CardLogic'
 import { activitiesForApplyTime, clockAfterApplyTime, insertedCardId, planApplyTimeJump } from './applyTimeJump'
+import {
+  applyForwardDistance,
+  applySecondDistances,
+  noteBackwardJump,
+  noteLiveDistance,
+  openSyntheticDay,
+  resetDayOdometers,
+} from './dayOdometer'
 import type { VirtualCardDecisions } from './virtualCardConsents'
 import { useCardWizard2 } from './CardWizard2'
 import { useActionLog } from './ActionLogContext'
@@ -113,6 +122,7 @@ import { useLanguage } from './translations'
 import { ControlPanel } from './ControlPanel'
 import type { TrainingProfile } from './VirtualCardNameSettings'
 import { printCardHolder, printDateUtc } from './print/driverCardPrintRows'
+import { vehiclePrintHolder } from './print/vehicleDayPrintRows'
 import { VirtualCardNameSettings, loadVirtualCardNames, virtualCardTemplate } from './VirtualCardNameSettings'
 import { PrintVehicleSettings } from './components/PrintVehicleSettings'
 import { loadPrintVehicleProfile } from './data/printVehicleProfile'
@@ -829,6 +839,14 @@ export default function App() {
   const virtualLocationRef = useRef<VirtualRoutePoint | null>(null)
   const odometerKmRef = useRef(odometerKm)
   odometerKmRef.current = odometerKm
+  const dayOdometersRef = useRef<DayOdometerRecord[]>([])
+  if (dayOdometersRef.current.length === 0) {
+    dayOdometersRef.current = [openSyntheticDay(simulatedUtcTime, odometerKm)]
+  }
+  const noteDayKmRef = useRef<(atUtc: number, deltaKm: number) => void>(() => {})
+  noteDayKmRef.current = (atUtc, deltaKm) => {
+    noteLiveDistance(dayOdometersRef.current, atUtc, deltaKm)
+  }
 
   useSimulationSecondClock({
     simulatedUtcTimeRef,
@@ -1158,6 +1176,7 @@ export default function App() {
     targetSpeedRef,
     currentSpeedRef,
     odometerKmRef,
+    noteDayKmRef,
     virtualLocationRef,
     trackOverspeed,
     simulatedUtcTimeRef,
@@ -1967,8 +1986,11 @@ export default function App() {
     const shift = clockAfterApplyTime(simulatedUtcTime, timeOffsetMs, targetMsUtc)
     const { deltaMs } = shift
 
-    // Skok zpět – jen přenastavíme offset, nic negenerujeme
+    // Skok zpět – jen přenastavíme offset. UTC se nevrací, tachometr se do minulosti nezapisuje.
     if (deltaMs <= 0) {
+      if (shift.nextSimulatedUtcMs < simulatedUtcTime) {
+        noteBackwardJump(dayOdometersRef.current, shift.nextSimulatedUtcMs)
+      }
       lastPanelAdjustmentMsRef.current = 0
       setTimeOffsetMs(shift.nextTimeOffsetMs)
       return
@@ -2042,6 +2064,9 @@ export default function App() {
       // Ujetá vzdálenost za přeskočený čas (pokud byla rychlost > 0)
       if (isDrivingNow && driverForJump) {
         const distanceDeltaKm = (speedNow * deltaMinutes) / 60 // v km
+        applyForwardDistance(
+          dayOdometersRef.current, simulatedUtcTime, shift.nextSimulatedUtcMs, distanceDeltaKm, odometerKmRef.current,
+        )
         odometerKmRef.current += distanceDeltaKm
         setOdometerKm((prev) => prev + distanceDeltaKm)
         const distanceFromStartKm = Math.max(0, odometerKmRef.current - ODOMETER_KM)
@@ -2059,29 +2084,34 @@ export default function App() {
           if (d >= DRIVING_LIMIT_430_MS && !breakWarning430DismissedRef.current) setBreakWarningActive('430')
           else if (d >= DRIVING_LIMIT_415_MS && !breakWarning415DismissedRef.current) setBreakWarningActive('415')
         }
-      } else if (restDriver) {
-        restSinceLastBreakMsByDriverRef.current[restDriver] += deltaMs
-        const rest = restSinceLastBreakMsByDriverRef.current[restDriver]
-        const splitRef = splitFirstPartTakenByDriverRef.current[restDriver]
-        if (rest >= REST_RESET_MS) {
-          drivingSinceLastBreakMsByDriverRef.current[restDriver] = 0
-          restSinceLastBreakMsByDriverRef.current[restDriver] = 0
-          splitFirstPartTakenByDriverRef.current[restDriver] = false
-          setSplitFirstPartTakenByDriver((p) => ({ ...p, [restDriver]: false }))
-          if (restDriver === 1) {
-            breakWarning415DismissedRef.current = false
-            breakWarning430DismissedRef.current = false
-            setBreakWarningActive(null)
-          }
-        } else if (splitRef && rest >= SPLIT_REST_SECOND_MS) {
-          drivingSinceLastBreakMsByDriverRef.current[restDriver] = 0
-          restSinceLastBreakMsByDriverRef.current[restDriver] = 0
-          splitFirstPartTakenByDriverRef.current[restDriver] = false
-          setSplitFirstPartTakenByDriver((p) => ({ ...p, [restDriver]: false }))
-          if (restDriver === 1) {
-            breakWarning415DismissedRef.current = false
-            breakWarning430DismissedRef.current = false
-            setBreakWarningActive(null)
+      } else {
+        applyForwardDistance(
+          dayOdometersRef.current, simulatedUtcTime, shift.nextSimulatedUtcMs, 0, odometerKmRef.current,
+        )
+        if (restDriver) {
+          restSinceLastBreakMsByDriverRef.current[restDriver] += deltaMs
+          const rest = restSinceLastBreakMsByDriverRef.current[restDriver]
+          const splitRef = splitFirstPartTakenByDriverRef.current[restDriver]
+          if (rest >= REST_RESET_MS) {
+            drivingSinceLastBreakMsByDriverRef.current[restDriver] = 0
+            restSinceLastBreakMsByDriverRef.current[restDriver] = 0
+            splitFirstPartTakenByDriverRef.current[restDriver] = false
+            setSplitFirstPartTakenByDriver((p) => ({ ...p, [restDriver]: false }))
+            if (restDriver === 1) {
+              breakWarning415DismissedRef.current = false
+              breakWarning430DismissedRef.current = false
+              setBreakWarningActive(null)
+            }
+          } else if (splitRef && rest >= SPLIT_REST_SECOND_MS) {
+            drivingSinceLastBreakMsByDriverRef.current[restDriver] = 0
+            restSinceLastBreakMsByDriverRef.current[restDriver] = 0
+            splitFirstPartTakenByDriverRef.current[restDriver] = false
+            setSplitFirstPartTakenByDriver((p) => ({ ...p, [restDriver]: false }))
+            if (restDriver === 1) {
+              breakWarning415DismissedRef.current = false
+              breakWarning430DismissedRef.current = false
+              setBreakWarningActive(null)
+            }
           }
         }
       }
@@ -2212,7 +2242,9 @@ export default function App() {
     setRestSinceLastBreakMsByDriver((p) => ({ ...p, 1: 0 }))
 
     trackOverspeed(0, simulatedUtcTimeRef.current, 0)
-    setSimulatedUtcTime(startMs + SIMULATE_4H10M_MS)
+    const simulatedEndMs = startMs + SIMULATE_4H10M_MS
+    simulatedUtcTimeRef.current = simulatedEndMs
+    setSimulatedUtcTime(simulatedEndMs)
     setTargetSpeed(0)
     setCurrentSpeed(0)
     setIgnitionOn(true)
@@ -2220,6 +2252,9 @@ export default function App() {
     targetSpeedRef.current = 0
     currentSpeedRef.current = 0
 
+    applySecondDistances(
+      dayOdometersRef.current, secondEntries, totalDrivingDistance, odometerKmRef.current, simulatedEndMs,
+    )
     const newOdometer = odometerKmRef.current + totalDrivingDistance
     odometerKmRef.current = newOdometer
     setOdometerKm((prev) => prev + totalDrivingDistance)
@@ -2469,6 +2504,8 @@ export default function App() {
     setOverrideWarningCode(null)
     overspeedRunRef.current = null
     const now = Date.now()
+    simulatedUtcTimeRef.current = now
+    dayOdometersRef.current = resetDayOdometers(now, odometerKmRef.current)
     setSimulatedUtcTime(now)
     setPanelDateTime(new Date(now))
     setTimeOffsetMs(0)
@@ -3473,6 +3510,15 @@ export default function App() {
           ferry: ferryTrainEvents,
           places: recordedGpsLocations,
           isCrew: isMultiManning,
+          insertedHolders: [
+            card1Inserted && printCard1Data
+              ? vehiclePrintHolder('driver', printCardHolder(printCard1Data, insertedSlot1?.original))
+              : null,
+            card2Inserted && printCard2Data
+              ? vehiclePrintHolder('driver', printCardHolder(printCard2Data, insertedSlot2?.original))
+              : null,
+          ].filter((holder) => holder != null),
+          dayOdometers: dayOdometersRef.current,
           resolveCard: (id) => id === 'zmizik' || id === 'novak'
             ? printCardHolder({ ...virtualCardTemplate(id, virtualCardNames), templateId: id, trainingExpiryUtc: expiryByCard[id] })
             : dddCards[id]?.original,

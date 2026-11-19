@@ -52,7 +52,7 @@ import {
 } from './TachoTypes'
 import { DRIVING_SYMBOL, segmentToMsUtc } from './CardLogic'
 import { activitiesForApplyTime, clockAfterApplyTime, insertedCardId, planApplyTimeJump } from './applyTimeJump'
-import { loadVirtualCardConsents, saveVirtualCardConsents } from './virtualCardConsents'
+import type { VirtualCardDecisions } from './virtualCardConsents'
 import { useCardWizard2 } from './CardWizard2'
 import { useActionLog } from './ActionLogContext'
 import * as WorkShift from './WorkShift'
@@ -89,7 +89,6 @@ import {
   saveTachographOutModeEvents,
   loadTachographRecordedGpsLocations,
   saveTachographRecordedGpsLocations,
-  loadTachographCardActivityHistoryByTemplateId,
 } from './data/tachograph_write_data'
 import { generateRandomWorkWeek } from './MockDataGenerator'
 import { workWeekToTxtString, simulatorToGraphData } from './workWeekExportTxt'
@@ -230,7 +229,7 @@ export default function App() {
   const [targetSpeed, setTargetSpeed] = useState(0)
   const [currentSpeed, setCurrentSpeed] = useState(0)
   const [odometerKm, setOdometerKm] = useState(ODOMETER_KM)
-  const [ignitionOn, setIgnitionOn] = useState(true)
+  const [ignitionOn, setIgnitionOn] = useState(false)
   const [ignitionWarningActive, setIgnitionWarningActive] = useState(false)
   const ignitionWarningDismissedRef = useRef(false)
   /** Probuzení displeje ze Standby – libovolné tlačítko rozsvítí displej, žádná další akce. */
@@ -297,7 +296,7 @@ export default function App() {
   // Původní události tachografu (tachoEvents) aktuálně nevyužíváme – ponecháno pro budoucí rozšíření
   /** Sekundový tracker aktivit (R1, R2, rychlost) – pro detailní historii. */
   const [secondHistory, setSecondHistory] = useState<SecondActivitySnapshot[]>([])
-  /** Historie aktivit po minutách – perzistentní log. */
+  /** Historie aktivit po minutách v aktuální relaci. */
   const [activityHistory, setActivityHistory] = useState<ActivityHistoryEntry[]>(() => loadTachographActivityHistory())
   /** Varování / chyby (např. jízda bez karty). */
   const [faultsAndEvents, setFaultsAndEvents] = useState<FaultOrEvent[]>(() => loadTachographFaultsAndEvents())
@@ -347,12 +346,9 @@ export default function App() {
   /** Univerzální průvodce výtiskem (requiresDate, requiresUtcConfirm). */
   const [printWizardState, setPrintWizardState] = useState<PrintWizardState | null>(null)
   /** Data z karty – VDO counter čerpá z karty; bez karty z paměti tachografu (activityHistory) */
-  const [cardActivityHistoryByTemplateId, setCardActivityHistoryByTemplateId] = useState<Record<string, ActivityHistoryEntry[]>>(() => loadTachographCardActivityHistoryByTemplateId())
-  /** Persistence isFirstInsertion, itsConsent, vdoConsent pro karty řidičů. */
-  const [driverCardStateByTemplateId, setDriverCardStateByTemplateId] = useState(loadVirtualCardConsents)
-  useEffect(() => {
-    saveVirtualCardConsents(driverCardStateByTemplateId)
-  }, [driverCardStateByTemplateId])
+  const [cardActivityHistoryByTemplateId, setCardActivityHistoryByTemplateId] = useState<Record<string, ActivityHistoryEntry[]>>({})
+  /** Rozhodnutí řidičů platná do obnovení stránky. */
+  const [driverCardStateByTemplateId, setDriverCardStateByTemplateId] = useState<VirtualCardDecisions>({})
   /** Uložené 1M záznamy pro řidiče 1 (pro výtisk) – uloží se při dokončení průvodce. */
   const [card1Manual, setDriver1ManualEntryBuffer] = useState<ManualEntrySegment[]>(() => loadCard1ManualEntryBuffer())
   /** Uložené 1M záznamy pro řidiče 2 (pro výtisk). */
@@ -364,7 +360,6 @@ export default function App() {
     const timer = window.setTimeout(() => setExpiryNote(null), 3000)
     return () => window.clearTimeout(timer)
   }, [expiryNote])
-  const [preparedTrainingCards, setPreparedTrainingCards] = useState<Partial<Record<'zmizik' | 'novak', true>>>({})
   const driver1ManualEntryBuffer = card1Data?.templateId === CARD2_TEMPLATE_ID ? card2Manual : card1Manual
   const driver2ManualEntryBuffer = card2Data?.templateId === CARD1_TEMPLATE_ID ? card1Manual : card2Manual
   /** Stav a logika výtisků – overlaye, otevření/zavření, toast. */
@@ -1898,8 +1893,6 @@ export default function App() {
       template,
       card1StoredLastWithdrawal: loadCard1LastWithdrawal(),
       card2StoredLastWithdrawal: loadCard2LastWithdrawal(),
-      now: new Date(simulatedUtcTime),
-      prepared: preparedTrainingCards[templateId],
       driverState: (templateId && driverCardStateByTemplateId[templateId]) ?? undefined,
     })
     const skipReadyToDrive = !ignitionOn && displayAwakeFromStandby
@@ -1920,7 +1913,7 @@ export default function App() {
     setDragOverSlot(null)
     setCardsOpen(false)
     setCardPickerSlot(null)
-  }, [ignitionOn, displayAwakeFromStandby, simulatedUtcTime, timeOffsetMs, countries, card1Data, card2Data, driverCardStateByTemplateId, preparedTrainingCards, card1Manual, card2Manual, addEntry, startOrQueueInsertion, virtualLocation, virtualCardNames, expiryByCard])
+  }, [ignitionOn, displayAwakeFromStandby, simulatedUtcTime, timeOffsetMs, countries, card1Data, card2Data, driverCardStateByTemplateId, card1Manual, card2Manual, addEntry, startOrQueueInsertion, virtualLocation, virtualCardNames, expiryByCard])
 
   const handleSlotDrop = (e: React.DragEvent, slot: 1 | 2) => {
     e.preventDefault()
@@ -2276,7 +2269,6 @@ export default function App() {
       if (withdrawal == null) clearCard2LastWithdrawal()
       else saveCard2LastWithdrawal(withdrawal)
     }
-    setPreparedTrainingCards(prev => ({ ...prev, [id]: true }))
   }
 
   const handleGenerateWorkWeek = useCallback(() => {
@@ -2445,7 +2437,6 @@ export default function App() {
     setDriverCardStateByTemplateId({})
     setExpiryByCard({})
     setExpiryNote(null)
-    setPreparedTrainingCards({})
     setDriver1ManualEntryBuffer([])
     setDriver2ManualEntryBuffer([])
     setWorkWeekGraphData(null)

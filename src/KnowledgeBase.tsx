@@ -1,7 +1,7 @@
 import { useId, useRef, useState } from 'react'
 import type { SymbolMap } from './TachoTypes'
 import type { SupportedLanguage } from './translations/types'
-import { parseSymbols } from './Symbols'
+import messageSymbols from './assets/dtco-message-symbols.svg'
 import { searchKnowledge, type KnowledgeSection } from './data/knowledgeBase'
 import pictogramAtlas from './assets/dtco-manual-pictograms.svg'
 import './knowledgeBase.css'
@@ -25,9 +25,14 @@ const labels = {
 }
 
 const sections = ['pictograms', 'messages'] as const
-const stripSymbolIds = (text: string) => text.replace(/\(\d+\)/g, '').trimStart()
+function renderSymbols(text: string) {
+  return text.split(/([\uE000-\uF8FF])/u).map((part, index) => {
+    if (!/^[\uE000-\uF8FF]$/u.test(part)) return part
+    return <svg key={index} className="kb-message-icon" aria-hidden="true"><use href={`${messageSymbols}#g${part.charCodeAt(0).toString(16)}`} /></svg>
+  })
+}
 
-export function KnowledgeBase({ language, symbolMap }: {
+export function KnowledgeBase({ language }: {
   language: SupportedLanguage
   symbolMap: SymbolMap | null
 }) {
@@ -50,9 +55,6 @@ export function KnowledgeBase({ language, symbolMap }: {
     dialog.current?.showModal()
   }
 
-  const renderSymbols = (text: string) => (
-    symbolMap && Object.keys(symbolMap).length ? parseSymbols(text, symbolMap) : stripSymbolIds(text)
-  )
 
   return (
     <section className="kb-launcher" lang={language} aria-label={copy.title}>
@@ -126,9 +128,9 @@ export function KnowledgeBase({ language, symbolMap }: {
                             {entry.display?.map(line => line && <div key={line}>{renderSymbols(line)}</div>)}
                           </div>
                           <div className="kb-description">
-                            <strong>{entry.label}</strong>
-                            {entry.meaning && <p>{entry.meaning}</p>}
-                            {entry.action && <p><b>{copy.action}</b> {entry.action}</p>}
+                            {entry.label && <strong>{entry.label}</strong>}
+                            {entry.meaning && <p>{renderSymbols(entry.meaning)}</p>}
+                            {entry.action && <p><b>{copy.action}</b> {renderSymbols(entry.action)}</p>}
                           </div>
                         </li>
                       ))}

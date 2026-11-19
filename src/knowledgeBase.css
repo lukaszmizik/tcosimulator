@@ -216,3 +216,14 @@ body:has(.kb-dialog[open]) {
     padding-block: .35rem;
   }
 }
+
+.kb-message-icon {
+  width: .75em;
+  height: 1em;
+  vertical-align: -.12em;
+  fill: currentColor;
+}
+
+.kb-display {
+  white-space: pre-wrap;
+}

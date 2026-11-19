@@ -1,9 +1,12 @@
 import type { ReactNode } from 'react'
 import type { SupportedLanguage, Translations } from './translations/types'
 import { Speedometer } from './Speedometer'
+import { KnowledgeBase } from './KnowledgeBase'
+import type { SymbolMap } from './TachoTypes'
 export type ControlPanelProps = {
   t: Translations
   language: SupportedLanguage
+  symbolMap: SymbolMap | null
   ignitionOn: boolean
   onIgnitionStart: () => void
   targetSpeed: number
@@ -64,6 +67,7 @@ export function ControlPanel(p: ControlPanelProps) {
       <section className="dash-module reset-module"><button className="reset-key" onClick={p.onReset} title={t.ui.resetTitle}><span>⟲</span>{t.ui.reset}</button></section>
     </div>
     {p.infoPanels}
+    <KnowledgeBase language={p.language} symbolMap={p.symbolMap} />
     <details className="dash-extras" onKeyDown={(event) => event.stopPropagation()}><summary>{t.controls.dataScenariosSettings}</summary>
       <label className="dash-check"><input type="checkbox" checked={p.remoteDataDownloadActive} onChange={e=>p.onRemoteDataDownloadActiveChange(e.target.checked)}/>{t.ui.remoteDataDownloadActive}</label>
       <div className="dash-tool-buttons">

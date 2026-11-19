@@ -3370,6 +3370,7 @@ export default function App() {
         <ControlPanel
           t={t}
           language={language}
+          symbolMap={symbolMap}
           ignitionOn={ignitionOn}
           onIgnitionStart={() => setIgnitionOn(true)}
           targetSpeed={targetSpeed}

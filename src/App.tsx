@@ -993,7 +993,9 @@ export default function App() {
     () => visibleMenuItems(items, tachoState).filter(item => {
       if (!item.sub_menu?.endsWith('_CONSENT')) return true
       const card = currentMenuId === 'SUB_INPUT_D1_SETTINGS' ? card1Data : card2Data
-      return Boolean(card?.templateId && driverCardStateByTemplateId[card.templateId])
+      const decisions = card?.templateId ? driverCardStateByTemplateId[card.templateId] : undefined
+      const field = item.sub_menu.includes('_ITS_') ? 'itsConsent' : 'vdoConsent'
+      return typeof decisions?.[field] === 'boolean'
     }),
     [items, tachoState, currentMenuId, card1Data, card2Data, driverCardStateByTemplateId],
   )
@@ -1515,8 +1517,8 @@ export default function App() {
       const firstSlot = consentMenuId.startsWith('D1_')
       const card = firstSlot ? card1Data : card2Data
       const id = card?.templateId
-      if (!id || !driverCardStateByTemplateId[id]) return
       const field = consentMenuId.includes('_ITS_') ? 'itsConsent' : 'vdoConsent'
+      if (!id || typeof driverCardStateByTemplateId[id]?.[field] !== 'boolean') return
       if (selectedItem.sub_menu) {
         setCurrentMenuPath(path => enterSubmenu(path, consentMenuId).path)
         setSelectedIndex(driverCardStateByTemplateId[id][field] ? 0 : 1)
@@ -2248,13 +2250,11 @@ export default function App() {
     if (card1Data?.templateId === id || card2Data?.templateId === id) return
     const first = id === CARD1_TEMPLATE_ID
     const now = simulatedUtcTimeRef.current
-    if (profile === 'expiring') {
-      const expiryUtc = (Math.floor(now / 86400000) + 7) * 86400000
-      setExpiryByCard(prev => ({ ...prev, [id]: expiryUtc }))
-      return
-    }
-    setExpiryByCard(prev => ({ ...prev, [id]: undefined }))
-    const generated = profile === 'week' ? generateRandomWorkWeek(first ? 1 : 2, now, id, now, false) : null
+    const unused = profile === 'empty'
+    const expiryUtc = profile === 'expiring' ? (Math.floor(now / 86400000) + 7) * 86400000 : undefined
+    const generated = unused ? null : generateRandomWorkWeek(first ? 1 : 2, now, id, now, false)
+    setExpiryByCard(prev => ({ ...prev, [id]: expiryUtc }))
+    setDriverCardStateByTemplateId(prev => ({ ...prev, [id]: { isFirstInsertion: unused } }))
     const manual = generated?.manualEntryBuffer ?? []
     const end = manual[manual.length - 1]
     const withdrawal = end ? segmentToMsUtc(end) : null

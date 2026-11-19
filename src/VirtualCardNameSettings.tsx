@@ -16,9 +16,9 @@ const labels = {
 }
 
 const preparationLabels = {
-  cs: { empty: 'Nepoužitá karta', expiring: 'Karta s končící platností', select: 'Připravit kartu…', expiryConfirm: 'Nastavit konec platnosti za 7 simulovaných dní? Historie karty zůstane zachována.', week: 'Karta s modelovým týdnem', confirm: 'Připravit kartu? Přepíše historii vybrané karty.', done: 'Karta připravena.' },
-  en: { empty: 'Unused card', expiring: 'Card nearing expiry', select: 'Prepare card…', expiryConfirm: 'Set expiry to 7 simulated days from now? Card history will be kept.', week: 'Card with a sample week', confirm: 'Prepare the card? This replaces the selected card’s history.', done: 'Card prepared.' },
-  ru: { empty: 'Неиспользованная карта', expiring: 'Карта с истекающим сроком', select: 'Подготовить карту…', expiryConfirm: 'Установить срок действия ещё на 7 дней симуляции? История карты сохранится.', week: 'Карта с примером недели', confirm: 'Подготовить карту? История выбранной карты будет заменена.', done: 'Карта подготовлена.' },
+  cs: { empty: 'Nepoužitá karta', expiring: 'Karta s končící platností', select: 'Připravit kartu…', expiryConfirm: 'Nastavit konec platnosti za 7 simulovaných dní? Historie vybrané karty se nahradí modelovým týdnem.', week: 'Karta s modelovým týdnem', confirm: 'Připravit kartu? Přepíše historii vybrané karty.', done: 'Karta připravena.' },
+  en: { empty: 'Unused card', expiring: 'Card nearing expiry', select: 'Prepare card…', expiryConfirm: 'Set expiry to 7 simulated days from now? A sample week will replace the selected card’s history.', week: 'Card with a sample week', confirm: 'Prepare the card? This replaces the selected card’s history.', done: 'Card prepared.' },
+  ru: { empty: 'Неиспользованная карта', expiring: 'Карта с истекающим сроком', select: 'Подготовить карту…', expiryConfirm: 'Установить срок действия ещё на 7 дней симуляции? История выбранной карты будет заменена примером рабочей недели.', week: 'Карта с примером недели', confirm: 'Подготовить карту? История выбранной карты будет заменена.', done: 'Карта подготовлена.' },
 }
 
 function normalizeName(value: unknown, cardId: CardId): string {

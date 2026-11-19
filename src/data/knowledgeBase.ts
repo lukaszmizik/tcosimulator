@@ -1,5 +1,6 @@
 import type { SupportedLanguage } from '../translations/types'
 import { knowledgeBaseLocales } from './knowledgeBaseLocales'
+import { getPictogramGroups } from './knowledgeBasePictograms'
 
 export type KnowledgeSection = 'pictograms' | 'messages'
 
@@ -7,7 +8,8 @@ export type KnowledgeEntry = {
   id: string
   label: string
   symbol?: string
-  page: number
+  pictogram?: string
+  page?: number
   display?: readonly [string, string?]
   meaning?: string
   action?: string
@@ -18,9 +20,6 @@ type KnowledgeGroup = {
   title: string
   entries: readonly KnowledgeEntry[]
 }
-
-const pictogram = <Id extends string>(id: Id, symbol: string, label: string, page: number): KnowledgeEntry & { id: Id } =>
-  ({ id, symbol, label, page })
 
 const message = <Id extends string>(
   id: Id,
@@ -33,65 +32,6 @@ const message = <Id extends string>(
 
 // DTCO 4.1–4.1b, BA00.1381.41 100 116, české vydání 4, 2025-03.
 const knowledgeBase = {
-  pictograms: [
-    {
-      id: 'activities',
-      title: 'Činnosti a obsluha',
-      entries: [
-        pictogram('driving', '(2)', 'Řízení', 36),
-        pictogram('work', '(9)', 'Jiná práce', 36),
-        pictogram('availability', '(7)', 'Pohotovost', 36),
-        pictogram('rest', '(8)', 'Přestávka a odpočinek', 36),
-        pictogram('break', '(10)', 'Platné přerušení', 36),
-        pictogram('unknown', '?', 'Neznámá činnost', 36),
-        pictogram('card', '(14)', 'Načtená karta tachografu', 36),
-        pictogram('entry', '(42)', 'Zadání', 36),
-        pictogram('manual', 'M', 'Ruční zadání činností', 37),
-        pictogram('print', '(18)', 'Tiskárna nebo výtisk', 36),
-        pictogram('download', '(22)', 'Stahování dat', 36),
-      ],
-    },
-    {
-      id: 'conditions',
-      title: 'Místa a zvláštní podmínky',
-      entries: [
-        pictogram('start-place', '(37)(36)', 'Místo začátku směny', 37),
-        pictogram('end-place', '(41)(37)', 'Místo konce směny', 37),
-        pictogram('border', '(43)', 'Překročení hranic', 37),
-        pictogram('load', '(52)', 'Nakládka', 37),
-        pictogram('unload', '(53)', 'Vykládka', 37),
-        pictogram('load-unload', '(54)', 'Současná nakládka a vykládka', 37),
-        pictogram('out', 'OUT', 'Režim OUT', 37),
-        pictogram('ferry', '(49)', 'Trajekt nebo vlak', 37),
-      ],
-    },
-    {
-      id: 'printouts',
-      title: 'Výtisky',
-      entries: [
-        pictogram('card-day-print', '24h(14)(18)', 'Denní aktivity z karty řidiče', 38),
-        pictogram('vehicle-day-print', '24h(24)(18)', 'Denní aktivity z paměti vozidla', 38),
-        pictogram('card-event-print', '(27)(34)(14)(18)', 'Události a poruchy z karty řidiče', 38),
-        pictogram('vehicle-event-print', '(27)(34)(24)(18)', 'Události a poruchy vozidla', 38),
-        pictogram('speed-print', '(39)(39)(18)', 'Překročení rychlosti', 38),
-        pictogram('technical-print', '(5)(17)(18)', 'Technické údaje', 38),
-        pictogram('activity-print', '(44)(14)(18)', 'Graf aktivit řidiče', 38),
-        pictogram('v-diagram', '(44)v(18)', 'V-diagram', 38),
-      ],
-    },
-    {
-      id: 'alerts',
-      title: 'Hlášení',
-      entries: [
-        pictogram('event', '(27)', 'Událost', 36),
-        pictogram('fault', '(34)', 'Porucha', 36),
-        pictogram('warning', '(35)', 'Upozornění nebo výstraha', 36),
-        pictogram('no-card-event', '(27)(2)(14)', 'Jízda bez platné karty řidiče', 39),
-        pictogram('power-loss', '(27)(26)', 'Přerušení napájení', 39),
-        pictogram('printer-fault', '(34)(18)', 'Porucha tiskárny', 39),
-      ],
-    },
-  ],
   messages: [
     {
       id: 'card',
@@ -152,30 +92,23 @@ const knowledgeBase = {
       ],
     },
   ],
-} as const satisfies Record<KnowledgeSection, readonly KnowledgeGroup[]>
+} as const satisfies { messages: readonly KnowledgeGroup[] }
 
-type GroupId = (typeof knowledgeBase)[KnowledgeSection][number]['id']
-type EntryId<Section extends KnowledgeSection> = (typeof knowledgeBase)[Section][number]['entries'][number]['id']
+type GroupId = (typeof knowledgeBase.messages)[number]['id']
+type MessageId = (typeof knowledgeBase.messages)[number]['entries'][number]['id']
 
 export type KnowledgeLocale = {
   groups: Record<GroupId, string>
-  pictograms: Record<EntryId<'pictograms'>, string>
-  messages: Record<EntryId<'messages'>, [
+  messages: Record<MessageId, [
     label: string, display: NonNullable<KnowledgeEntry['display']>, meaning: string, action: string,
   ]>
 }
 
 function localizedKnowledge(section: KnowledgeSection, language: SupportedLanguage): readonly KnowledgeGroup[] {
-  if (language === 'cs') return knowledgeBase[section]
+  if (section === 'pictograms') return getPictogramGroups(language)
+  if (language === 'cs') return knowledgeBase.messages
 
   const locale = knowledgeBaseLocales[language]
-  if (section === 'pictograms') {
-    return knowledgeBase.pictograms.map(group => ({
-      ...group,
-      title: locale.groups[group.id],
-      entries: group.entries.map(entry => ({ ...entry, label: locale.pictograms[entry.id] })),
-    }))
-  }
   return knowledgeBase.messages.map(group => ({
     ...group,
     title: locale.groups[group.id],

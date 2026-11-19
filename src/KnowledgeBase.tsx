@@ -3,20 +3,24 @@ import type { SymbolMap } from './TachoTypes'
 import type { SupportedLanguage } from './translations/types'
 import { parseSymbols } from './Symbols'
 import { searchKnowledge, type KnowledgeSection } from './data/knowledgeBase'
+import pictogramAtlas from './assets/dtco-manual-pictograms.svg'
 import './knowledgeBase.css'
 
 const labels = {
   cs: {
     title: 'Znalostní báze', pictograms: 'Piktogramy', messages: 'Hlášení displeje',
     close: 'Zavřít', search: 'Hledat v přehledu', empty: 'Žádná shoda.', action: 'Co udělat',
+    source: 'DTCO 4.1–4.1b · český návod, vydání 4',
   },
   en: {
     title: 'Knowledge base', pictograms: 'Pictograms', messages: 'Display messages',
     close: 'Close', search: 'Search the knowledge base', empty: 'No matches.', action: 'What to do',
+    source: 'DTCO 4.1–4.1b · Czech manual, edition 4',
   },
   ru: {
     title: 'База знаний', pictograms: 'Пиктограммы', messages: 'Сообщения дисплея',
     close: 'Закрыть', search: 'Поиск по базе знаний', empty: 'Совпадений нет.', action: 'Что делать',
+    source: 'DTCO 4.1–4.1b · руководство на чешском, издание 4',
   },
 }
 
@@ -87,29 +91,52 @@ export function KnowledgeBase({ language, symbolMap }: {
           </header>
           <div className="kb-results" ref={results} tabIndex={0}>
             {!groups.length && <p role="status">{copy.empty}</p>}
-            <div>
-              {groups.map(group => (
-                <section key={group.id} className="kb-group">
-                  <h3>{group.title}</h3>
-                  <ul>
-                    {group.entries.map(entry => (
-                      <li key={entry.id} className={entry.display ? 'kb-message' : 'kb-pictogram'}>
-                        <div className={entry.display ? 'kb-display' : 'kb-symbol'}
-                          aria-hidden={entry.symbol ? true : undefined}>
-                          {entry.symbol && renderSymbols(entry.symbol)}
-                          {entry.display?.map(line => line && <div key={line}>{renderSymbols(line)}</div>)}
-                        </div>
-                        <div className="kb-description">
-                          <strong>{entry.label}</strong>
-                          {entry.meaning && <p>{entry.meaning}</p>}
-                          {entry.action && <p><b>{copy.action}</b> {entry.action}</p>}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              ))}
-            </div>
+            {section === 'pictograms' ? (
+              <div>
+                <p className="kb-reference-source">{copy.source}</p>
+                {groups.map(group => (
+                  <table key={group.id} className="kb-reference">
+                    <caption>{group.title}</caption>
+                    <tbody>
+                      {group.entries.map(entry => (
+                        <tr key={entry.id}>
+                          <td className="kb-reference-symbol">
+                            {entry.pictogram ? (
+                              <svg viewBox="0 0 36 12" aria-hidden="true">
+                                <use href={`${pictogramAtlas}#${entry.pictogram}`} />
+                              </svg>
+                            ) : entry.symbol}
+                          </td>
+                          <th scope="row">{entry.label}</th>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ))}
+              </div>
+            ) : (
+              <div>
+                {groups.map(group => (
+                  <section key={group.id} className="kb-group">
+                    <h3>{group.title}</h3>
+                    <ul>
+                      {group.entries.map(entry => (
+                        <li key={entry.id}>
+                          <div className="kb-display">
+                            {entry.display?.map(line => line && <div key={line}>{renderSymbols(line)}</div>)}
+                          </div>
+                          <div className="kb-description">
+                            <strong>{entry.label}</strong>
+                            {entry.meaning && <p>{entry.meaning}</p>}
+                            {entry.action && <p><b>{copy.action}</b> {entry.action}</p>}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </dialog>

@@ -108,7 +108,6 @@ export function KnowledgeBase({ language, symbolMap }: {
                           {entry.meaning && <p>{entry.meaning}</p>}
                           {entry.action && <p><b>Co udělat</b> {entry.action}</p>}
                         </div>
-                        <small className="kb-page">str. {entry.page}</small>
                       </li>
                     ))}
                   </ul>

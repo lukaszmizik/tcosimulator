@@ -165,8 +165,9 @@ html body { min-width:0 !important; width:100%; }
  .device-column .slot-tap-controls { display:none; }
  .app-root .device-column .dashboard { display:contents; }
  .device-column .dashboard-grid { grid-column:1;grid-row:2; }
- .device-column .dash-extras { grid-column:1;grid-row:3;margin-top:0; }
- .device-column .vdo-labels { grid-row:4; }
+ .device-column .kb-launcher { grid-column:1;grid-row:3;margin:0; }
+ .device-column .dash-extras { grid-column:1;grid-row:4;margin-top:0; }
+ .device-column .vdo-labels { grid-row:5; }
 }
 
 @media screen and (max-width: 900px) {

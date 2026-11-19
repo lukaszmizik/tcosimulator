@@ -7,6 +7,18 @@ import type { ActivityId, CardData, CardInsertionState, EditorActivityId, Manual
 import { ACTIVITY_SYMBOLS, MANUAL_ACTIVITIES, UNKNOWN_ACTIVITY_SYMBOL } from './TachoTypes'
 import { FIRST_INSERTION_OFFSET_MS } from './Constants'
 
+const lcdOdometerFormat = new Intl.NumberFormat('cs-CZ', {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+})
+
+export function formatLcdOdometer(km: number): string {
+  const parts = lcdOdometerFormat.formatToParts(km)
+  const padding = parts.filter(({ type }) => type === 'group').length
+  const number = parts.filter(({ type }) => type !== 'group').map(({ value }) => value).join('')
+  return '\u00a0'.repeat(padding) + number + 'km'
+}
+
 export const DRIVING_SYMBOL = '\u0053'
 
 export const EDITOR_FIELD_ORDER: CardInsertionState['editorBlinkField'][] = ['activity', 'day', 'month', 'year', 'hour', 'minute']

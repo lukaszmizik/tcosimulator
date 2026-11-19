@@ -19,7 +19,7 @@ import type { CountryEntry } from './data/countriesLoader'
 import { getWarning } from './data/warnings'
 import { SPECIAL_SYMBOLS } from './TachoTypes'
 import { parseSymbols, getIconChar, TachoIcon, TACHO_FONT } from './Symbols'
-import { getActivityCode } from './CardLogic'
+import { formatLcdOdometer, getActivityCode } from './CardLogic'
 import { CardInsertionDisplay2 } from './CardInsertionDisplay2'
 import {
   BreakWarningDisplay,
@@ -700,7 +700,7 @@ function OperatingDisplay(props: TachoDisplayProps) {
                 )}
               </div>
               <div className="lcd-row-center">
-                {odometerKm.toLocaleString('cs-CZ', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}km
+                {formatLcdOdometer(odometerKm)}
               </div>
               <div className="lcd-row-sides">
                 {card2Inserted && (
@@ -878,7 +878,7 @@ function OperatingDisplay(props: TachoDisplayProps) {
               )}
             </div>
             <div className="lcd-row-center">
-              {odometerKm.toLocaleString('cs-CZ', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}km
+              {formatLcdOdometer(odometerKm)}
             </div>
             <div className="lcd-row-sides">
               {card2Inserted && (

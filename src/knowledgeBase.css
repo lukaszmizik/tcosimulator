@@ -13,7 +13,6 @@
 }
 
 .kb-launcher h2,
-.kb-header p,
 .kb-description p {
   margin: 0;
 }
@@ -94,11 +93,6 @@ body:has(.kb-dialog[open]) {
   background: #101a24;
   color: inherit;
   font: inherit;
-}
-
-.kb-source {
-  font-size: .8rem;
-  color: #becfdb;
 }
 
 .kb-results {

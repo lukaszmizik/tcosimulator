@@ -1,3 +1,6 @@
+import type { SupportedLanguage } from '../translations/types'
+import { knowledgeBaseLocales } from './knowledgeBaseLocales'
+
 export type KnowledgeSection = 'pictograms' | 'messages'
 
 export type KnowledgeEntry = {
@@ -11,26 +14,28 @@ export type KnowledgeEntry = {
 }
 
 type KnowledgeGroup = {
+  id: string
   title: string
   entries: readonly KnowledgeEntry[]
 }
 
-const pictogram = (id: string, symbol: string, label: string, page: number): KnowledgeEntry =>
+const pictogram = <Id extends string>(id: Id, symbol: string, label: string, page: number): KnowledgeEntry & { id: Id } =>
   ({ id, symbol, label, page })
 
-const message = (
-  id: string,
+const message = <Id extends string>(
+  id: Id,
   label: string,
   page: number,
   display: KnowledgeEntry['display'],
   meaning: string,
   action: string,
-): KnowledgeEntry => ({ id, label, page, display, meaning, action })
+): KnowledgeEntry & { id: Id } => ({ id, label, page, display, meaning, action })
 
 // DTCO 4.1–4.1b, BA00.1381.41 100 116, české vydání 4, 2025-03.
-export const knowledgeBase: Record<KnowledgeSection, readonly KnowledgeGroup[]> = {
+const knowledgeBase = {
   pictograms: [
     {
+      id: 'activities',
       title: 'Činnosti a obsluha',
       entries: [
         pictogram('driving', '(2)', 'Řízení', 36),
@@ -47,6 +52,7 @@ export const knowledgeBase: Record<KnowledgeSection, readonly KnowledgeGroup[]> 
       ],
     },
     {
+      id: 'conditions',
       title: 'Místa a zvláštní podmínky',
       entries: [
         pictogram('start-place', '(37)(36)', 'Místo začátku směny', 37),
@@ -60,6 +66,7 @@ export const knowledgeBase: Record<KnowledgeSection, readonly KnowledgeGroup[]> 
       ],
     },
     {
+      id: 'printouts',
       title: 'Výtisky',
       entries: [
         pictogram('card-day-print', '24h(14)(18)', 'Denní aktivity z karty řidiče', 38),
@@ -73,6 +80,7 @@ export const knowledgeBase: Record<KnowledgeSection, readonly KnowledgeGroup[]> 
       ],
     },
     {
+      id: 'alerts',
       title: 'Hlášení',
       entries: [
         pictogram('event', '(27)', 'Událost', 36),
@@ -86,6 +94,7 @@ export const knowledgeBase: Record<KnowledgeSection, readonly KnowledgeGroup[]> 
   ],
   messages: [
     {
+      id: 'card',
       title: 'Události a hlášení související s kartou',
       entries: [
         message('no-card', 'Jízda bez platné karty řidiče', 113, ['(27)(2)(14) jízda bez', 'vložené karty xx'],
@@ -101,6 +110,7 @@ export const knowledgeBase: Record<KnowledgeSection, readonly KnowledgeGroup[]> 
       ],
     },
     {
+      id: 'faults',
       title: 'Poruchy',
       entries: [
         message('printer', 'Porucha tiskárny', 116, ['(34)(18) Porucha tiskárny', 'xx'],
@@ -114,6 +124,7 @@ export const knowledgeBase: Record<KnowledgeSection, readonly KnowledgeGroup[]> 
       ],
     },
     {
+      id: 'driving',
       title: 'Výstrahy pro dobu řízení',
       entries: [
         message('break-soon', 'Výstraha po 4 h 15 min řízení', 119, ['(35)(2)1 pauza!', '1(2)04h15 (10)00h15'],
@@ -123,6 +134,7 @@ export const knowledgeBase: Record<KnowledgeSection, readonly KnowledgeGroup[]> 
       ],
     },
     {
+      id: 'notices',
       title: 'Upozornění a informace',
       entries: [
         message('entry-request', 'Výzva k ručnímu zadání', 121, ['(35)(42) prosím', 'zadání'],
@@ -140,15 +152,47 @@ export const knowledgeBase: Record<KnowledgeSection, readonly KnowledgeGroup[]> 
       ],
     },
   ],
+} as const satisfies Record<KnowledgeSection, readonly KnowledgeGroup[]>
+
+type GroupId = (typeof knowledgeBase)[KnowledgeSection][number]['id']
+type EntryId<Section extends KnowledgeSection> = (typeof knowledgeBase)[Section][number]['entries'][number]['id']
+
+export type KnowledgeLocale = {
+  groups: Record<GroupId, string>
+  pictograms: Record<EntryId<'pictograms'>, string>
+  messages: Record<EntryId<'messages'>, [
+    label: string, display: NonNullable<KnowledgeEntry['display']>, meaning: string, action: string,
+  ]>
+}
+
+function localizedKnowledge(section: KnowledgeSection, language: SupportedLanguage): readonly KnowledgeGroup[] {
+  if (language === 'cs') return knowledgeBase[section]
+
+  const locale = knowledgeBaseLocales[language]
+  if (section === 'pictograms') {
+    return knowledgeBase.pictograms.map(group => ({
+      ...group,
+      title: locale.groups[group.id],
+      entries: group.entries.map(entry => ({ ...entry, label: locale.pictograms[entry.id] })),
+    }))
+  }
+  return knowledgeBase.messages.map(group => ({
+    ...group,
+    title: locale.groups[group.id],
+    entries: group.entries.map(entry => {
+      const [label, display, meaning, action] = locale.messages[entry.id]
+      return { ...entry, label, display, meaning, action }
+    }),
+  }))
 }
 
 function searchKey(text: string) {
   return text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
 }
 
-export function searchKnowledge(section: KnowledgeSection, query: string) {
+export function searchKnowledge(section: KnowledgeSection, query: string, language: SupportedLanguage) {
   const terms = searchKey(query).split(/\s+/).filter(Boolean)
-  return knowledgeBase[section].map(group => ({
+  return localizedKnowledge(section, language).map(group => ({
     ...group,
     entries: group.entries.filter(entry => {
       const text = searchKey(

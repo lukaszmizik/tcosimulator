@@ -8,18 +8,15 @@ import './knowledgeBase.css'
 const labels = {
   cs: {
     title: 'Znalostní báze', pictograms: 'Piktogramy', messages: 'Hlášení displeje',
-    close: 'Zavřít', search: 'Hledat v přehledu', empty: 'Žádná shoda.',
-    source: 'Český návod DTCO 4.1–4.1b · vydání 4 · březen 2025',
+    close: 'Zavřít', search: 'Hledat v přehledu', empty: 'Žádná shoda.', action: 'Co udělat',
   },
   en: {
     title: 'Knowledge base', pictograms: 'Pictograms', messages: 'Display messages',
-    close: 'Close', search: 'Search the Czech reference', empty: 'No matches.',
-    source: 'Czech DTCO 4.1–4.1b manual · edition 4 · March 2025',
+    close: 'Close', search: 'Search the knowledge base', empty: 'No matches.', action: 'What to do',
   },
   ru: {
     title: 'База знаний', pictograms: 'Пиктограммы', messages: 'Сообщения дисплея',
-    close: 'Закрыть', search: 'Поиск по справочнику на чешском', empty: 'Совпадений нет.',
-    source: 'Руководство DTCO 4.1–4.1b на чешском · издание 4 · март 2025',
+    close: 'Закрыть', search: 'Поиск по базе знаний', empty: 'Совпадений нет.', action: 'Что делать',
   },
 }
 
@@ -36,7 +33,7 @@ export function KnowledgeBase({ language, symbolMap }: {
   const title = useId()
   const [section, setSection] = useState<KnowledgeSection>('pictograms')
   const [query, setQuery] = useState('')
-  const groups = searchKnowledge(section, query)
+  const groups = searchKnowledge(section, query, language)
 
   function selectSection(next: KnowledgeSection) {
     setSection(next)
@@ -54,7 +51,7 @@ export function KnowledgeBase({ language, symbolMap }: {
   )
 
   return (
-    <section className="kb-launcher" aria-label={copy.title}>
+    <section className="kb-launcher" lang={language} aria-label={copy.title}>
       <h2>{copy.title}</h2>
       <div className="kb-actions">
         {sections.map(item => (
@@ -87,13 +84,12 @@ export function KnowledgeBase({ language, symbolMap }: {
                 if (results.current) results.current.scrollTop = 0
               }} />
             </label>
-            <p className="kb-source">{copy.source}</p>
           </header>
           <div className="kb-results" ref={results} tabIndex={0}>
             {!groups.length && <p role="status">{copy.empty}</p>}
-            <div lang="cs">
+            <div>
               {groups.map(group => (
-                <section key={group.title} className="kb-group">
+                <section key={group.id} className="kb-group">
                   <h3>{group.title}</h3>
                   <ul>
                     {group.entries.map(entry => (
@@ -106,7 +102,7 @@ export function KnowledgeBase({ language, symbolMap }: {
                         <div className="kb-description">
                           <strong>{entry.label}</strong>
                           {entry.meaning && <p>{entry.meaning}</p>}
-                          {entry.action && <p><b>Co udělat</b> {entry.action}</p>}
+                          {entry.action && <p><b>{copy.action}</b> {entry.action}</p>}
                         </div>
                       </li>
                     ))}

@@ -1,11 +1,22 @@
+/* kode-mono-latin-ext-500-normal */
 @font-face {
-  font-family: VT323;
-  src: url('/fonts/VT323-Regular.woff2') format('woff2');
-  font-weight: 400;
+  font-family: 'Kode Mono';
   font-style: normal;
   font-display: block;
+  font-weight: 500;
+  src: url('/fonts/kode-mono-latin-ext-500-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
 }
 
+/* kode-mono-latin-500-normal */
+@font-face {
+  font-family: 'Kode Mono';
+  font-style: normal;
+  font-display: block;
+  font-weight: 500;
+  src: url('/fonts/kode-mono-latin-500-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
 .print-vehicle-settings {
   width: 100%;
   box-sizing: border-box;
@@ -107,21 +118,28 @@
 
 .daily-card-print-scroll {
   overflow: auto;
+  background: #e7e3db;
 }
 
 .daily-card-print-paper {
   box-sizing: border-box;
-  width: 266px;
+  width: min(344px, calc(100vw - 56px));
+  margin: 12px auto 16px;
   padding: 14px 17px 12px;
   background: #fffefa;
   color: #141310;
-  font: 400 24px / 0.91 VT323, monospace;
+  box-shadow: 0 0 0 1px #3d332319, 0 3px 8px #3d33232b;
+  /* Reserve 34px for paper padding and 14.4em for 24 cells. */
+  --print-font-size: min(21px, calc((100vw - 90px) / 14.4));
+  --print-row-height: 1.2em;
+  --print-symbol-size: 0.86em;
+  font: 500 var(--print-font-size) / var(--print-row-height) "Kode Mono", monospace;
 }
 
 .daily-card-print-row {
   display: grid;
   grid-template-columns: repeat(24, 1ch);
-  min-height: 0.91em;
+  min-height: var(--print-row-height);
   white-space: pre;
   break-inside: avoid;
 }
@@ -131,7 +149,7 @@
   justify-content: center;
   align-items: center;
   font-family: SymbolTacho1;
-  font-size: 0.68em;
+  font-size: var(--print-symbol-size);
   line-height: 1;
 }
 
@@ -208,6 +226,9 @@
     padding: 3mm 0 3mm 5mm;
     background: #fff;
     color: #000;
-    font-size: 4.8mm;
+    box-shadow: none;
+    --print-row-height: 4.368mm;
+    --print-symbol-size: 3.264mm;
+    font-size: 3.55mm;
   }
 }

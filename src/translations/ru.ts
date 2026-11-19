@@ -162,6 +162,12 @@ export const ru: Translations = {
     totalUnconfirmed: 'Всего неподтверждённых:', // 44
   },
   workWeek: {
+    sharedWeek: 'Общая неделя',
+    drivingWeek: 'Неделя вождения для слота {slot}',
+    manualWeek: 'Неделя ручного ввода',
+    manualSlotWeek: 'Неделя ручного ввода для слота {slot}',
+    historicalSlotWeek: 'Неделя с архивными данными слота {slot}',
+    emptyWeek: 'Пустая неделя',
     dayNames: [
       'Воскресенье', // 45
       'Понедельник',  // 46
@@ -244,7 +250,48 @@ export const ru: Translations = {
       border_crossing: 'пересечение границы',
     },
   },
+  cardPanel: {
+    title: 'Карты водителей',
+    tab: 'КАРТА',
+    openCard: 'Открыть меню карты {slot}',
+    close: 'Закрыть меню карт',
+    startIgnition: 'Сначала включите зажигание кнопкой START.',
+    chooseForSlot: 'Выбрать карту для слота {slot}',
+    insertIntoSlot: 'Вставить карту в слот {slot}',
+    insertedInSlot: 'Вставлена в слот {slot}',
+    insertCard: 'Вставить карту',
+    slot: 'Слот {slot}',
+    remove: 'Убрать карту',
+    dataTitle: 'Данные карты',
+    missingNumber: 'В файле нет номера карты.',
+    alreadyLoaded: 'Эта карта уже загружена.',
+    parseFailed: 'Не удалось загрузить файл как карту водителя.',
+    readFailed: 'Не удалось прочитать файл.',
+    missingWithdrawal: 'Не удалось определить начало ручного ввода. В файле нет времени последнего использования автомобиля (vehicle_last_use).',
+    futureWithdrawal: 'Ручной ввод начался бы позже времени симуляции. Сначала измените время симуляции.',
+    alreadyInserted: 'Эта карта уже вставлена в другой слот.',
+  },
+  vehicleSettings: {
+    title: 'Предприятие и автомобиль',
+    companyName: 'Название предприятия',
+    companyAddress: 'Адрес',
+    companyId: 'Регистрационный номер предприятия',
+    registration: 'Регистрационный номер автомобиля',
+    registrationNation: 'Страна регистрации',
+    load: 'Тип нагрузки по умолчанию',
+    unspecified: 'Не указан',
+    passengers: 'Пассажиры',
+    goods: 'Грузы',
+    save: 'Сохранить данные',
+    saved: 'Данные сохранены.',
+    saveFailed: 'Не удалось сохранить данные.',
+  },
   controls: {
+    simulationMode: 'Режим симуляции',
+    speedTarget: 'Заданная скорость',
+    speedTargetShort: 'Цель',
+    decreaseSpeed: 'Уменьшить скорость на 5 км/ч',
+    increaseSpeed: 'Увеличить скорость на 5 км/ч',
     dataScenariosSettings: 'Данные, сценарии и настройки',
     generateWorkWeek: 'Сформировать рабочую неделю', // 80
     generateWorkWeekTitle: 'Сгенерировать 5–6 рабочих смен с поездками, работой и перерывами в память и карту Zmizik', // 81
@@ -272,6 +319,9 @@ export const ru: Translations = {
     dataAndRecords: 'Данные и записи',
   },
   printOverlay: {
+    printPdf: 'Печать / PDF',
+    driverActivitiesTitle: 'Деятельность водителя',
+    vehicleEventsTitle: 'События и сбои автомобиля',
     driverCard24hTitle: 'Суточная распечатка карты водителя',
     driver1Title: 'Распечатка водитель 1', // 88
     basicInfo: 'Основная информация', // 89

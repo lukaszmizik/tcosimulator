@@ -167,6 +167,12 @@ export type Translations = {
     totalUnconfirmed: string
   }
   workWeek: {
+    sharedWeek: string
+    drivingWeek: string
+    manualWeek: string
+    manualSlotWeek: string
+    historicalSlotWeek: string
+    emptyWeek: string
     dayNames: [string, string, string, string, string, string, string]
     activityLabels: Record<string, string>
     activityTypes: Record<string, string>
@@ -217,7 +223,48 @@ export type Translations = {
     faultExcessSpeed: string
     recordedLocationTypes: Record<string, string>
   }
+  cardPanel: {
+    title: string
+    tab: string
+    openCard: string
+    close: string
+    startIgnition: string
+    chooseForSlot: string
+    insertIntoSlot: string
+    insertedInSlot: string
+    insertCard: string
+    slot: string
+    remove: string
+    dataTitle: string
+    missingNumber: string
+    alreadyLoaded: string
+    parseFailed: string
+    readFailed: string
+    missingWithdrawal: string
+    futureWithdrawal: string
+    alreadyInserted: string
+  }
+  vehicleSettings: {
+    title: string
+    companyName: string
+    companyAddress: string
+    companyId: string
+    registration: string
+    registrationNation: string
+    load: string
+    unspecified: string
+    passengers: string
+    goods: string
+    save: string
+    saved: string
+    saveFailed: string
+  }
   controls: {
+    simulationMode: string
+    speedTarget: string
+    speedTargetShort: string
+    decreaseSpeed: string
+    increaseSpeed: string
     dataScenariosSettings: string
     generateWorkWeek: string
     generateWorkWeekTitle: string
@@ -245,6 +292,9 @@ export type Translations = {
     dataAndRecords: string
   }
   printOverlay: {
+    printPdf: string
+    driverActivitiesTitle: string
+    vehicleEventsTitle: string
     driverCard24hTitle: string
     driver1Title: string
     basicInfo: string

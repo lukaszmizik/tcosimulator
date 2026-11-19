@@ -1,3 +1,4 @@
+import { useLanguage } from '../../translations'
 import type { ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import type { SymbolMap } from '../../TachoTypes'
@@ -10,6 +11,8 @@ export function PrintPreview({ title, closeLabel, onClose, ready = true, childre
   ready?: boolean
   children: ReactNode
 }) {
+  const { t } = useLanguage()
+
   async function print() {
     await document.fonts.ready
     window.print()
@@ -21,7 +24,7 @@ export function PrintPreview({ title, closeLabel, onClose, ready = true, childre
       <div className="daily-card-print-panel" onClick={(event) => event.stopPropagation()}>
         <div className="daily-card-print-toolbar">
           <h2>{title}</h2>
-          <button type="button" disabled={!ready} onClick={() => void print()}>Tisk / PDF</button>
+          <button type="button" disabled={!ready} onClick={() => void print()}>{t.printOverlay.printPdf}</button>
         </div>
         <div className="daily-card-print-scroll">
           <article className="daily-card-print-paper" aria-label={title}>{children}</article>

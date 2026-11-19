@@ -161,6 +161,12 @@ export const en: Translations = {
     totalUnconfirmed: 'Total unconfirmed:', // 44
   },
   workWeek: {
+    sharedWeek: 'Shared week',
+    drivingWeek: 'Driving week for slot {slot}',
+    manualWeek: 'Manual entry week',
+    manualSlotWeek: 'Manual entry week for slot {slot}',
+    historicalSlotWeek: 'Week with historical slot {slot} data',
+    emptyWeek: 'Empty week',
     dayNames: [
       'Sunday',    // 45
       'Monday',    // 46
@@ -243,7 +249,48 @@ export const en: Translations = {
       border_crossing: 'border crossing',
     },
   },
+  cardPanel: {
+    title: 'Driver cards',
+    tab: 'CARD',
+    openCard: 'Open card {slot} menu',
+    close: 'Close card menu',
+    startIgnition: 'Press START to switch on the ignition first.',
+    chooseForSlot: 'Choose a card for slot {slot}',
+    insertIntoSlot: 'Insert card into slot {slot}',
+    insertedInSlot: 'Inserted in slot {slot}',
+    insertCard: 'Insert card',
+    slot: 'Slot {slot}',
+    remove: 'Remove card',
+    dataTitle: 'Card data',
+    missingNumber: 'The card file does not contain a card number.',
+    alreadyLoaded: 'This card is already loaded.',
+    parseFailed: 'The file could not be loaded as a driver card.',
+    readFailed: 'The file could not be read.',
+    missingWithdrawal: 'The start of manual entry cannot be determined. The file has no last vehicle use time (vehicle_last_use).',
+    futureWithdrawal: 'Manual entry would start after the simulation time. Adjust the simulation time first.',
+    alreadyInserted: 'This card is already in the other slot.',
+  },
+  vehicleSettings: {
+    title: 'Company and vehicle',
+    companyName: 'Company name',
+    companyAddress: 'Address',
+    companyId: 'Company registration number',
+    registration: 'Vehicle registration number',
+    registrationNation: 'Country of registration',
+    load: 'Default load type',
+    unspecified: 'Unspecified',
+    passengers: 'Passengers',
+    goods: 'Goods',
+    save: 'Save details',
+    saved: 'Details saved.',
+    saveFailed: 'The details could not be saved.',
+  },
   controls: {
+    simulationMode: 'Simulation mode',
+    speedTarget: 'Target speed',
+    speedTargetShort: 'Target',
+    decreaseSpeed: 'Decrease speed by 5 km/h',
+    increaseSpeed: 'Increase speed by 5 km/h',
     dataScenariosSettings: 'Data, scenarios and settings',
     generateWorkWeek: 'Generate work week', // 80
     generateWorkWeekTitle: 'Generate 5–6 work shifts with driving, work and breaks into memory and Zmizik card', // 81
@@ -271,6 +318,9 @@ export const en: Translations = {
     dataAndRecords: 'Data and records',
   },
   printOverlay: {
+    printPdf: 'Print / PDF',
+    driverActivitiesTitle: 'Driver activities',
+    vehicleEventsTitle: 'Vehicle events and faults',
     driverCard24hTitle: '24h driver card printout',
     driver1Title: 'Printout driver 1', // 88
     basicInfo: 'Basic info', // 89

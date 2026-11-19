@@ -43,7 +43,7 @@ export function ControlPanel(p: ControlPanelProps) {
   return <section className="dashboard" data-running={p.ignitionOn} aria-label={t.controls.simulationControlsTitle}>
     <div className="dashboard-grid">
       <section className="dash-module mode-module">
-        <h2>Simulační režim</h2>
+        <h2>{t.controls.simulationMode}</h2>
         <p className="mode-status"><i />{p.ignitionOn ? t.controls.ignitionOn : t.controls.ignitionOff}</p>
         <div className="mode-keys">
           <button className="start-key" aria-pressed={p.ignitionOn} onClick={p.onIgnitionStart}>▶︎ START</button>
@@ -61,8 +61,8 @@ export function ControlPanel(p: ControlPanelProps) {
       <section className="dash-module speed-module">
         <h2>{t.ui.speedLabel}</h2>
         <Speedometer speed={p.currentSpeed}/>
-        <div className="speed-keys"><button aria-label="Snížit rychlost o 5 km/h" disabled={!p.ignitionOn || p.targetSpeed <= 0} onClick={()=>p.onTargetSpeedChange(Math.max(0,p.targetSpeed-5))}>−</button><span>Cíl {p.targetSpeed} km/h</span><button aria-label="Zvýšit rychlost o 5 km/h" disabled={!p.ignitionOn || p.targetSpeed >= 125} onClick={()=>p.onTargetSpeedChange(Math.min(125,p.targetSpeed+5))}>+</button></div>
-        <input aria-label="Cílová rychlost" type="range" min="0" max="125" value={p.targetSpeed} disabled={!p.ignitionOn} onChange={e=>p.onTargetSpeedChange(Number(e.target.value))}/>
+        <div className="speed-keys"><button aria-label={t.controls.decreaseSpeed} disabled={!p.ignitionOn || p.targetSpeed <= 0} onClick={()=>p.onTargetSpeedChange(Math.max(0,p.targetSpeed-5))}>−</button><span>{t.controls.speedTargetShort} {p.targetSpeed} km/h</span><button aria-label={t.controls.increaseSpeed} disabled={!p.ignitionOn || p.targetSpeed >= 125} onClick={()=>p.onTargetSpeedChange(Math.min(125,p.targetSpeed+5))}>+</button></div>
+        <input aria-label={t.controls.speedTarget} type="range" min="0" max="125" value={p.targetSpeed} disabled={!p.ignitionOn} onChange={e=>p.onTargetSpeedChange(Number(e.target.value))}/>
       </section>
       <section className="dash-module reset-module"><button className="reset-key" onClick={p.onReset} title={t.ui.resetTitle}><span>⟲</span>{t.ui.reset}</button></section>
     </div>

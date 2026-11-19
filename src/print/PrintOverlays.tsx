@@ -84,7 +84,7 @@ export function PrintOverlays({
           symbols={symbolMap}
           onClose={printState.onCloseDriverActivities}
           closeLabel={t.printOverlay.close}
-          title={`Aktivity řidiče ${activitiesPrint.slot}`}
+          title={`${t.printOverlay.driverActivitiesTitle} ${activitiesPrint.slot}`}
         />
       )}
       {printDriver1Open && printDriver1SelectedDate != null && (
@@ -149,6 +149,7 @@ export function PrintOverlays({
           })}
           symbols={symbolMap}
           closeLabel={t.printOverlay.close}
+          title={t.printOverlay.vehicleEventsTitle}
           onClose={printState.onCloseVehicleEvents}
         />
       )}
@@ -166,15 +167,16 @@ export function PrintOverlays({
   )
 }
 
-function VehicleEventsPreview({ input, symbols, closeLabel, onClose }: {
+function VehicleEventsPreview({ input, symbols, title, closeLabel, onClose }: {
   input: () => Parameters<typeof buildVehicleEventPrintRows>[0]
   symbols: SymbolMap | null
+  title: string
   closeLabel: string
   onClose: () => void
 }) {
   const [rows] = useState(() => buildVehicleEventPrintRows(input()))
   return (
-    <PrintPreview title="Události a poruchy vozidla" closeLabel={closeLabel} onClose={onClose} ready={!!symbols?.[18]}>
+    <PrintPreview title={title} closeLabel={closeLabel} onClose={onClose} ready={!!symbols?.[18]}>
       <PrintRows rows={rows} symbols={symbols} />
     </PrintPreview>
   )

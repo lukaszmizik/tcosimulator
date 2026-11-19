@@ -161,6 +161,12 @@ export const cs: Translations = {
     totalUnconfirmed: 'Celkem nepotvrzených:', // 44
   },
   workWeek: {
+    sharedWeek: 'Společný týden',
+    drivingWeek: 'Týden řízení šachty {slot}',
+    manualWeek: 'Týden ručního doplnění',
+    manualSlotWeek: 'Týden ručního doplnění šachty {slot}',
+    historicalSlotWeek: 'Týden historické šachty {slot}',
+    emptyWeek: 'Prázdný týden',
     dayNames: [
       'Neděle',   // 45
       'Pondělí',  // 46
@@ -243,7 +249,48 @@ export const cs: Translations = {
       border_crossing: 'průjezd hranic',
     },
   },
+  cardPanel: {
+    title: 'Karty řidičů',
+    tab: 'KARTA',
+    openCard: 'Otevřít nabídku karty {slot}',
+    close: 'Zavřít nabídku karet',
+    startIgnition: 'Nejprve zapni zapalování tlačítkem START.',
+    chooseForSlot: 'Vybrat kartu pro slot {slot}',
+    insertIntoSlot: 'Vložit kartu do slotu {slot}',
+    insertedInSlot: 'Vložena ve slotu {slot}',
+    insertCard: 'Vložit kartu',
+    slot: 'Slot {slot}',
+    remove: 'Odebrat kartu',
+    dataTitle: 'Data z karty',
+    missingNumber: 'Výpis neobsahuje číslo karty.',
+    alreadyLoaded: 'Tato karta už je načtená.',
+    parseFailed: 'Soubor se nepodařilo načíst jako kartu řidiče.',
+    readFailed: 'Soubor se nepodařilo přečíst.',
+    missingWithdrawal: 'Začátek ručního doplnění nelze určit. Výpis neobsahuje čas posledního použití vozidla (vehicle_last_use).',
+    futureWithdrawal: 'Ruční doplnění by začínalo až po simulačním čase. Nejprve uprav simulační čas.',
+    alreadyInserted: 'Tato karta už je vložená v druhé šachtě.',
+  },
+  vehicleSettings: {
+    title: 'Firma a vozidlo',
+    companyName: 'Název firmy',
+    companyAddress: 'Adresa',
+    companyId: 'IČO',
+    registration: 'Registrační značka',
+    registrationNation: 'Stát registrace',
+    load: 'Standardní druh nákladu',
+    unspecified: 'Neuveden',
+    passengers: 'Cestující',
+    goods: 'Zboží',
+    save: 'Uložit údaje',
+    saved: 'Údaje uloženy.',
+    saveFailed: 'Údaje se nepodařilo uložit.',
+  },
   controls: {
+    simulationMode: 'Simulační režim',
+    speedTarget: 'Cílová rychlost',
+    speedTargetShort: 'Cíl',
+    decreaseSpeed: 'Snížit rychlost o 5 km/h',
+    increaseSpeed: 'Zvýšit rychlost o 5 km/h',
     dataScenariosSettings: 'Data, scénáře a další nastavení',
     generateWorkWeek: 'Generovat pracovní týden', // 80
     generateWorkWeekTitle: 'Vygenerovat 5–6 pracovních směn s jízdou, prací a přestávkami do paměti a na kartu Zmizík', // 81
@@ -271,6 +318,9 @@ export const cs: Translations = {
     dataAndRecords: 'Data a záznamy',
   },
   printOverlay: {
+    printPdf: 'Tisk / PDF',
+    driverActivitiesTitle: 'Aktivity řidiče',
+    vehicleEventsTitle: 'Události a poruchy vozidla',
     driverCard24hTitle: '24h výtisk karty řidiče',
     driver1Title: 'Výtisk řidič 1', // 88
     basicInfo: 'Základní info', // 89

@@ -1,21 +1,24 @@
 import { useState, type FormEvent } from 'react'
+import { useLanguage } from '../translations'
 import { savePrintVehicleProfile, type PrintVehicleProfile } from '../data/printVehicleProfile'
 
 const fields = [
-  ['companyName', 'Název firmy', 100],
-  ['companyAddress', 'Adresa', 150],
-  ['companyId', 'IČO', 20],
-  ['registration', 'Registrační značka', 16],
-  ['registrationNation', 'Stát registrace', 3],
-  ['vin', 'VIN', 17],
+  ['companyName', 100],
+  ['companyAddress', 150],
+  ['companyId', 20],
+  ['registration', 16],
+  ['registrationNation', 3],
+  ['vin', 17],
 ] as const
 
 export function PrintVehicleSettings({ profile, onSave }: {
   profile: PrintVehicleProfile
   onSave: (profile: PrintVehicleProfile) => void
 }) {
+  const { t } = useLanguage()
+  const labels = t.vehicleSettings
   const [draft, setDraft] = useState(profile)
-  const [message, setMessage] = useState('')
+  const [message, setMessage] = useState<'saved' | 'saveFailed' | null>(null)
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -32,19 +35,19 @@ export function PrintVehicleSettings({ profile, onSave }: {
       savePrintVehicleProfile(next)
       onSave(next)
       setDraft(next)
-      setMessage('Údaje uloženy.')
+      setMessage('saved')
     } catch {
-      setMessage('Údaje se nepodařilo uložit.')
+      setMessage('saveFailed')
     }
   }
 
   return (
-    <form className="print-vehicle-settings" onSubmit={submit} onChange={() => setMessage('')}>
-      <h2>Firma a vozidlo</h2>
+    <form className="print-vehicle-settings" onSubmit={submit} onChange={() => setMessage(null)}>
+      <h2>{labels.title}</h2>
       <div className="print-vehicle-fields">
-        {fields.map(([key, label, maxLength]) => (
+        {fields.map(([key, maxLength]) => (
           <label key={key}>
-            {label}
+            {key === 'vin' ? 'VIN' : labels[key]}
             <input
               value={draft[key]}
               maxLength={maxLength}
@@ -53,18 +56,18 @@ export function PrintVehicleSettings({ profile, onSave }: {
           </label>
         ))}
         <label>
-          Standardní druh nákladu
+          {labels.load}
           <select value={draft.load} onChange={(event) => setDraft({
             ...draft, load: event.target.value as PrintVehicleProfile['load'],
           })}>
-            <option value="">Neuveden</option>
-            <option value="passengers">Cestující</option>
-            <option value="goods">Zboží</option>
+            <option value="">{labels.unspecified}</option>
+            <option value="passengers">{labels.passengers}</option>
+            <option value="goods">{labels.goods}</option>
           </select>
         </label>
       </div>
-      <button type="submit">Uložit údaje</button>
-      <span role="status">{message}</span>
+      <button type="submit">{labels.save}</button>
+      <span role="status">{message && labels[message]}</span>
     </form>
   )
 }

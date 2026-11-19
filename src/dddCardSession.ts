@@ -7,13 +7,7 @@ import type { ActivityHistoryEntry, CardData, ManualEntrySegment } from './Tacho
 import type { DddParsedCard } from './types/tachoViewerDddMapper'
 import { buildDddCardPreview, type DddCardPreview } from './dddCardPreview'
 
-export const DDD_INSERT_MISSING_WITHDRAWAL =
-  'Začátek ručního doplnění nelze určit. Výpis neobsahuje čas posledního použití vozidla (vehicle_last_use).'
-
-export const DDD_INSERT_FUTURE_WITHDRAWAL =
-  'Ruční doplnění by začínalo až po simulačním čase. Nejprve upravte čas stávajícím ovládáním.'
-
-export const DDD_INSERT_ALREADY_INSERTED = 'Tato karta už je vložená v druhé šachtě.'
+export type DddInsertError = 'missingWithdrawal' | 'futureWithdrawal' | 'alreadyInserted'
 
 export type DddCardRecord = {
   cardNumber: string
@@ -31,7 +25,7 @@ export type DddCardRecord = {
 
 export type DddInsertDecision =
   | { ok: true; cardData: CardData; manualBuffer: ManualEntrySegment[] }
-  | { ok: false; message: string }
+  | { ok: false; reason: DddInsertError }
 
 export function createDddCardRecord(card: DddParsedCard): DddCardRecord {
   return {
@@ -54,16 +48,16 @@ export function assessDddInsertion(input: {
   otherSlotCardNumber: string | null
 }): DddInsertDecision {
   if (input.otherSlotCardNumber === input.record.cardNumber) {
-    return { ok: false, message: DDD_INSERT_ALREADY_INSERTED }
+    return { ok: false, reason: 'alreadyInserted' }
   }
   const fromVehicle = input.record.vehicleLastUseUtc
   const fromSession = input.record.workingLastWithdrawalUtc
   const startMs = fromSession ?? fromVehicle
   if (startMs == null) {
-    return { ok: false, message: DDD_INSERT_MISSING_WITHDRAWAL }
+    return { ok: false, reason: 'missingWithdrawal' }
   }
   if (startMs > input.simulatedNowMs) {
-    return { ok: false, message: DDD_INSERT_FUTURE_WITHDRAWAL }
+    return { ok: false, reason: 'futureWithdrawal' }
   }
   const usesVehicleTime = fromSession == null
   return {

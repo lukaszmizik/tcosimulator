@@ -139,10 +139,15 @@ import {
   replaceWorkingManual,
   setWorkingWithdrawal,
   type DddCardRecord,
+  type DddInsertError,
 } from './dddCardSession'
 
 export type { ActivityId, CardData, CardInsertionState, CardWithdrawalState, TachoState, ManualActivityEntry, ManualEntrySegment, ActivityHistoryEntry, EventLogEntry }
 export { TEST_CARDS }
+
+type CardPrepError = 'missingNumber' | 'alreadyLoaded' | 'parseFailed' | 'readFailed'
+
+const withSlot = (label: string, slot: number) => label.replace('{slot}', String(slot))
 
 const languageTabs = [
   { language: 'cs', code: 'CZ', name: 'Čeština' },
@@ -382,8 +387,8 @@ export default function App() {
   const [dddPreviewOpen, setDddPreviewOpen] = useState(false)
   const [cardGraphsWindowOpen, setCardGraphsWindowOpen] = useState(false)
   const [cardPrep, setCardPrep] = useState<[CardPrep | null, CardPrep | null]>([null, null])
-  const [cardPrepError, setCardPrepError] = useState<[string | null, string | null]>([null, null])
-  const [dddInsertMessage, setDddInsertMessage] = useState<string | null>(null)
+  const [cardPrepError, setCardPrepError] = useState<[CardPrepError | null, CardPrepError | null]>([null, null])
+  const [dddInsertMessage, setDddInsertMessage] = useState<DddInsertError | null>(null)
   const [dddCards, setDddCards] = useState<Record<string, DddCardRecord>>({})
   const dddCardsRef = useRef(dddCards)
   dddCardsRef.current = dddCards
@@ -1863,7 +1868,7 @@ export default function App() {
         otherSlotCardNumber: other?.cardNumber ?? null,
       })
       if (!decision.ok) {
-        setDddInsertMessage(decision.message)
+        setDddInsertMessage(decision.reason)
         setDragOverSlot(null)
         return
       }
@@ -2324,9 +2329,9 @@ export default function App() {
     setWorkWeekGraphData({ days: daysToShow, countryMarkers })
   }, [activityHistory, card1Manual, cardActivityHistoryByTemplateId])
 
-  const setPrepError = useCallback((index: 0 | 1, message: string | null) => {
+  const setPrepError = useCallback((index: 0 | 1, message: CardPrepError | null) => {
     setCardPrepError((prev) => {
-      const next: [string | null, string | null] = [...prev]
+      const next: [CardPrepError | null, CardPrepError | null] = [...prev]
       next[index] = message
       return next
     })
@@ -2368,11 +2373,11 @@ export default function App() {
       try {
         const card = await loadDriverCardFromDdd(new Uint8Array(buffer))
         if (!card.cardNumber) {
-          setPrepError(index, 'Výpis nemá číslo karty, takže ji nelze odlišit od jiné karty.')
+          setPrepError(index, 'missingNumber')
           return
         }
         if (dddCardsRef.current[card.cardNumber]) {
-          setPrepError(index, 'Tato karta už je načtená.')
+          setPrepError(index, 'alreadyLoaded')
           setDddPreview(dddCardsRef.current[card.cardNumber].originalPreview)
           return
         }
@@ -2386,14 +2391,11 @@ export default function App() {
         setDddPreview(record.originalPreview)
         setPrepError(index, null)
         setDddInsertMessage(null)
-      } catch (error) {
-        const message = error instanceof Error && error.message
-          ? error.message
-          : 'Soubor se nepodařilo načíst jako kartu řidiče.'
-        setPrepError(index, message)
+      } catch {
+        setPrepError(index, 'parseFailed')
       }
     }).catch(() => {
-      setPrepError(index, 'Soubor se nepodařilo přečíst.')
+      setPrepError(index, 'readFailed')
     })
   }, [setPrepError])
 
@@ -3018,7 +3020,7 @@ export default function App() {
   return (
     <div>
     <div className="app-root" data-lang={language} style={{ minHeight: '100vh', background: '#444', display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-start', margin: 0, padding: 24, gap: 24 }}>
-      {cardsOpen && <button className="cards-dismiss" aria-label="Zavřít nabídku karet" onClick={() => {setCardsOpen(false);setCardPickerSlot(null)}}/>}
+      {cardsOpen && <button className="cards-dismiss" aria-label={t.cardPanel.close} onClick={() => {setCardsOpen(false);setCardPickerSlot(null)}}/>}
       {!cardsOpen && (
         <div className="language-edge-tabs" role="group" aria-label={t.ui.language}>
           {languageTabs.map(tab => (
@@ -3034,16 +3036,17 @@ export default function App() {
           ))}
         </div>
       )}
-      <aside className={`cards-drawer ${cardsOpen ? 'is-open' : ''} ${cardDragging ? 'is-dragging' : ''}`} aria-label="Karty řidičů"
+      <aside className={`cards-drawer ${cardsOpen ? 'is-open' : ''} ${cardDragging ? 'is-dragging' : ''}`} aria-label={t.cardPanel.title}
         onKeyDown={e => {if(e.key === 'Escape'){setCardsOpen(false);setCardPickerSlot(null)}}}
         onDragStartCapture={() => setCardDragging(true)} onDragEndCapture={() => {setCardDragging(false);setCardsOpen(false)}}>
-        <div className="card-edge-tabs" onPointerEnter={e => {if(e.pointerType === 'mouse') setCardsOpen(true)}}>{([1,2] as const).map(n => <button key={n} aria-label={`Otevřít nabídku karty ${n}`} aria-expanded={cardsOpen} onClick={() => {setCardsOpen(true);setCardPickerSlot(null)}}><span>▥</span><b>{n}</b><small>KARTA</small></button>)}</div>
+        <div className="card-edge-tabs" onPointerEnter={e => {if(e.pointerType === 'mouse') setCardsOpen(true)}}>{([1,2] as const).map(n => <button key={n} aria-label={withSlot(t.cardPanel.openCard, n)} aria-expanded={cardsOpen} onClick={() => {setCardsOpen(true);setCardPickerSlot(null)}}><span>▥</span><b>{n}</b><small>{t.cardPanel.tab}</small></button>)}</div>
         <div className="cards-drawer-content" hidden={!cardsOpen}>
-        <div className="cards-drawer-heading"><strong>{cardPickerSlot ? `Vložit kartu do slotu ${cardPickerSlot}` : 'Karty řidičů'}</strong><button onClick={() => {setCardsOpen(false);setCardPickerSlot(null)}} aria-label="Zavřít karty">×</button></div>
-        {!(ignitionOn || displayAwakeFromStandby) && <p className="cards-hint">Nejprve zapni zapalování tlačítkem START.</p>}
+        <div className="cards-drawer-heading"><strong>{cardPickerSlot ? withSlot(t.cardPanel.insertIntoSlot, cardPickerSlot) : t.cardPanel.title}</strong><button onClick={() => {setCardsOpen(false);setCardPickerSlot(null)}} aria-label={t.cardPanel.close}>×</button></div>
+        {!(ignitionOn || displayAwakeFromStandby) && <p className="cards-hint">{t.cardPanel.startIgnition}</p>}
         <div className="driver-cards-column" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {([0, 1] as const).map((index) => {
             const prepared = cardPrep[index]
+            const error = cardPrepError[index]
             const templateId = prepared?.kind === 'virtual' ? prepared.templateId : null
             const dddRecord = prepared?.kind === 'ddd' ? dddCards[prepared.cardNumber] : null
             const insertedSlot = templateId
@@ -3057,7 +3060,8 @@ export default function App() {
                 key={index}
                 index={index}
                 prepared={prepared}
-                error={cardPrepError[index]}
+                error={error ? t.cardPanel[error] : null}
+                removeLabel={t.cardPanel.remove}
                 loadDddLabel={t.controls.loadCardFromDdd}
                 loadDddTitle={t.controls.loadCardFromDddTitle}
                 loadVirtualLabel={t.controls.loadVirtualCard}
@@ -3110,12 +3114,12 @@ export default function App() {
                   </div>
                 )}
                 {prepared && <div className="card-insert-actions">
-                  {insertedSlot ? <span>Vložena ve slotu {insertedSlot}</span> : (cardPickerSlot ? [cardPickerSlot] : [1,2] as const).map(slot => <button key={slot} disabled={!(ignitionOn || displayAwakeFromStandby) || !!(slot === 1 ? card1Data : card2Data)} onClick={() => insertCardIntoSlot(prepared.kind === 'virtual' ? prepared.templateId : `ddd:${prepared.cardNumber}`, slot as 1 | 2)}>Vložit do slotu {slot}</button>)}
+                  {insertedSlot ? <span>{withSlot(t.cardPanel.insertedInSlot, insertedSlot)}</span> : (cardPickerSlot ? [cardPickerSlot] : [1,2] as const).map(slot => <button key={slot} disabled={!(ignitionOn || displayAwakeFromStandby) || !!(slot === 1 ? card1Data : card2Data)} onClick={() => insertCardIntoSlot(prepared.kind === 'virtual' ? prepared.templateId : `ddd:${prepared.cardNumber}`, slot as 1 | 2)}>{withSlot(t.cardPanel.insertIntoSlot, slot)}</button>)}
                 </div>}
               </CardPrepMenu>
             )
           })}
-          {dddInsertMessage && <p className="ddd-insert-message" role="alert">{dddInsertMessage}</p>}
+          {dddInsertMessage && <p className="ddd-insert-message" role="alert">{t.cardPanel[dddInsertMessage]}</p>}
         </div>
         </div>
       </aside>
@@ -3323,7 +3327,7 @@ export default function App() {
             <div className="card-slot-row">
               <div
                 ref={slot1Ref}
-                role="button" tabIndex={0} aria-label="Vybrat kartu pro slot 1"
+                role="button" tabIndex={0} aria-label={withSlot(t.cardPanel.chooseForSlot, 1)}
                 onClick={() => openCardPicker(1)}
                 onKeyDown={e => {if(e.key === 'Enter' || e.key === ' '){e.preventDefault();openCardPicker(1)}}}
                 className={`slot-shaft-line slot-drop-zone ${!ignitionOn && !displayAwakeFromStandby ? 'slot-shaft-line-ignition-off' : ''} ${card1Data ? 'slot-drop-zone-occupied' : ''} ${dragOverSlot === 1 ? 'slot-drop-zone-highlight' : ''}`}
@@ -3358,7 +3362,7 @@ export default function App() {
               </div>
               <div
                 ref={slot2Ref}
-                role="button" tabIndex={0} aria-label="Vybrat kartu pro slot 2"
+                role="button" tabIndex={0} aria-label={withSlot(t.cardPanel.chooseForSlot, 2)}
                 onClick={() => openCardPicker(2)}
                 onKeyDown={e => {if(e.key === 'Enter' || e.key === ' '){e.preventDefault();openCardPicker(2)}}}
                 className={`slot-shaft-line slot-drop-zone ${!ignitionOn && !displayAwakeFromStandby ? 'slot-shaft-line-ignition-off' : ''} ${card2Data ? 'slot-drop-zone-occupied' : ''} ${dragOverSlot === 2 ? 'slot-drop-zone-highlight' : ''}`}
@@ -3371,7 +3375,7 @@ export default function App() {
           </div>
         </div>
         </FaceplateFrame>
-        <div className="slot-tap-controls">{([1,2] as const).map(slot => {const card=slot === 1 ? card1Data : card2Data;return <button key={slot} disabled={!!card} onClick={() => openCardPicker(slot)}>Slot {slot} · {card ? card.surname || card.name : 'Vložit kartu'}</button>})}</div>
+        <div className="slot-tap-controls">{([1,2] as const).map(slot => {const card=slot === 1 ? card1Data : card2Data;return <button key={slot} disabled={!!card} onClick={() => openCardPicker(slot)}>{withSlot(t.cardPanel.slot, slot)} · {card ? card.surname || card.name : t.cardPanel.insertCard}</button>})}</div>
 
 
         <ControlPanel
@@ -3552,13 +3556,13 @@ export default function App() {
         )}
     </div>
     {cardGraphsWindowOpen && (insertedSlot1 || insertedSlot2) && (
-      <div className="card-graphs-window-overlay" role="dialog" aria-modal="true" aria-label="Data z karty">
+      <div className="card-graphs-window-overlay" role="dialog" aria-modal="true" aria-label={t.cardPanel.dataTitle}>
         <div className="card-graphs-window" data-card-graphs-window="">
           <button
             type="button"
             className="card-graphs-window-close"
             data-card-graphs-close=""
-            aria-label="Zavřít"
+            aria-label={t.ui.close}
             onClick={() => setCardGraphsWindowOpen(false)}
           >
             ×

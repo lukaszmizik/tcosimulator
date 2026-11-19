@@ -177,9 +177,8 @@ export function InsertedCardsHistory({
   slot2: DddCardRecord | null
   vehicleOutEvents: OutModeEvent[]
 }) {
-  const { language } = useLanguage()
+  const { language, t } = useLanguage()
   const graphLanguage = language === 'ru' ? 'ru' : 'cs'
-  const slotNote = graphLanguage === 'ru' ? 'слот' : 'šachta'
   const manual1 = latestManualActivityUtc(slot1)
   const manual2 = latestManualActivityUtc(slot2)
   const latestManual = manual1 == null ? manual2 : manual2 == null ? manual1 : Math.max(manual1, manual2)
@@ -189,20 +188,20 @@ export function InsertedCardsHistory({
       if (ms == null) return
       marks.push({ id, label, ms: utcWeekStart(ms) })
     }
-    add('slot1-driving', 'Týden řízení šachty 1', slot1?.originalPreview.firstDriving?.startMs)
-    add('slot2-driving', 'Týden řízení šachty 2', slot2?.originalPreview.firstDriving?.startMs)
-    add('slot1-manual', 'Týden ručního doplnění', manual1)
-    add('slot2-manual', 'Týden ručního doplnění šachty 2', manual2)
+    add('slot1-driving', t.workWeek.drivingWeek.replace('{slot}', '1'), slot1?.originalPreview.firstDriving?.startMs)
+    add('slot2-driving', t.workWeek.drivingWeek.replace('{slot}', '2'), slot2?.originalPreview.firstDriving?.startMs)
+    add('slot1-manual', t.workWeek.manualWeek, manual1)
+    add('slot2-manual', t.workWeek.manualSlotWeek.replace('{slot}', '2'), manual2)
     const slot2Activity = [...(slot1?.original.activities ?? []), ...(slot2?.original.activities ?? [])].find(
       (activity) => activity.slot === 2,
     )
-    add('historical-slot2', 'Týden historické šachty 2', slot2Activity?.startUtc)
+    add('historical-slot2', t.workWeek.historicalSlotWeek.replace('{slot}', '2'), slot2Activity?.startUtc)
     const earliest = marks.reduce((min, mark) => Math.min(min, mark.ms), Number.POSITIVE_INFINITY)
     if (Number.isFinite(earliest)) {
-      marks.push({ id: 'empty-week', label: 'Prázdný týden', ms: earliest - WEEK_MS })
+      marks.push({ id: 'empty-week', label: t.workWeek.emptyWeek, ms: earliest - WEEK_MS })
     }
     return marks
-  }, [slot1, slot2, manual1, manual2])
+  }, [slot1, slot2, manual1, manual2, t.workWeek])
 
   const [chosenWeek, setChosenWeek] = useState<number | null>(null)
   const [clockMode, setClockMode] = useState<'local' | 'utc'>('utc')
@@ -221,7 +220,7 @@ export function InsertedCardsHistory({
     <ViewerLanguageProvider language={graphLanguage}>
       <section className="inserted-card-graphs" data-shared-week={weekStart} data-shared-clock={clockMode}>
         <div className="inserted-card-graphs-toolbar">
-          <span>Společný týden</span>
+          <span>{t.workWeek.sharedWeek}</span>
           {weeks.map((week) => (
             <button
               key={week.id}
@@ -244,7 +243,7 @@ export function InsertedCardsHistory({
           vehicleOutEvents={vehicleOutEvents}
           onWeekStartChange={onWeekStartChange}
           onClockModeChange={setClockMode}
-          headingNote={`${slotNote} 1`}
+          headingNote={t.cardPanel.slot.replace('{slot}', '1')}
         />
         <SlotGraph
           key={`2:${slot2?.cardNumber ?? ''}:${manualWeek ?? ''}`}
@@ -255,7 +254,7 @@ export function InsertedCardsHistory({
           vehicleOutEvents={vehicleOutEvents}
           onWeekStartChange={onWeekStartChange}
           onClockModeChange={setClockMode}
-          headingNote={`${slotNote} 2`}
+          headingNote={t.cardPanel.slot.replace('{slot}', '2')}
         />
       </section>
     </ViewerLanguageProvider>

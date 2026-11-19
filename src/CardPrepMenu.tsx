@@ -12,6 +12,7 @@ export function CardPrepMenu({
   index,
   prepared,
   error,
+  removeLabel,
   loadDddLabel,
   loadDddTitle,
   loadVirtualLabel,
@@ -24,6 +25,7 @@ export function CardPrepMenu({
   index: 0 | 1
   prepared: CardPrep | null
   error: string | null
+  removeLabel: string
   loadDddLabel: string
   loadDddTitle: string
   loadVirtualLabel: string
@@ -49,7 +51,7 @@ export function CardPrepMenu({
           type="button"
           className="card-prep-remove"
           data-prep-remove={index}
-          aria-label="Odebrat kartu"
+          aria-label={removeLabel}
           onClick={onRemove}
         >
           ×

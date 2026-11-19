@@ -6,7 +6,7 @@
 import { useState, useEffect } from 'react'
 import { useLanguage } from './translations'
 import type { DayData, ParsedActivity, ActivityType, CountryMarker } from './workWeekTxtParser'
-import { parseTimeAndDate, getWeekStartMsLocal, DAY_MS } from './workWeekTxtParser'
+import { parseTimeAndDate, getWeekStartMsLocal, localDayStart } from './workWeekTxtParser'
 import type { ManualEntrySegment, VehicleLoadUnloadEvent, FerryTrainEvent, OutModeEvent, FaultOrEvent, RecordedGpsLocation } from './TachoTypes'
 import type { SymbolMap } from './TachoTypes'
 import { DRIVING_SYMBOL, segmentToMsUtc } from './CardLogic'
@@ -68,7 +68,7 @@ function getActivityColor(act: ParsedActivity): string {
  * Půlnoc následujícího dne (konec dne) = 1.0, ne 0.
  */
 function timeToX(dayStartMs: number, ms: number): number {
-  const dayEndMs = dayStartMs + 24 * 3600 * 1000
+  const dayEndMs = localDayStart(dayStartMs, 1)
   if (ms >= dayEndMs) return 1.0
   const d = new Date(ms)
   const h = d.getHours()
@@ -88,7 +88,7 @@ function createEmptyDay(dayStartMs: number, dayNames: string[]): DayData {
 
 function formatWeekRange(weekStartMs: number): string {
   const mon = new Date(weekStartMs)
-  const sun = new Date(weekStartMs + 6 * DAY_MS)
+  const sun = new Date(localDayStart(weekStartMs, 6))
   const fmt = (d: Date) =>
     `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`
   return `${fmt(mon)} – ${fmt(sun)}`
@@ -238,7 +238,7 @@ function getWorkShiftRangesForDay(
   workShiftRanges: Array<{ startMs: number; endMs: number }>,
   dayUtc: number
 ): Array<{ startMs: number; endMs: number }> {
-  const dayEnd = dayUtc + 24 * 3600 * 1000
+  const dayEnd = localDayStart(dayUtc, 1)
   const result: Array<{ startMs: number; endMs: number }> = []
   for (const r of workShiftRanges) {
     if (r.endMs <= dayUtc || r.startMs >= dayEnd) continue
@@ -251,7 +251,7 @@ function getWorkShiftRangesForDay(
 }
 
 function getMarkersOnDay(markers: CountryMarker[], dayUtcMs: number): CountryMarker[] {
-  const dayEndMs = dayUtcMs + 24 * 3600 * 1000
+  const dayEndMs = localDayStart(dayUtcMs, 1)
   return markers.filter((m) => {
     const ms = parseTimeAndDate(m.timeStr, m.dateStr)
     return ms >= dayUtcMs && ms < dayEndMs
@@ -259,19 +259,19 @@ function getMarkersOnDay(markers: CountryMarker[], dayUtcMs: number): CountryMar
 }
 
 function getLoadUnloadOnDay(events: VehicleLoadUnloadEvent[], dayUtcMs: number): VehicleLoadUnloadEvent[] {
-  const dayEndMs = dayUtcMs + 24 * 3600 * 1000
+  const dayEndMs = localDayStart(dayUtcMs, 1)
   return events.filter((e) => e.minuteStartUtc >= dayUtcMs && e.minuteStartUtc < dayEndMs)
 }
 
 const FERRY_TRAIN_SYMBOL_ID = 49
 
 function getFerryTrainOnDay(events: FerryTrainEvent[], dayUtcMs: number): FerryTrainEvent[] {
-  const dayEndMs = dayUtcMs + 24 * 3600 * 1000
+  const dayEndMs = localDayStart(dayUtcMs, 1)
   return events.filter((e) => e.minuteStartUtc >= dayUtcMs && e.minuteStartUtc < dayEndMs)
 }
 
 function getOutModeOnDay(events: OutModeEvent[], dayUtcMs: number): OutModeEvent[] {
-  const dayEndMs = dayUtcMs + 24 * 3600 * 1000
+  const dayEndMs = localDayStart(dayUtcMs, 1)
   return events.filter((e) => e.minuteStartUtc >= dayUtcMs && e.minuteStartUtc < dayEndMs)
 }
 
@@ -366,13 +366,13 @@ function GraphBlock({ days, countryMarkers, manualEntryBuffer, lastWithdrawalUtc
 
   const visibleDays: DayData[] = []
   for (let i = 0; i < DAYS_PER_WEEK; i++) {
-    const dayStart = displayWeekStartMs + i * DAY_MS
+    const dayStart = localDayStart(displayWeekStartMs, i)
     visibleDays.push(dayMap.get(dayStart) ?? createEmptyDay(dayStart, dayNames))
   }
 
   const visibleFirstDate = visibleDays[0]!.dateUtc
   const visibleLastDate = visibleDays[visibleDays.length - 1]!.dateUtc
-  const visibleLastEnd = visibleLastDate + DAY_MS
+  const visibleLastEnd = localDayStart(visibleLastDate, 1)
   const visibleMarkers = countryMarkers.filter((m) => {
     const ms = parseTimeAndDate(m.timeStr, m.dateStr)
     return ms >= visibleFirstDate && ms < visibleLastEnd
@@ -904,19 +904,20 @@ export function WorkWeekGraphView({ days, countryMarkers, manualEntryBuffer, las
   const dayNames = t.workWeek.dayNames
   const getInitialWeekStart = () => {
     if (focusMs != null) return getWeekStartMsLocal(focusMs)
-    if (days.length > 0) return getWeekStartMsLocal(days[days.length - 1]!.dateUtc)
+    const initialDays = days.length ? days : card2Data?.days
+    if (initialDays?.length) return getWeekStartMsLocal(initialDays[initialDays.length - 1]!.dateUtc)
     return getWeekStartMsLocal(Date.now())
   }
   const [displayWeekStartMs, setDisplayWeekStartMs] = useState(getInitialWeekStart)
 
   useEffect(() => {
     setDisplayWeekStartMs(getInitialWeekStart())
-  }, [days, focusMs])
+  }, [days, card2Data, focusMs])
 
-  const goPrevWeek = () => setDisplayWeekStartMs((ms) => ms - 7 * DAY_MS)
-  const goNextWeek = () => setDisplayWeekStartMs((ms) => ms + 7 * DAY_MS)
+  const goPrevWeek = () => setDisplayWeekStartMs((ms) => localDayStart(ms, -7))
+  const goNextWeek = () => setDisplayWeekStartMs((ms) => localDayStart(ms, 7))
 
-  if (days.length === 0) {
+  if (days.length === 0 && !card2Data) {
     return (
       <div className="work-week-graph-overlay" onClick={onClose}>
         <div className="work-week-graph-window" onClick={(e) => e.stopPropagation()}>
@@ -1007,7 +1008,7 @@ export function WorkWeekGraphView({ days, countryMarkers, manualEntryBuffer, las
           </div>
         </div>
 
-        <GraphBlock
+        {days.length > 0 && <GraphBlock
           days={days}
           countryMarkers={countryMarkers}
           manualEntryBuffer={manualEntryBuffer}
@@ -1021,11 +1022,11 @@ export function WorkWeekGraphView({ days, countryMarkers, manualEntryBuffer, las
           title={card2Data != null ? t.workWeek.card1 : undefined}
           dayNames={dayNames}
           t={t}
-        />
+        />}
 
         {(() => {
           const visibleFirstDate = displayWeekStartMs
-          const visibleLastEnd = displayWeekStartMs + 7 * DAY_MS
+          const visibleLastEnd = localDayStart(displayWeekStartMs, 7)
           const fromRecorded = (recordedGpsLocations ?? []).filter(
             (r) => r.minuteStartUtc >= visibleFirstDate && r.minuteStartUtc < visibleLastEnd
           )

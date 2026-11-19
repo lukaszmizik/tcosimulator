@@ -137,7 +137,8 @@ export function simulatorToGraphData(
     const type = KIND_TO_ACTIVITY_TYPE[kind] ?? 'odpočinek'
     const startMs = e.minuteStartUtc
     let endMs = startMs + 60000
-    while (i + 1 < activityHistory.length && activityHistory[i + 1]![driverKey] === kind) {
+    while (i + 1 < activityHistory.length && activityHistory[i + 1]![driverKey] === kind &&
+           activityHistory[i + 1]!.minuteStartUtc === endMs) {
       i++
       endMs = activityHistory[i]!.minuteStartUtc + 60000
     }

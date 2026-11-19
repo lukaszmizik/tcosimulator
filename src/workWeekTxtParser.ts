@@ -229,6 +229,12 @@ export function getWeekStartMs(ms: number): number {
   return Date.UTC(mondayDate.getUTCFullYear(), mondayDate.getUTCMonth(), mondayDate.getUTCDate())
 }
 
+/** Místní půlnoc posunutá o kalendářní dny, včetně změn letního času. */
+export function localDayStart(ms: number, offsetDays: number): number {
+  const d = new Date(ms)
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + offsetDays).getTime()
+}
+
 /** Pondělí 00:00 místního času (pro zobrazení grafu v místním čase). */
 export function getWeekStartMsLocal(ms: number): number {
   const d = new Date(ms)
@@ -253,7 +259,7 @@ export function expandToFullWeek(days: DayData[], referenceMs: number): DayData[
 
   const result: DayData[] = []
   for (let i = 0; i < 7; i++) {
-    const dayStart = weekStartMs + i * DAY_MS
+    const dayStart = localDayStart(weekStartMs, i)
     const existing = dayMap.get(dayStart)
     if (existing) {
       result.push(existing)
@@ -290,9 +296,9 @@ export function expandToWeeksContainingData(days: DayData[], referenceMs: number
   }
 
   const result: DayData[] = []
-  for (let weekStart = weekStartMin; weekStart <= weekStartMax; weekStart += 7 * DAY_MS) {
+  for (let weekStart = weekStartMin; weekStart <= weekStartMax; weekStart = localDayStart(weekStart, 7)) {
     for (let i = 0; i < 7; i++) {
-      const dayStart = weekStart + i * DAY_MS
+      const dayStart = localDayStart(weekStart, i)
       const existing = dayMap.get(dayStart)
       if (existing) {
         result.push(existing)

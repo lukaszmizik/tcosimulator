@@ -8,3 +8,4 @@ release/
 /public/ttf/
 .vercel-verify-*/
 node_modules
+.vercel

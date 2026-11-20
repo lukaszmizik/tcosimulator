@@ -319,7 +319,13 @@ export function useCardWizard2(params: UseCardWizard2Params) {
         if (action === 'up' || action === 'down') return { ...prev, decisionSupplement: !prev.decisionSupplement }
         if (action === 'ok') {
           if (!prev.decisionSupplement) {
-            return { ...prev, phase: prev.showItsVdoQuestions ? 'itsQuestion' : 'finalizeStep1', phaseStartTime: Date.now() }
+            // DTCO 4.1b: po odmítnutí doplnění následuje výchozí země, ne ITS ani dokončení.
+            return {
+              ...prev,
+              phase: 'country',
+              phaseStartTime: Date.now(),
+              insertionTimeFixed: floorToMinute(prev.cardInsertionTime),
+            }
           }
           const offset = timeOffsetMsRef.current
           const insertionTimeFixed = floorToMinute(prev.cardInsertionTime)
@@ -451,8 +457,8 @@ export function useCardWizard2(params: UseCardWizard2Params) {
           if (prev.awaitingMaxTimeConfirm) {
             const segForTime = prev.pendingMaxTimeSegment ?? seg
             const segUtc = floorToMinute(tachographSegmentToUtcMs(segForTime, offset))
-            const hasStartCountry = prev.manualEntryBuffer.some((s) => s.activityId === 'START_COUNTRY')
-            const nextPhase = hasStartCountry ? ('finalConfirm' as CardInsertionPhase) : ('country' as CardInsertionPhase)
+            // Razítko země v mezeře není výchozí země v okamžiku vložení — tu DTCO ptá vždy.
+            const nextPhase = 'country' as CardInsertionPhase
             const store = (fields: typeof prev.segmentStart, activityId: typeof seg.activityId) =>
               tachographSegmentToUtcForBuffer({ ...fields, activityId }, offset)
             if (segUtc >= insertionTimeFixed) {
@@ -508,8 +514,7 @@ export function useCardWizard2(params: UseCardWizard2Params) {
             tachographSegmentToUtcForBuffer({ ...prev.segmentStart, activityId: seg.activityId }, offset),
             tachographSegmentToUtcForBuffer({ ...segValid, activityId: seg.activityId }, offset),
           ]
-          const hasStartCountry = newBuffer.some((s) => s.activityId === 'START_COUNTRY')
-          const nextPhase = hasStartCountry ? ('finalConfirm' as CardInsertionPhase) : ('country' as CardInsertionPhase)
+          const nextPhase = 'country' as CardInsertionPhase
           const l2Utc = floorToMinute(tachographSegmentToUtcMs(segValid, offset))
           if (l2Utc >= insertionTimeFixed) {
             return { ...prev, manualEntryBuffer: newBuffer, phase: nextPhase, phaseStartTime: Date.now() }

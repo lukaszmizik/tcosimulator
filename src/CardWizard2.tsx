@@ -26,14 +26,6 @@ function shiftTachographDay(seg: { day: number; month: number; year: number }, d
   seg.year = shifted.getUTCFullYear()
 }
 
-/** Výměna řidičů: karta vytažena a vložena do 1 minuty, L1 a L2 by byly stejné → přeskočit doplňování časů a jít rovnou na výběr výchozí země. */
-function shouldSkipToCountryStep(prev: CardInsertionState): boolean {
-  if (prev.firstInsertion || prev.lastWithdrawal == null) return false
-  const withinOneMinute = prev.cardInsertionTime - prev.lastWithdrawal <= 60000
-  const sameMinute = floorToMinute(prev.lastWithdrawal) === floorToMinute(prev.cardInsertionTime)
-  return withinOneMinute && sameMinute
-}
-
 // Zkopírované časy zobrazení obrazovek
 const WELCOME_MS = 3000
 const LOADING_MS = 3000
@@ -202,9 +194,6 @@ export function useCardWizard2(params: UseCardWizard2Params) {
         }
         if (prev.phase === 'lastRemoval') {
           if (elapsed >= LAST_REMOVAL_MS) {
-            if (shouldSkipToCountryStep(prev)) {
-              return { ...prev, phase: 'country', phaseStartTime: Date.now(), insertionTimeFixed: floorToMinute(prev.cardInsertionTime) }
-            }
             return { ...prev, phase: 'decision1M', phaseStartTime: Date.now() }
           }
           return prev
@@ -319,19 +308,15 @@ export function useCardWizard2(params: UseCardWizard2Params) {
         if (action === 'up' || action === 'down') return { ...prev, decisionSupplement: !prev.decisionSupplement }
         if (action === 'ok') {
           if (!prev.decisionSupplement) {
-            // DTCO 4.1b: po odmítnutí doplnění následuje výchozí země, ne ITS ani dokončení.
-            return {
-              ...prev,
-              phase: 'country',
-              phaseStartTime: Date.now(),
-              insertionTimeFixed: floorToMinute(prev.cardInsertionTime),
-            }
+            // Návod str. 56: Ne = žádné činnosti, pokračuje se krokem i (bez editoru a bez výchozí země).
+            return { ...prev, phase: prev.showItsVdoQuestions ? 'itsQuestion' : 'finalizeStep1', phaseStartTime: Date.now() }
           }
           const offset = timeOffsetMsRef.current
           const insertionTimeFixed = floorToMinute(prev.cardInsertionTime)
           const l1Utc = floorToMinute(prev.lastWithdrawal ?? prev.firstManualEntryStartUtc ??
             segmentToMsUtc({ ...prev.segmentStart, activityId: 'REST' }))
-          if (prev.firstManualEntryStartUtc != null && l1Utc >= insertionTimeFixed) {
+          // Činnost potřebuje aspoň minutu. Když už nastal okamžik vložení, následuje výchozí země.
+          if (l1Utc + 60_000 > insertionTimeFixed) {
             return { ...prev, phase: 'country', phaseStartTime: Date.now(), insertionTimeFixed }
           }
           const l1FromLastWithdrawal = utcMsToTachographSegment(l1Utc, offset)

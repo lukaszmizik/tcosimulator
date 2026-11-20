@@ -143,6 +143,7 @@ export const ru: Translations = {
     saved: 'сохранено', // 30
     endCountry: 'Конец страны', // 31
     startCountry: 'Нач. страны', // 32
+    printUtcLine1: 'печать в',
     printUtc: 'UTC время?', // 33
     printStarted: 'запущен...', // 34
     cardWarning: '\u00A0карта!', // 35 (неразрывный пробел перед текстом)

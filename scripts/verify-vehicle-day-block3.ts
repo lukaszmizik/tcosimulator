@@ -2,7 +2,7 @@
  * Blok [3]/[3a] denní sestavy vozidla. Data jsou syntetická.
  */
 import assert from 'node:assert/strict'
-import type { ActivityHistoryEntry } from '../src/TachoTypes.ts'
+import { NO_CARD, type ActivityHistoryEntry, type ActivityKind } from '../src/TachoTypes.ts'
 import {
   applyForwardDistance,
   applySecondDistances,
@@ -60,6 +60,33 @@ function block9(printed: PrintRow[]): string[] {
   const start = text.findIndex((row) => row.includes('(17)') && row.startsWith('-'))
   const end = text.findIndex((row, index) => index > start && row.includes('(12)') && row.startsWith('-'))
   return text.slice(start, end)
+}
+
+function fillMinutes(
+  start: number, end: number, driver1: ActivityKind, extra: Partial<ActivityHistoryEntry> = {},
+): ActivityHistoryEntry[] {
+  const entries: ActivityHistoryEntry[] = []
+  for (let at = start; at < end; at += 60_000) {
+    entries.push({
+      minuteStartUtc: at, driver1, driver2: 'none',
+      driver1CardId: NO_CARD, driver2CardId: NO_CARD, ...extra,
+    })
+  }
+  return entries
+}
+
+function slotLines(printed: PrintRow[], slot: 1 | 2): string[] {
+  const text = printed.map(line)
+  const start = text.findIndex((row) => row.startsWith('-') && row.includes(slot === 1 ? '(12)' : '(13)'))
+  const end = text.findIndex((row, index) => index > start && row.startsWith('-')
+    && (slot === 1 ? row.includes('(13)') : row.includes('(40)')))
+  return text.slice(start, end)
+}
+
+function summaryDurations(printed: PrintRow[]): string[] {
+  const text = printed.map(line)
+  const start = text.findIndex((row) => row.startsWith('-') && row.includes('(40)'))
+  return text.slice(start).filter((row) => /^\([29871]\) /.test(row) || row.startsWith('(2)(2) '))
 }
 
 function identification(printed: PrintRow[]): string[] {
@@ -449,9 +476,167 @@ export function main(): void {
     insertedHolders: [], dayOdometers: sample, selectedDayUtc: sampleDay, printedAtUtc: sampleDay + dayMs,
   }).every((row) => row.length <= 24))
 
+  const evening = DAY + 20 * hour
+  const rest = (fromHour: number, toHour: number) => fillMinutes(DAY + fromHour * hour, DAY + toHour * hour, 'rest')
+  const work = (fromHour: number, toHour: number) => fillMinutes(DAY + fromHour * hour, DAY + toHour * hour, 'otherWork')
+
+  // A. OUT začátek a konec během jedné aktivity.
+  const outDuring = rows({
+    insertedHolders: [], printedAtUtc: evening, history: rest(8, 12),
+    out: [
+      { minuteStartUtc: DAY + 9 * hour, type: 'activation' },
+      { minuteStartUtc: DAY + 10 * hour, type: 'deactivation' },
+    ],
+  })
+  assert.deepEqual(slotLines(outDuring, 1).slice(1, 5), [
+    '(14)---',
+    '(8) 08:00 04h00',
+    '  09:00 OUT(59)',
+    '  10:00 (59)OUT',
+  ])
+  assert.equal(slotLines(outDuring, 1).filter((row) => row.includes('(8)')).length, 1)
+
+  // B. Trajekt začátek a konec během odpočinku, odpočinek se nedělí.
+  const ferryDuring = rows({
+    insertedHolders: [], printedAtUtc: evening,
+    history: [...rest(8, 11), ...work(11, 12)],
+    ferry: [
+      { minuteStartUtc: DAY + 9 * hour + 30 * 60 * 1000, type: 'activation' },
+      { minuteStartUtc: DAY + 10 * hour + 30 * 60 * 1000, type: 'deactivation' },
+    ],
+  })
+  assert.deepEqual(slotLines(ferryDuring, 1).slice(1, 6), [
+    '(14)---',
+    '(8) 08:00 03h00',
+    '  09:30 (49)(59)',
+    '  10:30 (59)(49)',
+    '(9) 11:00 01h00',
+  ])
+
+  // C. Více podmínek v jedné aktivitě.
+  const several = rows({
+    insertedHolders: [], printedAtUtc: evening, history: rest(8, 12),
+    out: [
+      { minuteStartUtc: DAY + 8 * hour + 30 * 60 * 1000, type: 'activation' },
+      { minuteStartUtc: DAY + 11 * hour, type: 'deactivation' },
+    ],
+    ferry: [
+      { minuteStartUtc: DAY + 9 * hour + 30 * 60 * 1000, type: 'activation' },
+      { minuteStartUtc: DAY + 10 * hour + 30 * 60 * 1000, type: 'deactivation' },
+    ],
+  })
+  assert.deepEqual(slotLines(several, 1).filter((row) => row.startsWith('  ')), [
+    '  08:30 OUT(59)',
+    '  09:30 (49)(59)',
+    '  10:30 (59)(49)',
+    '  11:00 (59)OUT',
+  ])
+  assert.equal(slotLines(several, 1).filter((row) => row.startsWith('(8)')).length, 1)
+
+  // D. Událost přesně na hranici dvou aktivit.
+  const onBoundary = rows({
+    insertedHolders: [], printedAtUtc: evening,
+    history: [...rest(8, 11), ...work(11, 13)],
+    ferry: [{ minuteStartUtc: DAY + 11 * hour, type: 'activation' }],
+  })
+  const boundary = slotLines(onBoundary, 1)
+  assert.ok(boundary.indexOf('(8) 08:00 03h00') < boundary.indexOf('  11:00 (49)(59)'))
+  assert.ok(boundary.indexOf('  11:00 (49)(59)') < boundary.indexOf('(9) 11:00 02h00'))
+
+  // E. Událost bez uložené aktivity v daném okamžiku.
+  const inGap = rows({
+    insertedHolders: [], printedAtUtc: evening,
+    history: [...rest(8, 9), ...work(11, 12)],
+    out: [{ minuteStartUtc: DAY + 10 * hour, type: 'activation' }],
+  })
+  const gap = slotLines(inGap, 1)
+  assert.ok(gap.indexOf('(8) 08:00 01h00') < gap.indexOf('  10:00 OUT(59)'))
+  assert.ok(gap.indexOf('  10:00 OUT(59)') < gap.indexOf('(9) 11:00 01h00'))
+  const noActivity = slotLines(rows({
+    insertedHolders: [], printedAtUtc: evening,
+    out: [{ minuteStartUtc: DAY + 9 * hour + 30 * 60 * 1000, type: 'activation' }],
+  }), 1)
+  assert.deepEqual(noActivity, [
+    '-----------(12)------------',
+    '---',
+    '  09:30 OUT(59)',
+  ])
+
+  // F. OUT aktivní přes půlnoc.
+  const overnight = rows({
+    insertedHolders: [], printedAtUtc: evening, history: rest(8, 10),
+    out: [
+      { minuteStartUtc: DAY - hour, type: 'activation' },
+      { minuteStartUtc: DAY + 8 * hour + 30 * 60 * 1000, type: 'deactivation' },
+    ],
+  })
+  const overnightText = overnight.map(line)
+  const outBanner = overnightText.findIndex((row) => row.startsWith('-') && row.includes('OUT') && !row.includes('(59)'))
+  const slot1At = overnightText.findIndex((row) => row.startsWith('-') && row.includes('(12)'))
+  assert.ok(outBanner >= 0 && outBanner < slot1At)
+  assert.equal(overnightText.some((row) => row.includes('OUT(59)')), false)
+  assert.ok(slotLines(overnight, 1).includes('  08:30 (59)OUT'))
+  const previousDay = rows({
+    insertedHolders: [], selectedDayUtc: DAY - dayMs, printedAtUtc: evening,
+    history: fillMinutes(DAY - 2 * hour, DAY, 'rest'),
+    out: [{ minuteStartUtc: DAY - hour, type: 'activation' }],
+  })
+  assert.ok(slotLines(previousDay, 1).includes('  23:00 OUT(59)'))
+  assert.equal(previousDay.map(line).some((row) => row.startsWith('-') && row.includes('OUT') && !row.includes('(12)')), false)
+
+  // G. Šachta 1 a 2: značky jen ve šachtě 1, chronologie oddělená.
+  const twoSlots = rows({
+    insertedHolders: [], printedAtUtc: evening,
+    history: fillMinutes(DAY + 8 * hour, DAY + 12 * hour, 'rest', { driver2: 'availability' }),
+    ferry: [{ minuteStartUtc: DAY + 9 * hour + 30 * 60 * 1000, type: 'activation' }],
+  })
+  assert.ok(slotLines(twoSlots, 1).includes('  09:30 (49)(59)'))
+  assert.equal(slotLines(twoSlots, 2).some((row) => row.includes('(49)') || row.includes('OUT')), false)
+  assert.ok(slotLines(twoSlots, 2).some((row) => row.startsWith('(7)')))
+
+  // H. UTC/LOC, událost před půlnocí UTC se v LOC může posunout na další kalendářní datum.
+  const late = DAY + 23 * hour + 30 * 60 * 1000
+  const localCrossing = rows({
+    insertedHolders: [], selectedDayUtc: DAY, printedAtUtc: DAY + dayMs,
+    history: rest(22, 24),
+    out: [{ minuteStartUtc: late, type: 'activation' }],
+    isUtc: false, localOffsetMs: 2 * hour,
+  })
+  assert.equal(block9(localCrossing)[1], '       15.01.2026')
+  assert.ok(slotLines(localCrossing, 1).includes('  01:30 OUT(59)'))
+  assert.equal(slotLines(localCrossing, 1).some((row) => row.includes('23:30')), false)
+  const utcCrossing = rows({
+    insertedHolders: [], selectedDayUtc: DAY, printedAtUtc: DAY + dayMs,
+    history: rest(22, 24),
+    out: [{ minuteStartUtc: late, type: 'activation' }],
+  })
+  assert.ok(slotLines(utcCrossing, 1).includes('  23:30 OUT(59)'))
+  assert.equal(rows({
+    insertedHolders: [], selectedDayUtc: DAY + dayMs, printedAtUtc: DAY + 2 * dayMs,
+    out: [{ minuteStartUtc: late, type: 'activation' }],
+  }).map(line).some((row) => row.includes('OUT(59)')), false)
+
+  // I. Součty aktivit se značkami i bez nich jsou stejné.
+  const historyForTotals = [...rest(8, 11), ...work(11, 13)]
+  const withoutMarks = rows({ insertedHolders: [], printedAtUtc: evening, history: historyForTotals })
+  const withMarks = rows({
+    insertedHolders: [], printedAtUtc: evening, history: historyForTotals,
+    out: [
+      { minuteStartUtc: DAY + 9 * hour, type: 'activation' },
+      { minuteStartUtc: DAY + 11 * hour, type: 'deactivation' },
+    ],
+    ferry: [{ minuteStartUtc: DAY + 10 * hour, type: 'activation' }],
+  })
+  assert.deepEqual(summaryDurations(withMarks), summaryDurations(withoutMarks))
+  assert.ok(slotLines(withoutMarks, 1).includes('(8) 08:00 03h00'))
+  assert.ok(slotLines(withMarks, 1).includes('(8) 08:00 03h00'))
+  assert.ok(slotLines(withMarks, 1).includes('(9) 11:00 02h00'))
+  assert.ok(withMarks.every((row) => row.length <= 24))
+
   console.log(controlled.slice(calibration, dayRecord + 1).join('\n'))
   console.log(sampleBlock.join('\n'))
   console.log(block9(rows({
     insertedHolders: [], dayOdometers: parked, selectedDayUtc: parkedAt, printedAtUtc: parkedPrint,
   })).join('\n'))
+  console.log(slotLines(ferryDuring, 1).join('\n'))
 }

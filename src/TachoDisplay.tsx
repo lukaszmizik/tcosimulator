@@ -360,7 +360,7 @@ function PrintWizardDisplay(props: TachoDisplayProps) {
   const pw = printWizardState!
 
   if (pw.step === 'utc') {
-    const l1 = parseSymbols('výtisk v', symbolMap)
+    const l1 = parseSymbols(t.tachoDisplay.printUtcLine1, symbolMap)
     return (
       <div className="lcd-two-rows lcd-card-insertion">
         <div className="lcd-row lcd-row-left"><span className="lcd-inline-symbols">{l1}</span></div>

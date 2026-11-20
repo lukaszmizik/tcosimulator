@@ -142,6 +142,7 @@ export const en: Translations = {
     saved: 'saved', // 30
     endCountry: 'end country', // 31
     startCountry: 'begin country', // 32
+    printUtcLine1: 'print in',
     printUtc: 'UTC time?', // 33
     printStarted: 'started...', // 34
     cardWarning: '\u00A0card!', // 35 (non-breaking space before text)

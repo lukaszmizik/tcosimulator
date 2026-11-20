@@ -146,6 +146,7 @@ export type Translations = {
     saved: string
     endCountry: string
     startCountry: string
+    printUtcLine1: string
     printUtc: string
     printStarted: string
     cardWarning: string

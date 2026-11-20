@@ -6,7 +6,7 @@ import {
   NO_CARD, type ActivityHistoryEntry, type ActivityKind, type DayOdometerRecord, type EventLogEntry,
   type FerryTrainEvent, type OutModeEvent, type RecordedGpsLocation, type SecondActivitySnapshot,
 } from '../TachoTypes'
-import { createPrintRows, duration, printDateUtc, printTimeUtc } from './driverCardPrintRows'
+import { createPrintRows, duration, printDateUtc, printTimeUtc, type PrintCell } from './driverCardPrintRows'
 
 const MINUTE = 60_000
 const DAY = 1_440 * MINUTE
@@ -241,12 +241,16 @@ export function buildVehicleDayPrintRows(input: VehicleDayPrintData & {
     if (card?.dateOfExpiry) add('  ', card.dateOfExpiry)
   }
 
-  const conditions: { at: number; label: string; icon?: number }[] = [
+  // Blok [10f]: čas a piktogram specifické podmínky. 59 = od/do podle DTCO 4.1b.
+  // Šachta 2 je neopakuje: manuál je řadí do chronologie šachty 1, [10h] je jen šachta 2.
+  const conditions: { at: number; pictograms: PrintCell[] }[] = [
     ...input.out.filter((event) => inDay(event.minuteStartUtc)).map((event) => ({
-      at: event.minuteStartUtc, label: event.type === 'activation' ? 'OUT >' : '< OUT',
+      at: event.minuteStartUtc,
+      pictograms: event.type === 'activation' ? ['OUT', 59] : [59, 'OUT'],
     })),
     ...input.ferry.filter((event) => inDay(event.minuteStartUtc)).map((event) => ({
-      at: event.minuteStartUtc, label: event.type === 'activation' ? ' >' : ' <', icon: 49,
+      at: event.minuteStartUtc,
+      pictograms: event.type === 'activation' ? [49, 59] : [59, 49],
     })),
   ].sort((a, b) => a.at - b.at)
   const lastOutBefore = input.out.filter((event) => event.minuteStartUtc < from)
@@ -264,17 +268,18 @@ export function buildVehicleDayPrintRows(input: VehicleDayPrintData & {
     let previous: Segment | undefined
     const addMark = () => {
       const mark = marks[markIndex++]
-      add('  ', stamp(mark.at), ' ', ...(mark.icon == null ? [] : [mark.icon]), mark.label)
+      add('  ', stamp(mark.at), ' ', ...mark.pictograms)
     }
     for (const segment of segments) {
       if (!previous || previous.cardId !== segment.cardId || previous.end !== segment.start) {
         if (previous) separator()
         cardHeader(segment.cardId)
       }
-      while (markIndex < marks.length && marks[markIndex].at <= segment.start) addMark()
+      while (markIndex < marks.length && marks[markIndex].at < segment.start) addMark()
       add(symbols[segment.activity], ' ', stamp(segment.start),
         segment.open ? '' : ' ' + duration(segment.end - segment.start),
         ...(segment.crew ? [' ', 2, 2] : []))
+      while (markIndex < marks.length && marks[markIndex].at <= segment.end) addMark()
       previous = segment
       const key = segment.cardId === NO_CARD || !segment.cardId
         ? `${slot}:${segment.cardId ?? "?"}` : segment.cardId
@@ -284,8 +289,8 @@ export function buildVehicleDayPrintRows(input: VehicleDayPrintData & {
       if (segment.crew) total.crew += minutes
       totals.set(key, total)
     }
-    while (markIndex < marks.length) addMark()
     if (!segments.length) add('---')
+    while (markIndex < marks.length) addMark()
   }
 
   separator(40)

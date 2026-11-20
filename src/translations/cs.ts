@@ -142,6 +142,7 @@ export const cs: Translations = {
     saved: 'uloženo', // 30
     endCountry: 'cílová země', // 31
     startCountry: 'výchozí země', // 32
+    printUtcLine1: 'výtisk v',
     printUtc: 'UTC času?', // 33
     printStarted: 'spuštěn...', // 34
     cardWarning: '\u00A0karta!', // 35 (nezlomitelná mezera před textem)

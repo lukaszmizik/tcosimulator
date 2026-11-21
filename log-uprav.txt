@@ -131,8 +131,14 @@ Téma: 24h výtisk řidiče – události jako piktogramy + čas
 - Blok [12] denního výtisku: místo textu „Jízda bez karty“ piktogramy (!(2)(14) / !(14)(2) / x), datum, čas, trvání, (24) SPZ/---.
 - Soubor: driverCardPrintRows.ts.
 
+=== BLOK 1p – Dokončená úprava ===
+Datum: 2026-11-21
+Téma: KB hlášení – jednotná okýnka 16×2 jako LCD
+
+- Náhledy hlášek ve Znalostní bázi mají pevnou šířku 16 znaků a 2 řádky (Casio font), všechna okýnka stejně velká.
+- Soubory: knowledgeBase.css, KnowledgeBase.tsx.
+
 === BLOK 2 – Nedokončeno / na příště ===
-- Trajekt při stání: zda přeskočit časy karet jako teď, nebo je ukázat i s aktivním trajektem.
 - Week-graph: chybějící výstrahy v grafu pracovního týdne.
 - Jednotný graf i pro virtuální kartu (teď jde do starého WorkWeekGraphView; chybí most historie → SimulatorSlotGraphInput + přepínač v handleShowCardData; odloženo).
 - Tlačítko „Generovat pracovní týden“ odstraněno z UI; handleGenerateWorkWeek v App ponecháno.

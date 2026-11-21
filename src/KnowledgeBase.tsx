@@ -124,8 +124,12 @@ export function KnowledgeBase({ language }: {
                     <ul>
                       {group.entries.map(entry => (
                         <li key={entry.id}>
-                          <div className="kb-display">
-                            {entry.display?.map(line => line && <div key={line}>{renderSymbols(line)}</div>)}
+                          <div className="kb-display" aria-label={entry.display?.join(' / ')}>
+                            {[0, 1].map((index) => (
+                              <div key={index} className="kb-display-line">
+                                {entry.display?.[index] ? renderSymbols(entry.display[index]!) : '\u00a0'}
+                              </div>
+                            ))}
                           </div>
                           <div className="kb-description">
                             {entry.label && <strong>{entry.label}</strong>}

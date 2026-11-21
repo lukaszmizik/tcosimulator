@@ -30,7 +30,6 @@ export type ControlPanelProps = {
   /** true pokud je vložena alespoň jedna karta (řidič 1 nebo 2) */
   cardInserted: boolean
   isMultiManning: boolean
-  onGenerateWorkWeek: () => void
   onShowCardData: () => void
   virtualCardSettings?: ReactNode
   printVehicleSettings?: ReactNode
@@ -72,7 +71,6 @@ export function ControlPanel(p: ControlPanelProps) {
       <label className="dash-check"><input type="checkbox" checked={p.remoteDataDownloadActive} onChange={e=>p.onRemoteDataDownloadActiveChange(e.target.checked)}/>{t.ui.remoteDataDownloadActive}</label>
       <div className="dash-tool-buttons">
         <button onClick={p.onSimulate4h10m} disabled={!p.ignitionOn || !p.cardInserted}>{t.ui.generate4h10mDriving}</button>
-        <button onClick={p.onGenerateWorkWeek} disabled={p.isMultiManning || p.ignitionOn}>{t.controls.generateWorkWeek}</button>
         <button onClick={p.onShowCardData}>{t.controls.showCardData}</button>
       </div>
       {p.virtualCardSettings}

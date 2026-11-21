@@ -14,3 +14,7 @@ Téma: VDO Counter (hlavní + VDO24h / týden / VDOi)
 - Trajekt při stání: zda přeskočit časy karet jako teď, nebo je ukázat i s aktivním trajektem.
 - Week-graph: chybějící výstrahy v grafu pracovního týdne.
 - Blikající h u aktivní části Counteru (odloženo za funkční pole).
+- Jednotný graf i pro virtuální kartu (teď jde do starého WorkWeekGraphView; chybí most historie → SimulatorSlotGraphInput + přepínač v handleShowCardData; odloženo).
+- Prošlá virtuální karta: profil expired + hlášení „! neplatná karta“ při vložení (návod str. 113); auto-výhoz po změně dne u už vložené karty; událost se do VU neukládá (pozn. 3 str. 149).
+- Tlačítko „Generovat pracovní týden“ odstraněno z UI; handleGenerateWorkWeek v App ponecháno.
+

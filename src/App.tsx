@@ -2320,6 +2320,7 @@ export default function App() {
     }
   }
 
+  /** UI tlačítko odstraněno (nahrazuje příprava karty s modelovým týdnem). Logika ponechána. */
   const handleGenerateWorkWeek = useCallback(() => {
     const slotIndex: 1 | 2 = 1
     const templateId = 'zmizik'
@@ -2366,6 +2367,9 @@ export default function App() {
     const daysToShow = activities.length > 0 ? expandToWeeksContainingData(days, Math.min(...activities.map((a) => a.startMs))) : expandToWeeksContainingData([], nowUtc)
     setWorkWeekGraphData({ days: daysToShow, countryMarkers })
   }, [activityHistory, card1Manual, cardActivityHistoryByTemplateId])
+  useEffect(() => {
+    void handleGenerateWorkWeek
+  }, [handleGenerateWorkWeek])
 
   const setPrepError = useCallback((index: 0 | 1, message: CardPrepError | null) => {
     setCardPrepError((prev) => {
@@ -3514,7 +3518,6 @@ export default function App() {
           onSimulate4h10m={handleSimulate4h10m}
           cardInserted={card1Inserted || card2Inserted}
           isMultiManning={isMultiManning}
-          onGenerateWorkWeek={handleGenerateWorkWeek}
           onShowCardData={handleShowCardData}
           virtualCardSettings={<VirtualCardNameSettings names={virtualCardNames} onSave={setVirtualCardNames} language={language} onPrepare={prepareTrainingCard} insertedIds={[card1Data?.templateId, card2Data?.templateId]} />}
           printVehicleSettings={<PrintVehicleSettings profile={printVehicleProfile} onSave={setPrintVehicleProfile} />}

@@ -39,7 +39,7 @@ export type TimesLocation =
 /**
  * Za jízdy: přehled řízení a odpočinku, hlavní Counter a počitadlo pracovní doby.
  * Při stání: časy obou šachet (i bez karty – poslední stav šachty), potom Counter jen u vložených karet
- * a při jiné práci nebo pohotovosti VDO24h, týden a VDOi.
+ * a při odpočinku, jiné práci nebo pohotovosti VDO24h, týden a VDOi.
  * Trajekt časy karet neotvírá.
  */
 export function buildTimesSequence(input: {
@@ -269,7 +269,7 @@ export function slot1CounterLcdProps(input: {
   }
 }
 
-/** Dolů na VDO24h při stání a jiné práci nebo pohotovosti. U šachty 2 se čte pravá činnost. */
+/** Dolů na VDO24h při stání a odpočinku, jiné práci nebo pohotovosti. U šachty 2 se čte pravá činnost. */
 export function vdo24hEntryAvailable(input: Slot1DddCounterContext & {
   card2Inserted: boolean
   speed: number
@@ -277,7 +277,8 @@ export function vdo24hEntryAvailable(input: Slot1DddCounterContext & {
   rightActivityId?: string
 }): boolean {
   if (input.speed !== 0) return false
-  const standing = (activity: string | undefined) => activity === 'WORK' || activity === 'AVAILABILITY'
+  const standing = (activity: string | undefined) =>
+    activity === 'REST' || activity === 'WORK' || activity === 'AVAILABILITY'
   if (slot2OnlyCounterSelected({ ...input, card2Inserted: input.card2Inserted })) return standing(input.rightActivityId)
   if (slot2EjectShowsCard1(input)) return standing(input.leftActivityId)
   if (crewOffPairCounterSelected(input) || crewPairCounterSelected(input)) {

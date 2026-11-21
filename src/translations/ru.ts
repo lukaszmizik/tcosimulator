@@ -125,8 +125,8 @@ export const ru: Translations = {
     supplement: 'ручной ввод?', // 12
     yes: 'да', // 13
     no: 'нет', // 14
-    startCountry: 'Нач. страны', // 15
-    endCountry: 'Конец страны', // 16
+    startCountry: 'Страна начала', // 15
+    endCountry: 'Страна конца', // 16
     firstInsertion: 'Первая вставка', // 17
     regionSpain: 'регион Испания', // 18
     idlePlease: 'пожалуйста', // 19
@@ -145,8 +145,8 @@ export const ru: Translations = {
   tachoDisplay: {
     input: 'ввод', // 29
     saved: 'сохранено', // 30
-    endCountry: 'Конец страны', // 31
-    startCountry: 'Нач. страны', // 32
+    endCountry: 'Страна конца', // 31
+    startCountry: 'Страна начала', // 32
     printUtcLine1: 'Распечатка с',
     printUtc: 'временем UTC', // 33
     printStarted: 'запущен...', // 34
@@ -368,8 +368,8 @@ export const ru: Translations = {
       PV_STATUS: { line2: '(44)D(18) статус D1/D2' },
       PV_V_PROF: { line2: '%v(18) v-профиль' },
       PV_N_PROF: { line2: '%n(18) n-профиль' },
-      ID1_START: { line2: '(37)(36) Начало страны' },
-      ID1_END: { line2: '(41)(37) страна прибытия' },
+      ID1_START: { line2: '(37)(36) Страна начала' },
+      ID1_END: { line2: '(41)(37) Страна конца' },
       ID1_SETTINGS: { line2: '?(19) Настройки' },
       ID1_ITS: { line2: 'Публиковать ITS' },
       ID1_VDO: { line2: 'Публиковать VDO' },
@@ -379,8 +379,8 @@ export const ru: Translations = {
       CONSENT_NO: { line2: 'нет' },
       ID1_BT: { line2: '(1) Bluetooth' },
       ID1_MISC: { line2: 'Прочее' },
-      ID2_START: { line2: '(37)(36) Начало страны' },
-      ID2_END: { line2: '(41)(37) страна прибытия' },
+      ID2_START: { line2: '(37)(36) Страна начала' },
+      ID2_END: { line2: '(41)(37) Страна конца' },
       ID2_SETTINGS: { line2: '?(19) Настройки' },
       ID2_BT: { line2: '(1) Bluetooth' },
       ID2_MISC: { line2: 'Прочее' },
@@ -434,8 +434,8 @@ export const ru: Translations = {
     },
   },
   manualEntry: {
-    startCountry: 'страна отправления', // 96
-    endCountry: 'страна прибытия', // 97
+    startCountry: 'Страна начала', // 96
+    endCountry: 'Страна конца', // 97
     segment: '1 сегмент', // 98
     segments: 'сегментов', // 99
     stamp: '1 штамп', // 100

@@ -627,14 +627,6 @@ export default function App() {
     }
   }, [outModeActive, currentSpeed, outStoppedAtUtc, simulatedUtcTime])
 
-  /** Zruš výstrahu „výhoz není možný“, jakmile už neplatí jízda ani načítání karty */
-  useEffect(() => {
-    if (!ejectionBlockedWarningActive) return
-    const stillLoading =
-      cardInsertionState != null && isCardLoadingPhase(cardInsertionState.phase)
-    if (currentSpeed === 0 && !stillLoading) setEjectionBlockedWarningActive(false)
-  }, [currentSpeed, cardInsertionState, ejectionBlockedWarningActive])
-
   /** Výstraha 4:15/4:30 se dřív jen ukazovala na LCD – do tabulky pod grafem se nezapisovala. */
   useEffect(() => {
     if (breakWarningActive !== '415' && breakWarningActive !== '430') return
@@ -776,6 +768,14 @@ export default function App() {
     timeOffsetMs,
     getCurrentLocationCountryCode: () => currentLocationCountryCodeRefForWizard.current ?? null,
   })
+
+  /** Zruš výstrahu „výhoz není možný“, jakmile už neplatí jízda ani načítání karty */
+  useEffect(() => {
+    if (!ejectionBlockedWarningActive) return
+    const stillLoading =
+      cardInsertionState != null && isCardLoadingPhase(cardInsertionState.phase)
+    if (currentSpeed === 0 && !stillLoading) setEjectionBlockedWarningActive(false)
+  }, [currentSpeed, cardInsertionState, ejectionBlockedWarningActive])
 
   const pendingInsertionRef = useRef<CardInsertionState | null>(null)
   const startOrQueueInsertion = useCallback((next: CardInsertionState) => {

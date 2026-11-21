@@ -823,7 +823,8 @@ function GraphBlock({
           )
         })()}
       </div>
-      {(visibleDays.some((d) => d.activities.some((a) => !a.isManualEntry)) ||
+      {showTables &&
+        (visibleDays.some((d) => d.activities.some((a) => !a.isManualEntry)) ||
         (manualEntryBuffer != null && manualEntryBuffer.length > 0) ||
         lastWithdrawalUtc != null ||
         loadUnloadEvents.length > 0 ||

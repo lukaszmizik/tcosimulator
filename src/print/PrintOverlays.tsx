@@ -6,6 +6,7 @@ import { PrintDriverActivities } from '../components/overlays/PrintDriverActivit
 import { useState } from 'react'
 import { PrintPreview, PrintRows } from '../components/overlays/PrintPreview'
 import { buildVehicleEventPrintRows } from './vehicleEventPrintRows'
+import { buildDriverEventPrintRows, driverEventsFromEventLog } from './driverEventPrintRows'
 import type { FaultOrEvent } from '../TachoTypes'
 import './dailyDriverCardPrint.css'
 import { DailyDriverCardPrint } from '../components/overlays/DailyDriverCardPrint'
@@ -154,6 +155,30 @@ export function PrintOverlays({
         />
       )}
 
+      {printState.printDriverEvents && (
+        <DriverEventsPreview
+          input={() => {
+            const slot = printState.printDriverEvents!.slot
+            const day = dailyDriverCard(slot)
+            return {
+              importedEvents: day.imported?.events,
+              importedFaults: day.imported?.faults,
+              // Simulované VU záznamy jízdy bez karty; 4:15/4:30 sem nepatří.
+              simulatedEvents: slot === 1 ? driverEventsFromEventLog(eventLog, simulatedUtcTime) : [],
+              profile: vehicleProfile,
+              card: day.card ? printCardHolder(day.card, day.imported) : null,
+              printedAtUtc: simulatedUtcTime,
+              localOffsetMs: day.localOffsetMs,
+              isUtc: printState.printDriverEvents!.isUtc,
+            }
+          }}
+          symbols={symbolMap}
+          closeLabel={t.printOverlay.close}
+          title={`${t.printOverlay.driverEventsTitle} ${printState.printDriverEvents.slot}`}
+          onClose={printState.onCloseDriverEvents}
+        />
+      )}
+
       {printSpeedVehicleOpen && <PrintSpeedVehicleOverlay
         onClose={onCloseSpeedVehicle}
         t={t}
@@ -175,6 +200,21 @@ function VehicleEventsPreview({ input, symbols, title, closeLabel, onClose }: {
   onClose: () => void
 }) {
   const [rows] = useState(() => buildVehicleEventPrintRows(input()))
+  return (
+    <PrintPreview title={title} closeLabel={closeLabel} onClose={onClose} ready={!!symbols?.[18]}>
+      <PrintRows rows={rows} symbols={symbols} />
+    </PrintPreview>
+  )
+}
+
+function DriverEventsPreview({ input, symbols, title, closeLabel, onClose }: {
+  input: () => Parameters<typeof buildDriverEventPrintRows>[0]
+  symbols: SymbolMap | null
+  title: string
+  closeLabel: string
+  onClose: () => void
+}) {
+  const [rows] = useState(() => buildDriverEventPrintRows(input()))
   return (
     <PrintPreview title={title} closeLabel={closeLabel} onClose={onClose} ready={!!symbols?.[18]}>
       <PrintRows rows={rows} symbols={symbols} />

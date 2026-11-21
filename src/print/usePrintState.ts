@@ -24,6 +24,9 @@ export type UsePrintStateReturn = {
   printVehicleEventsUtc: boolean | null
   openPrintVehicleEvents: (isUtc: boolean) => void
   onCloseVehicleEvents: () => void
+  printDriverEvents: { slot: 1 | 2; isUtc: boolean } | null
+  openPrintDriverEvents: (slot: 1 | 2, isUtc: boolean) => void
+  onCloseDriverEvents: () => void
   printSpeedVehicleOpen: boolean
   printStartedToastUntil: number | null
 
@@ -58,6 +61,7 @@ export function usePrintState(): UsePrintStateReturn {
   const [printVehicle24hIsUtc, setPrintVehicle24hIsUtc] = useState(true)
   const [printVehicle24hOpen, setPrintVehicle24hOpen] = useState(false)
   const [printVehicleEventsUtc, setPrintVehicleEventsUtc] = useState<boolean | null>(null)
+  const [printDriverEvents, setPrintDriverEvents] = useState<{ slot: 1 | 2; isUtc: boolean } | null>(null)
   const [printSpeedVehicleOpen, setPrintSpeedVehicleOpen] = useState(false)
   const [printStartedToastUntil, setPrintStartedToastUntil] = useState<number | null>(null)
   const printStartedToastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -110,6 +114,12 @@ export function usePrintState(): UsePrintStateReturn {
   }, [showPrintStartedToast])
   const onCloseVehicleEvents = useCallback(() => setPrintVehicleEventsUtc(null), [])
 
+  const openPrintDriverEvents = useCallback((slot: 1 | 2, isUtc: boolean) => {
+    setPrintDriverEvents({ slot, isUtc })
+    showPrintStartedToast()
+  }, [showPrintStartedToast])
+  const onCloseDriverEvents = useCallback(() => setPrintDriverEvents(null), [])
+
   const onCloseDriver1 = useCallback(() => {
     setPrintDriver1Open(false)
     setPrintDriver1SelectedDate(null)
@@ -140,10 +150,17 @@ export function usePrintState(): UsePrintStateReturn {
     setPrintVehicle24hSelectedDate(null)
     setPrintSpeedVehicleOpen(false)
     setPrintVehicleEventsUtc(null)
+    setPrintDriverEvents(null)
   }, [])
 
   const isPrintoutActive =
-    driverActivitiesPrint !== null || printVehicleEventsUtc !== null || printDriver1Open || printVDiagramOpen || printVehicle24hOpen || printSpeedVehicleOpen
+    driverActivitiesPrint !== null
+    || printVehicleEventsUtc !== null
+    || printDriverEvents !== null
+    || printDriver1Open
+    || printVDiagramOpen
+    || printVehicle24hOpen
+    || printSpeedVehicleOpen
 
   return {
     driverActivitiesPrint,
@@ -152,6 +169,9 @@ export function usePrintState(): UsePrintStateReturn {
     printVehicleEventsUtc,
     openPrintVehicleEvents,
     onCloseVehicleEvents,
+    printDriverEvents,
+    openPrintDriverEvents,
+    onCloseDriverEvents,
     printDriver1Open,
     printDriver1SelectedDate,
     printDriver1IsUtc,

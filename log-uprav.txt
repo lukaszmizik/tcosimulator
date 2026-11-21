@@ -36,6 +36,15 @@ Téma: Výstrahy 4:15/4:30 – InfoPanel + tabulka pod grafem
 - Dříve se výstraha jen ukazovala na LCD a do tabulky se nedostala (ztráta u setBreakWarningActive).
 - Soubory: App.tsx, TachoTypes.ts, WorkWeekGraphView.tsx, translations.
 
+=== BLOK 1e – Dokončená úprava ===
+Datum: 2026-11-21
+Téma: Výtisk řidič 1/2 – událost !x(14)(18)
+
+- Položka menu už neotevírá 24h den; UTC průvodce (ano/ne) jako u vozidla.
+- Nový builder buildDriverEventPrintRows: záhlaví GEN2 v2, typ (27)(34)(14)(18), držitel karty, záznamy bez kódu účelu, ř.3 = SPZ.
+- Data: importované events/faults z DDD + simulovaný eventLog (!04); 4:15/4:30 se netisknou.
+- Soubory: driverEventPrintRows.ts, printWizardHandling, usePrintState, PrintOverlays, menu_structure, App, translations.
+
 === BLOK 2 – Nedokončeno / na příště ===
 - Trajekt při stání: zda přeskočit časy karet jako teď, nebo je ukázat i s aktivním trajektem.
 - Week-graph: chybějící výstrahy v grafu pracovního týdne.
@@ -43,3 +52,4 @@ Téma: Výstrahy 4:15/4:30 – InfoPanel + tabulka pod grafem
 - Jednotný graf i pro virtuální kartu (teď jde do starého WorkWeekGraphView; chybí most historie → SimulatorSlotGraphInput + přepínač v handleShowCardData; odloženo).
 - Auto-výhoz už vložené karty po změně dne, když mezitím vypršela (návod str. 113/149).
 - Tlačítko „Generovat pracovní týden“ odstraněno z UI; handleGenerateWorkWeek v App ponecháno.
+- Výtisk událostí řidiče 2: simulované záznamy zatím jen u slotu 1 (eventLog).

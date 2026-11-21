@@ -18,6 +18,7 @@ export type PrintWizardKeyEffects = {
   setCurrentMenuPath: (path: string[]) => void
   openPrintDriverActivities?: (dayUtc: number, isUtc: boolean, slot: 1 | 2) => void
   openPrintVehicleEvents?: (isUtc: boolean) => void
+  openPrintDriverEvents?: (slot: 1 | 2, isUtc: boolean) => void
   openPrintVDiagram: (dayUtc: number) => void
   openPrintDriverCard: (dayUtc: number, isUtc: boolean, slot: 1 | 2) => void
   openPrintVehicle24h: (dayUtc: number, isUtc: boolean) => void
@@ -33,7 +34,9 @@ export function applyPrintWizardKey(
   const openDriver = prev.action.startsWith('PRINT_ACT_')
     ? effects.openPrintDriverActivities : effects.openPrintDriverCard
   if (action === 'back') {
-    if (prev.action === 'PRINT_EVENT_V') return null
+    if (prev.action === 'PRINT_EVENT_V' || prev.action === 'PRINT_EVENT_D1' || prev.action === 'PRINT_EVENT_D2') {
+      return null
+    }
     if (prev.step === 'utc') return { ...prev, step: 'date' }
     return null
   }
@@ -55,6 +58,11 @@ export function applyPrintWizardKey(
     if (prev.action === 'PRINT_EVENT_V') {
       effects.setCurrentMenuPath(prev.returnMenuPath)
       effects.openPrintVehicleEvents?.(prev.utcYes)
+      return null
+    }
+    if (prev.action === 'PRINT_EVENT_D1' || prev.action === 'PRINT_EVENT_D2') {
+      effects.setCurrentMenuPath(prev.returnMenuPath)
+      effects.openPrintDriverEvents?.(prev.action === 'PRINT_EVENT_D1' ? 1 : 2, prev.utcYes)
       return null
     }
     if (prev.step === 'date') {
@@ -106,7 +114,7 @@ export type PrintMenuActionResult =
 /** Vrátí obsluhu známé tiskové akce. Neznámá nebo nedokončená akce vrací null. */
 export function resolvePrintMenuAction(input: PrintMenuActionInput): PrintMenuActionResult | null {
   const { action, line2, requiresDate, requiresUtcConfirm, secondHistory, simulatedUtcTime, currentMenuPath } = input
-  if (action === 'PRINT_EVENT_V') {
+  if (action === 'PRINT_EVENT_V' || action === 'PRINT_EVENT_D1' || action === 'PRINT_EVENT_D2') {
     return {
       type: 'dateWizard',
       state: {
@@ -156,7 +164,7 @@ export function resolvePrintMenuAction(input: PrintMenuActionInput): PrintMenuAc
       },
     }
   }
-  if (['PRINT_24H_D1', 'PRINT_EVENT_D1'].includes(action)) {
+  if (action === 'PRINT_24H_D1') {
     return { type: 'openDriver1' }
   }
   if (action === 'PRINT_V_DIAGRAM') {

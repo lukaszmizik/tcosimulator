@@ -328,6 +328,7 @@ export const en: Translations = {
     printPdf: 'Print / PDF',
     driverActivitiesTitle: 'Driver activities',
     vehicleEventsTitle: 'Vehicle events and faults',
+    driverEventsTitle: 'Driver card events and faults',
     driverCard24hTitle: '24h driver card printout',
     driver1Title: 'Printout driver 1', // 88
     basicInfo: 'Basic info', // 89

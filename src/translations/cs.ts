@@ -328,6 +328,7 @@ export const cs: Translations = {
     printPdf: 'Tisk / PDF',
     driverActivitiesTitle: 'Aktivity řidiče',
     vehicleEventsTitle: 'Události a poruchy vozidla',
+    driverEventsTitle: 'Události a poruchy karty řidiče',
     driverCard24hTitle: '24h výtisk karty řidiče',
     driver1Title: 'Výtisk řidič 1', // 88
     basicInfo: 'Základní info', // 89

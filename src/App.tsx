@@ -1307,6 +1307,7 @@ export default function App() {
       openPrintDriverCard: printState.openPrintDriverCard,
       openPrintDriverActivities: printState.openPrintDriverActivities,
       openPrintVehicleEvents: printState.openPrintVehicleEvents,
+      openPrintDriverEvents: printState.openPrintDriverEvents,
       openPrintVehicle24h: printState.openPrintVehicle24h,
     }))
   }, [printState])

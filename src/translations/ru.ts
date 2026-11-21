@@ -329,6 +329,7 @@ export const ru: Translations = {
     printPdf: 'Печать / PDF',
     driverActivitiesTitle: 'Деятельность водителя',
     vehicleEventsTitle: 'События и сбои автомобиля',
+    driverEventsTitle: 'События и сбои карты водителя',
     driverCard24hTitle: 'Суточная распечатка карты водителя',
     driver1Title: 'Распечатка водитель 1', // 88
     basicInfo: 'Основная информация', // 89

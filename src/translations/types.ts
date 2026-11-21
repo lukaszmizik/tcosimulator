@@ -302,6 +302,7 @@ export type Translations = {
     printPdf: string
     driverActivitiesTitle: string
     vehicleEventsTitle: string
+    driverEventsTitle: string
     driverCard24hTitle: string
     driver1Title: string
     basicInfo: string

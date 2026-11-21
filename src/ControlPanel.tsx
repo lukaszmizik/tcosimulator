@@ -66,7 +66,10 @@ export function ControlPanel(p: ControlPanelProps) {
         <div className="speed-keys"><button aria-label={t.controls.decreaseSpeed} disabled={!p.ignitionOn || p.targetSpeed <= 0} onClick={()=>p.onTargetSpeedChange(Math.max(0,p.targetSpeed-5))}>−</button><span>{t.controls.speedTargetShort} {p.targetSpeed} km/h</span><button aria-label={t.controls.increaseSpeed} disabled={!p.ignitionOn || p.targetSpeed >= 125} onClick={()=>p.onTargetSpeedChange(Math.min(125,p.targetSpeed+5))}>+</button></div>
         <input aria-label={t.controls.speedTarget} type="range" min="0" max="125" value={p.targetSpeed} disabled={!p.ignitionOn} onChange={e=>p.onTargetSpeedChange(Number(e.target.value))}/>
       </section>
-      <section className="dash-module reset-module"><button className="reset-key" onClick={p.onReset} title={t.ui.resetTitle}><span>⟲</span>{t.ui.reset}</button></section>
+      <section className="dash-module reset-module">
+        <button className="reset-key" onClick={p.onReset} title={t.ui.resetTitle}><span>⟲</span>{t.ui.reset}</button>
+        <button className="show-card-data-key" onClick={p.onShowCardData} title={t.controls.showCardDataTitle}>{t.controls.showCardData}</button>
+      </section>
     </div>
     <KnowledgeBase language={p.language} symbolMap={p.symbolMap} />
     {p.infoPanels}
@@ -75,7 +78,6 @@ export function ControlPanel(p: ControlPanelProps) {
       <label className="dash-check" title={t.ui.backgroundRunTitle}><input type="checkbox" checked={p.backgroundRunEnabled} onChange={e=>p.onBackgroundRunEnabledChange(e.target.checked)}/>{t.ui.backgroundRunEnabled}</label>
       <div className="dash-tool-buttons">
         <button onClick={p.onSimulate4h10m} disabled={!p.ignitionOn || !p.cardInserted}>{t.ui.generate4h10mDriving}</button>
-        <button onClick={p.onShowCardData}>{t.controls.showCardData}</button>
       </div>
       {p.virtualCardSettings}
       {p.printVehicleSettings}

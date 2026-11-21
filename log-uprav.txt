@@ -90,6 +90,13 @@ Téma: Výhoz během načítání karty → výstraha „výhoz není možný“
 - InfoPanel: samostatná bublina při výhozu během načítání (ejectionBlockedDuringLoading) vs. během jízdy.
 - Soubory: CardLogic.ts (isCardLoadingPhase), App.tsx, InfoPanel.tsx, překlady infoPanel cs/en/ru.
 
+=== BLOK 1k – Dokončená úprava ===
+Datum: 2026-11-21
+Téma: Tlačítko „Zobrazit data z karty“ vedle Reset
+
+- Přesunuto z details „Data / scénáře“ do reset-module (desktop i mobil ihned po ruce).
+- Soubory: ControlPanel.tsx, dashboard.css.
+
 === BLOK 2 – Nedokončeno / na příště ===
 - Trajekt při stání: zda přeskočit časy karet jako teď, nebo je ukázat i s aktivním trajektem.
 - Week-graph: chybějící výstrahy v grafu pracovního týdne.

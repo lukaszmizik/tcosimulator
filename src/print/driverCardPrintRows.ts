@@ -3,7 +3,7 @@ import { getCard1StoredData, getCard2StoredData } from '../data/card_stored_data
 import { VEHICLE_TECHNICAL_DATA } from '../data/vehicle_technical_data'
 import type { PrintVehicleProfile } from '../data/printVehicleProfile'
 import type { CardData, EventLogEntry, ManualEntrySegment } from '../TachoTypes'
-import type { DddCardIncident, DddParsedCard, DddVehicleUse } from '../types/tachoViewerDddMapper'
+import type { DddParsedCard, DddVehicleUse } from '../types/tachoViewerDddMapper'
 import {
   prepareDriver1Print24hUtc,
   type Driver1Print24hActivity,
@@ -270,27 +270,43 @@ export function buildDriverCardPrintRows(input: DailyCardPrintInput): PrintRow[]
   add(8, ' ', duration(totals.REST), '  ', 11, ' ', duration(totals.UNKNOWN))
   add(2, 2, ' ', duration(crew))
 
-  function addIncident(incident: DddCardIncident, icon: number) {
-    add(icon, ' ', printDateUtc(incident.fromUtc + offset), ' ', stamp(incident.fromUtc))
-    add('  ', incident.typeLabel)
-    if (incident.toUtc != null) add('  ', duration(incident.toUtc - incident.fromUtc))
-    if (incident.registration) add(24, ' ', incident.registration)
+  /** Blok [12]: pět nejnovějších událostí/poruch – piktogramy + datum/čas (ne textový popis). */
+  type DailyIncident = {
+    fromUtc: number
+    toUtc: number | null
+    pictograms: number[]
+    registration: string | null
   }
+  const dailyIncidents: DailyIncident[] = [
+    ...(imported?.events ?? []).map((item) => ({
+      fromUtc: item.fromUtc,
+      toUtc: item.toUtc,
+      pictograms: [27],
+      registration: item.registration,
+    })),
+    ...(imported?.faults ?? []).map((item) => ({
+      fromUtc: item.fromUtc,
+      toUtc: item.toUtc,
+      pictograms: [34],
+      registration: item.registration,
+    })),
+    ...input.vehicleEvents.map((item) => ({
+      fromUtc: item.startTime,
+      toUtc: item.endTime ?? null,
+      pictograms: item.type === 'CARD_INSERTION_WHILE_DRIVING' ? [27, 14, 2] : [27, 2, 14],
+      registration: null as string | null,
+    })),
+  ].filter((item) => item.fromUtc <= printedAtUtc)
+    .sort((a, b) => b.fromUtc - a.fromUtc)
+    .slice(0, 5)
 
   separator(27, 34, 14)
-  const incidents = [
-    ...(imported?.events ?? []).map((item) => ({ item, icon: 27 })),
-    ...(imported?.faults ?? []).map((item) => ({ item, icon: 34 })),
-  ].filter(({ item }) => item.fromUtc <= printedAtUtc).sort((a, b) => b.item.fromUtc - a.item.fromUtc)
-  for (const { item, icon } of incidents.slice(0, 5)) addIncident(item, icon)
-  separator(27, 34, 24)
-  const vehicleEvents = input.vehicleEvents.filter((item) => item.startTime <= printedAtUtc)
-    .sort((a, b) => b.startTime - a.startTime).slice(0, 5)
-  for (const item of vehicleEvents) {
-    addIncident({
-      fromUtc: item.startTime, toUtc: item.endTime ?? null, registration: null,
-      typeLabel: item.type === 'DRIVING_WITHOUT_CARD' ? 'Jízda bez karty' : 'Jízda bez platné karty',
-    }, 27)
+  for (const item of dailyIncidents) {
+    const end = item.toUtc != null && item.toUtc >= item.fromUtc ? item.toUtc : printedAtUtc
+    add(...item.pictograms, ' ', printDateUtc(item.fromUtc + offset), ' ', stamp(item.fromUtc))
+    add(duration(Math.max(0, end - item.fromUtc)).padStart(24))
+    if (item.registration) add(24, ' ', item.registration)
+    else add(24, ' ---')
   }
   // Firma před podpisy (volitelně). Typ výtisku 24h(14)(18) je jen v záhlaví – na konci neopakovat.
   if (profile.companyName || profile.companyAddress || profile.companyId) {

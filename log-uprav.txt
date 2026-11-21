@@ -124,6 +124,13 @@ Téma: Vložení karty za jízdy (EventFaultType 05)
 - InfoPanel bublina s výukovým textem.
 - Soubory: TachoTypes, WarningDisplays, TachoDisplay, App, InfoPanel, vehicle/driverEventPrintRows, WorkWeekGraphView, překlady.
 
+=== BLOK 1o – Dokončená úprava ===
+Datum: 2026-11-21
+Téma: 24h výtisk řidiče – události jako piktogramy + čas
+
+- Blok [12] denního výtisku: místo textu „Jízda bez karty“ piktogramy (!(2)(14) / !(14)(2) / x), datum, čas, trvání, (24) SPZ/---.
+- Soubor: driverCardPrintRows.ts.
+
 === BLOK 2 – Nedokončeno / na příště ===
 - Trajekt při stání: zda přeskočit časy karet jako teď, nebo je ukázat i s aktivním trajektem.
 - Week-graph: chybějící výstrahy v grafu pracovního týdne.

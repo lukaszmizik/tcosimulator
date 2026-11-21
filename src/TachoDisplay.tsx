@@ -8,6 +8,9 @@ import { useState, useEffect } from 'react'
 import { useLanguage } from './translations'
 import type { SymbolMap } from './TachoTypes'
 import type { CardInsertionState, CardWithdrawalState, MenuCountryInputState, MenuLoadUnloadConfirmState, PrintWizardState, ActivityHistoryEntry } from './TachoTypes'
+import type { DisplayBrowseState } from './print/printDisplayBrowse'
+import { splitPrintRowForLcd } from './print/printDisplayBrowse'
+import type { PrintCell } from './print/driverCardPrintRows'
 import type { TachoState } from './TachoTypes'
 import type { VDODurationsMs } from './VDOCounter'
 import {
@@ -49,6 +52,8 @@ export type TachoDisplayProps = {
   menuCountryInputState: MenuCountryInputState | null
   menuLoadUnloadConfirmState: MenuLoadUnloadConfirmState | null
   printWizardState: PrintWizardState | null
+  /** Prohlížení dat výtisku na LCD (menu Displej). */
+  displayBrowseState?: DisplayBrowseState | null
   /** Hláška „výtisk spuštěn“ – zobrazí se 1 s po potvrzení výtisku (timestamp do kdy platí). */
   printStartedToastUntil?: number | null
   displayMode: 'operating' | 'menu'
@@ -173,7 +178,7 @@ function LoadUnloadConfirmDisplay() {
 
 export function TachoDisplay(props: TachoDisplayProps) {
   const { language } = useLanguage()
-  const { symbolMap, cardInsertionState, cardWithdrawalState, drivingWithoutCardWarningActive, drivingWithoutValidCardWarningActive, breakWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, overrideWarningCode, menuCountryInputState, menuLoadUnloadConfirmState, printWizardState, printStartedToastUntil, displayMode, showOutOnL2 = false } = props
+  const { symbolMap, cardInsertionState, cardWithdrawalState, drivingWithoutCardWarningActive, drivingWithoutValidCardWarningActive, breakWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, overrideWarningCode, menuCountryInputState, menuLoadUnloadConfirmState, printWizardState, displayBrowseState, printStartedToastUntil, displayMode, showOutOnL2 = false } = props
 
   if (typeof window !== 'undefined' && window.location.search.includes('debug=1')) {
     // Diagnostika: která větev se vykresluje (otevři konzoli F12)
@@ -253,6 +258,9 @@ export function TachoDisplay(props: TachoDisplayProps) {
   }
   if (printWizardState) {
     return <PrintWizardDisplay {...props} />
+  }
+  if (displayBrowseState) {
+    return <DisplayBrowseDisplay symbolMap={symbolMap} state={displayBrowseState} />
   }
   if (printStartedToastUntil != null && Date.now() < printStartedToastUntil) {
     return <PrintStartedDisplay symbolMap={symbolMap} />
@@ -392,6 +400,27 @@ function PrintWizardDisplay(props: TachoDisplayProps) {
         <span>.</span>
         <span>{year}</span>
       </div>
+    </div>
+  )
+}
+
+function renderPrintCells(cells: readonly PrintCell[], symbolMap: SymbolMap | null) {
+  return cells.map((cell, index) =>
+    typeof cell === 'number'
+      ? <span key={index}>{symbolMap?.[cell] ?? ''}</span>
+      : <span key={index}>{cell}</span>,
+  )
+}
+
+/** Jeden řádek výtisku (24) rozdělený na L1/L2 – ↑/↓ listuje v App. */
+function DisplayBrowseDisplay(props: { symbolMap: SymbolMap | null; state: DisplayBrowseState }) {
+  const { symbolMap, state } = props
+  const row = state.rows[state.index] ?? []
+  const { line1, line2 } = splitPrintRowForLcd(row)
+  return (
+    <div className="lcd-two-rows lcd-card-insertion">
+      <div className="lcd-row lcd-row-left"><span className="lcd-inline-symbols">{renderPrintCells(line1, symbolMap)}</span></div>
+      <div className="lcd-row lcd-row-left"><span className="lcd-inline-symbols">{renderPrintCells(line2, symbolMap)}</span></div>
     </div>
   )
 }

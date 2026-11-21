@@ -144,22 +144,22 @@
     "SUB_DISPLAY_D1": {
       "header_line1": "(14)(20) řidič 1",
       "items": [
-        {"id": "DD1_24H", "line2": "24h(14)(20) den", "action": "DISP_24H_D1"},
-        {"id": "DD1_EVENT", "line2": "(27)(34)(14)(20) událost", "action": "DISP_EVENT_D1"}
+        {"id": "DD1_24H", "line2": "24h(14)(20) den", "action": "DISP_24H_D1", "requiresDate": true, "requiresUtcConfirm": true},
+        {"id": "DD1_EVENT", "line2": "(27)(34)(14)(20) událost", "action": "DISP_EVENT_D1", "requiresUtcConfirm": true}
       ]
     },
     "SUB_DISPLAY_D2": {
       "header_line1": "(14)(20) řidič 2",
       "items": [
-        {"id": "DD2_24H", "line2": "24h(14)(20) den", "action": "DISP_24H_D2"},
-        {"id": "DD2_EVENT", "line2": "(27)(34)(14)(20) událost", "action": "DISP_EVENT_D2"}
+        {"id": "DD2_24H", "line2": "24h(14)(20) den", "action": "DISP_24H_D2", "requiresDate": true, "requiresUtcConfirm": true},
+        {"id": "DD2_EVENT", "line2": "(27)(34)(14)(20) událost", "action": "DISP_EVENT_D2", "requiresUtcConfirm": true}
       ]
     },
     "SUB_DISPLAY_VEHICLE": {
       "header_line1": "vozidlo",
       "items": [
-        {"id": "DV_24H", "line2": "24h(24)(20) den", "action": "DISP_24H_V"},
-        {"id": "DV_EVENT", "line2": "(27)(34)(24)(20) událost", "action": "DISP_EVENT_V"},
+        {"id": "DV_24H", "line2": "24h(24)(20) den", "action": "DISP_24H_V", "requiresDate": true, "requiresUtcConfirm": true},
+        {"id": "DV_EVENT", "line2": "(27)(34)(24)(20) událost", "action": "DISP_EVENT_V", "requiresUtcConfirm": true},
         {"id": "DV_SPEED", "line2": "(39)(39)(20) vys.rychlost", "action": "DISP_SPEED_V"},
         {"id": "DV_TECH", "line2": "(5)(17)(20) tech. data", "action": "DISP_TECH_V"},
         {"id": "DV_CARDS", "line2": "(6)(14)(17)(20) Karty", "action": "DISP_CARDS_V"},

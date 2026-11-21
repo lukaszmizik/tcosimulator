@@ -283,7 +283,7 @@ export type MenuCountryInputState = {
   returnMenuPath: string[]
 }
 
-/** Univerzální průvodce výtiskem: výběr data + dotaz UTC (requiresDate, requiresUtcConfirm). */
+/** Univerzální průvodce výtiskem/displejem: výběr data + dotaz UTC (requiresDate, requiresUtcConfirm). */
 export type PrintWizardState = {
   action: string
   step: 'date' | 'utc'

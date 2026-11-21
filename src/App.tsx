@@ -122,8 +122,15 @@ import { LANGUAGE_PAGE, languages, recalledLanguage, rememberLanguage } from './
 import { useLanguage } from './translations'
 import { ControlPanel } from './ControlPanel'
 import type { TrainingProfile } from './VirtualCardNameSettings'
-import { printCardHolder, printDateUtc } from './print/driverCardPrintRows'
-import { vehiclePrintHolder } from './print/vehicleDayPrintRows'
+import { buildDriverCardPrintRows, printCardHolder, printDateUtc } from './print/driverCardPrintRows'
+import { buildVehicleDayPrintRows, vehiclePrintHolder } from './print/vehicleDayPrintRows'
+import { buildDriverEventPrintRows, driverEventsFromEventLog } from './print/driverEventPrintRows'
+import { buildVehicleEventPrintRows } from './print/vehicleEventPrintRows'
+import {
+  stepDisplayBrowseIndex,
+  toDisplayRows,
+  type DisplayBrowseState,
+} from './print/printDisplayBrowse'
 import { VirtualCardNameSettings, loadVirtualCardNames, virtualCardTemplate } from './VirtualCardNameSettings'
 import { PrintVehicleSettings } from './components/PrintVehicleSettings'
 import { loadPrintVehicleProfile } from './data/printVehicleProfile'
@@ -375,6 +382,17 @@ export default function App() {
   const [recordedGpsLocations, setRecordedGpsLocations] = useState<RecordedGpsLocation[]>(() => loadTachographRecordedGpsLocations())
   /** Univerzální průvodce výtiskem (requiresDate, requiresUtcConfirm). */
   const [printWizardState, setPrintWizardState] = useState<PrintWizardState | null>(null)
+  const [displayBrowseState, setDisplayBrowseState] = useState<DisplayBrowseState | null>(null)
+  const openDisplayBrowse = useCallback((rows: Parameters<typeof toDisplayRows>[0]) => {
+    setDisplayBrowseState({ rows: toDisplayRows(rows), index: 0 })
+  }, [])
+  /** Buildery displeje čtou aktuální stav z renderu (printCard* je až níže). */
+  const displayBrowseBuildersRef = useRef({
+    driverCard: (_dayUtc: number, _isUtc: boolean, _slot: 1 | 2) => {},
+    driverEvents: (_slot: 1 | 2, _isUtc: boolean) => {},
+    vehicleEvents: (_isUtc: boolean) => {},
+    vehicle24h: (_dayUtc: number, _isUtc: boolean) => {},
+  })
   /** Data z karty – VDO counter čerpá z karty; bez karty z paměti tachografu (activityHistory) */
   const [cardActivityHistoryByTemplateId, setCardActivityHistoryByTemplateId] = useState<Record<string, ActivityHistoryEntry[]>>({})
   /** Rozhodnutí řidičů platná do obnovení stránky. */
@@ -1309,6 +1327,10 @@ export default function App() {
       openPrintVehicleEvents: printState.openPrintVehicleEvents,
       openPrintDriverEvents: printState.openPrintDriverEvents,
       openPrintVehicle24h: printState.openPrintVehicle24h,
+      openDisplayDriverCard: (dayUtc, isUtc, slot) => displayBrowseBuildersRef.current.driverCard(dayUtc, isUtc, slot),
+      openDisplayDriverEvents: (slot, isUtc) => displayBrowseBuildersRef.current.driverEvents(slot, isUtc),
+      openDisplayVehicleEvents: (isUtc) => displayBrowseBuildersRef.current.vehicleEvents(isUtc),
+      openDisplayVehicle24h: (dayUtc, isUtc) => displayBrowseBuildersRef.current.vehicle24h(dayUtc, isUtc),
     }))
   }, [printState])
 
@@ -1448,6 +1470,10 @@ export default function App() {
       wakeDisplayFromStandby()
       if (!displayAwakeFromStandby) return
     }
+    if (displayBrowseState) {
+      setDisplayBrowseState((prev) => prev ? stepDisplayBrowseIndex(prev, 'up') : null)
+      return
+    }
     if (isPrintoutActive) return
     if (menuCountryInputState?.phase === 'confirmSaved' || menuLoadUnloadConfirmState) return
     if (cardInsertionState) {
@@ -1474,12 +1500,16 @@ export default function App() {
     }
     if (visibleItems.length === 0) return
     setSelectedIndex((prev) => stepMenuIndex(prev, visibleItems.length, 'up'))
-  }, [ignitionOn, wakeDisplayFromStandby, displayMode, card1Inserted, card2Inserted, visibleItems.length, cardInsertionState, cardWithdrawalState, printWizardState, menuCountryInputState, menuLoadUnloadConfirmState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, drivingWithoutCardWarningActive, drivingWithoutValidCardWarningActive, ignitionWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, isPrintoutActive, browseOperatingTimes])
+  }, [ignitionOn, wakeDisplayFromStandby, displayMode, card1Inserted, card2Inserted, visibleItems.length, cardInsertionState, cardWithdrawalState, printWizardState, displayBrowseState, menuCountryInputState, menuLoadUnloadConfirmState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, drivingWithoutCardWarningActive, drivingWithoutValidCardWarningActive, ignitionWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, isPrintoutActive, browseOperatingTimes])
 
   const handleDown = useCallback(() => {
     if (!ignitionOn) {
       wakeDisplayFromStandby()
       if (!displayAwakeFromStandby) return
+    }
+    if (displayBrowseState) {
+      setDisplayBrowseState((prev) => prev ? stepDisplayBrowseIndex(prev, 'down') : null)
+      return
     }
     if (isPrintoutActive) return
     if (menuCountryInputState?.phase === 'confirmSaved' || menuLoadUnloadConfirmState) return
@@ -1507,13 +1537,14 @@ export default function App() {
     }
     if (visibleItems.length === 0) return
     setSelectedIndex((prev) => stepMenuIndex(prev, visibleItems.length, 'down'))
-  }, [ignitionOn, wakeDisplayFromStandby, displayMode, card1Inserted, card2Inserted, visibleItems.length, cardInsertionState, cardWithdrawalState, printWizardState, menuCountryInputState, menuLoadUnloadConfirmState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, drivingWithoutCardWarningActive, drivingWithoutValidCardWarningActive, ignitionWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, isPrintoutActive, browseOperatingTimes])
+  }, [ignitionOn, wakeDisplayFromStandby, displayMode, card1Inserted, card2Inserted, visibleItems.length, cardInsertionState, cardWithdrawalState, printWizardState, displayBrowseState, menuCountryInputState, menuLoadUnloadConfirmState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, drivingWithoutCardWarningActive, drivingWithoutValidCardWarningActive, ignitionWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, isPrintoutActive, browseOperatingTimes])
 
   const handleOK = useCallback(() => {
     if (!ignitionOn) {
       wakeDisplayFromStandby()
       if (!displayAwakeFromStandby) return
     }
+    if (displayBrowseState) return
     if (isPrintoutActive) return
     /** Bezpečnostní výstrahy – OK nejprve potvrdí výstrahu, až poté průvodce/menu. */
     if (excessSpeedWarningActive) {
@@ -1754,12 +1785,17 @@ export default function App() {
     }
     setMenuComingSoonInfo({ id: `menu-coming-soon-${Date.now()}` })
     addEntry(t.actions.stiskOk, t.infoPanel.menuComingSoon)
-  }, [card1Data, card2Data, driverCardStateByTemplateId, currentMenuId, languagePage, languageDraft, languageCard, language, setLanguage, t, ignitionOn, wakeDisplayFromStandby, displayMode, currentSpeed, selectedItem, menusById, currentMenuPath, countries, spanishRegions, secondHistory, activityHistory, simulatedUtcTime, overrideWarningCode, drivingWithoutCardWarningActive, ignitionWarningActive, breakWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, cardInsertionState, cardWithdrawalState, printWizardState, menuCountryInputState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, openMenuCountryInput, confirmMenuLoadUnload, isPrintoutActive, printState, addEntry, getCardInsertionOkDetail])
+  }, [card1Data, card2Data, driverCardStateByTemplateId, currentMenuId, languagePage, languageDraft, languageCard, language, setLanguage, t, ignitionOn, wakeDisplayFromStandby, displayMode, currentSpeed, selectedItem, menusById, currentMenuPath, countries, spanishRegions, secondHistory, activityHistory, simulatedUtcTime, overrideWarningCode, drivingWithoutCardWarningActive, ignitionWarningActive, breakWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, cardInsertionState, cardWithdrawalState, printWizardState, displayBrowseState, menuCountryInputState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, openMenuCountryInput, confirmMenuLoadUnload, isPrintoutActive, printState, addEntry, getCardInsertionOkDetail])
 
   const handleBack = useCallback(() => {
     if (!ignitionOn) {
       wakeDisplayFromStandby()
       if (!displayAwakeFromStandby) return
+    }
+    if (displayBrowseState) {
+      addEntry(t.actions.stiskZpet, t.actions.navratVMenu)
+      setDisplayBrowseState(null)
+      return
     }
     if (isPrintoutActive) {
       addEntry(t.actions.stiskZpet, t.actions.zavreniTisku)
@@ -1817,7 +1853,7 @@ export default function App() {
       setCurrentMenuPath((path) => leaveSubmenu(path).path)
       setSelectedIndex(leaveSubmenu(currentMenuPath).index)
     }
-  }, [languagePage, languageDraft, t, ignitionOn, wakeDisplayFromStandby, displayMode, canGoBack, vdoCounterActive, overrideWarningCode, cardInsertionState, cardWithdrawalState, printWizardState, menuCountryInputState, menuLoadUnloadConfirmState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, leaveMenuLoadUnloadByBack, drivingWithoutCardWarningActive, drivingWithoutValidCardWarningActive, ignitionWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, isPrintoutActive, printState, addEntry])
+  }, [languagePage, languageDraft, t, ignitionOn, wakeDisplayFromStandby, displayMode, canGoBack, vdoCounterActive, overrideWarningCode, cardInsertionState, cardWithdrawalState, printWizardState, displayBrowseState, menuCountryInputState, menuLoadUnloadConfirmState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, leaveMenuLoadUnloadByBack, drivingWithoutCardWarningActive, drivingWithoutValidCardWarningActive, ignitionWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, isPrintoutActive, printState, addEntry])
 
   const cycleLeftActivity = useCallback(() => {
     setLeftActivityId((id) => getNextActivity(id))
@@ -2609,6 +2645,7 @@ export default function App() {
     setCurrentMenuPath([ENTRY_MENU_ID])
     setSelectedIndex(0)
     setPrintWizardState(null)
+    setDisplayBrowseState(null)
     cancelMenuCountryInput()
     cancelMenuLoadUnload()
     printState.closeAll()
@@ -2806,6 +2843,7 @@ export default function App() {
     menuCountryInputState,
     menuLoadUnloadConfirmState,
     printWizardState,
+    displayBrowseState,
     printStartedToastUntil: printState.printStartedToastUntil,
     displayMode,
     isMultiManning,
@@ -3170,6 +3208,7 @@ export default function App() {
     || menuCountryInputState
     || menuLoadUnloadConfirmState
     || printWizardState
+    || displayBrowseState
   )
   const lcdTeachItem = lcdTeachInfoItem({
     t,
@@ -3210,6 +3249,119 @@ export default function App() {
   }
   const printCard1Data = cardForPrint(card1Data)
   const printCard2Data = cardForPrint(card2Data)
+
+  const dailyDriverCardInput = (slot: 1 | 2) => {
+    const card = slot === 1 ? printCard1Data : printCard2Data
+    const imported = slot === 1 ? insertedSlot1 : insertedSlot2
+    const printCardId = card?.templateId ?? card?.cardNumber
+    const ongoing = printCardId ? ongoingPrintCardActivity(secondHistory, printCardId, simulatedUtcTime, isMultiManning) : null
+    const simulated = printCardId
+      ? simulatedPrintCardActivities(
+        imported?.workingActivities ?? cardActivityHistoryByTemplateId[printCardId] ?? [],
+        printCardId, ongoing?.startUtc ?? simulatedUtcTime, slot,
+      )
+      : []
+    if (ongoing) simulated.push(ongoing)
+    const recordedForCard = (at: number) => simulated.some((activity) => at >= activity.startUtc && at < activity.endUtc)
+    return {
+      printedAtUtc: simulatedUtcTime,
+      localOffsetMs: timeOffsetMs,
+      profile: printVehicleProfile,
+      card,
+      secondCard: slot === 1 ? (card2Inserted ? printCard2Data : null) : (card1Inserted ? printCard1Data : null),
+      imported: imported?.original,
+      secondImported: (slot === 1 ? insertedSlot2 : insertedSlot1)?.original,
+      manual: slot === 1 ? driver1ManualEntryBuffer : driver2ManualEntryBuffer,
+      simulated,
+      vehicleEvents: eventLog,
+      simulatedConditions: [
+        ...outModeEvents.map((event) => ({
+          atUtc: event.minuteStartUtc, kind: event.type === 'activation' ? 'out' : 'out_end',
+        })),
+        ...ferryTrainEvents.map((event) => ({
+          atUtc: event.minuteStartUtc, kind: event.type === 'activation' ? 'ferry' : 'ferry_end',
+        })),
+      ].filter((event) => recordedForCard(event.atUtc)),
+      simulatedPlaces: recordedGpsLocations.flatMap((entry) => {
+        if (!recordedForCard(entry.minuteStartUtc)) return []
+        const kind = entry.recordType === 'gps_3h' ? 'gps'
+          : entry.recordType === 'end_country_card' ? 'end_country' : entry.recordType ?? 'gps'
+        return [{ atUtc: entry.minuteStartUtc, kind, detail: entry.gpsLocation }]
+      }),
+    }
+  }
+
+  const vehicleDayInput = () => ({
+    profile: printVehicleProfile,
+    localOffsetMs: timeOffsetMs,
+    history: activityHistory,
+    seconds: secondHistory,
+    events: eventLog,
+    out: outModeEvents,
+    ferry: ferryTrainEvents,
+    places: recordedGpsLocations,
+    isCrew: isMultiManning,
+    insertedHolders: [
+      card1Inserted && printCard1Data
+        ? vehiclePrintHolder('driver', printCardHolder(printCard1Data, insertedSlot1?.original))
+        : null,
+      card2Inserted && printCard2Data
+        ? vehiclePrintHolder('driver', printCardHolder(printCard2Data, insertedSlot2?.original))
+        : null,
+    ].filter((holder) => holder != null),
+    dayOdometers: dayOdometersRef.current,
+    resolveCard: (id: string) => id === 'zmizik' || id === 'novak'
+      ? printCardHolder({
+        ...virtualCardTemplate(id, virtualCardNames),
+        templateId: id,
+        trainingExpiryUtc: expiryByCard[id],
+        trainingValidityBeginUtc: expiryByCard[id] == null ? undefined : trainingValidityBeginUtc(expiryByCard[id]!),
+      })
+      : dddCards[id]?.original,
+  })
+
+  displayBrowseBuildersRef.current = {
+    driverCard: (dayUtc, isUtc, slot) => {
+      openDisplayBrowse(buildDriverCardPrintRows({
+        ...dailyDriverCardInput(slot),
+        selectedDayUtc: dayUtc,
+        isUtc,
+      }))
+    },
+    driverEvents: (slot, isUtc) => {
+      const day = dailyDriverCardInput(slot)
+      openDisplayBrowse(buildDriverEventPrintRows({
+        importedEvents: day.imported?.events,
+        importedFaults: day.imported?.faults,
+        simulatedEvents: slot === 1 ? driverEventsFromEventLog(eventLog, simulatedUtcTime) : [],
+        profile: printVehicleProfile,
+        card: day.card ? printCardHolder(day.card, day.imported) : null,
+        printedAtUtc: simulatedUtcTime,
+        localOffsetMs: day.localOffsetMs,
+        isUtc,
+      }))
+    },
+    vehicleEvents: (isUtc) => {
+      openDisplayBrowse(buildVehicleEventPrintRows({
+        records: faultsAndEvents,
+        profile: printVehicleProfile,
+        card: card1Inserted && printCard1Data
+          ? printCardHolder(printCard1Data, dailyDriverCardInput(1).imported)
+          : null,
+        printedAtUtc: simulatedUtcTime,
+        localOffsetMs: timeOffsetMs,
+        isUtc,
+      }))
+    },
+    vehicle24h: (dayUtc, isUtc) => {
+      openDisplayBrowse(buildVehicleDayPrintRows({
+        ...vehicleDayInput(),
+        selectedDayUtc: dayUtc,
+        printedAtUtc: simulatedUtcTime,
+        isUtc,
+      }))
+    },
+  }
 
   return (
     <div>
@@ -3661,75 +3813,9 @@ export default function App() {
         )}
         eventLog={eventLog}
         vehicleEvents={faultsAndEvents}
-        vehicleDay={() => ({
-          profile: printVehicleProfile,
-          localOffsetMs: timeOffsetMs,
-          history: activityHistory,
-          seconds: secondHistory,
-          events: eventLog,
-          out: outModeEvents,
-          ferry: ferryTrainEvents,
-          places: recordedGpsLocations,
-          isCrew: isMultiManning,
-          insertedHolders: [
-            card1Inserted && printCard1Data
-              ? vehiclePrintHolder('driver', printCardHolder(printCard1Data, insertedSlot1?.original))
-              : null,
-            card2Inserted && printCard2Data
-              ? vehiclePrintHolder('driver', printCardHolder(printCard2Data, insertedSlot2?.original))
-              : null,
-          ].filter((holder) => holder != null),
-          dayOdometers: dayOdometersRef.current,
-          resolveCard: (id) => id === 'zmizik' || id === 'novak'
-            ? printCardHolder({
-              ...virtualCardTemplate(id, virtualCardNames),
-              templateId: id,
-              trainingExpiryUtc: expiryByCard[id],
-              trainingValidityBeginUtc: expiryByCard[id] == null ? undefined : trainingValidityBeginUtc(expiryByCard[id]!),
-            })
-            : dddCards[id]?.original,
-        })}
+        vehicleDay={vehicleDayInput}
         vehicleProfile={printVehicleProfile}
-        dailyDriverCard={(slot) => {
-          const card = slot === 1 ? printCard1Data : printCard2Data
-          const imported = slot === 1 ? insertedSlot1 : insertedSlot2
-          const printCardId = card?.templateId ?? card?.cardNumber
-          const ongoing = printCardId ? ongoingPrintCardActivity(secondHistory, printCardId, simulatedUtcTime, isMultiManning) : null
-          const simulated = printCardId
-            ? simulatedPrintCardActivities(
-              imported?.workingActivities ?? cardActivityHistoryByTemplateId[printCardId] ?? [],
-              printCardId, ongoing?.startUtc ?? simulatedUtcTime, slot,
-            )
-            : []
-          if (ongoing) simulated.push(ongoing)
-          const recordedForCard = (at: number) => simulated.some((activity) => at >= activity.startUtc && at < activity.endUtc)
-          return {
-            printedAtUtc: simulatedUtcTime,
-            localOffsetMs: timeOffsetMs,
-            profile: printVehicleProfile,
-            card,
-            secondCard: slot === 1 ? (card2Inserted ? printCard2Data : null) : (card1Inserted ? printCard1Data : null),
-            imported: imported?.original,
-            secondImported: (slot === 1 ? insertedSlot2 : insertedSlot1)?.original,
-            manual: slot === 1 ? driver1ManualEntryBuffer : driver2ManualEntryBuffer,
-            simulated,
-            vehicleEvents: eventLog,
-            simulatedConditions: [
-              ...outModeEvents.map((event) => ({
-                atUtc: event.minuteStartUtc, kind: event.type === 'activation' ? 'out' : 'out_end',
-              })),
-              ...ferryTrainEvents.map((event) => ({
-                atUtc: event.minuteStartUtc, kind: event.type === 'activation' ? 'ferry' : 'ferry_end',
-              })),
-            ].filter((event) => recordedForCard(event.atUtc)),
-            simulatedPlaces: recordedGpsLocations.flatMap((entry) => {
-              if (!recordedForCard(entry.minuteStartUtc)) return []
-              const kind = entry.recordType === 'gps_3h' ? 'gps'
-                : entry.recordType === 'end_country_card' ? 'end_country' : entry.recordType ?? 'gps'
-              return [{ atUtc: entry.minuteStartUtc, kind, detail: entry.gpsLocation }]
-            }),
-          }
-        }}
+        dailyDriverCard={dailyDriverCardInput}
       />
 
       {workWeekGraphData !== null &&

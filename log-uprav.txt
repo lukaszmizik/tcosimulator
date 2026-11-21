@@ -45,6 +45,15 @@ Téma: Výtisk řidič 1/2 – událost !x(14)(18)
 - Data: importované events/faults z DDD + simulovaný eventLog (!04); 4:15/4:30 se netisknou.
 - Soubory: driverEventPrintRows.ts, printWizardHandling, usePrintState, PrintOverlays, menu_structure, App, translations.
 
+=== BLOK 1f – Dokončená úprava ===
+Datum: 2026-11-21
+Téma: Menu Displej – prohlížení výtisku na LCD
+
+- DISP_* už nekončí na Coming soon (24h/událost řidič 1+2, 24h/událost vozidlo).
+- Stejný průvodce datum/UTC jako u výtisku; po OK se data z build*PrintRows prohlížejí na dvou řádcích LCD (řádek 24 → L1/L2 po 12).
+- Symbol tiskárny (18) se pro displej mění na (20); ↑/↓ listuje, Zpět ukončí.
+- Soubory: printDisplayBrowse.ts, printWizardHandling, TachoDisplay, App, menu_structure.
+
 === BLOK 2 – Nedokončeno / na příště ===
 - Trajekt při stání: zda přeskočit časy karet jako teď, nebo je ukázat i s aktivním trajektem.
 - Week-graph: chybějící výstrahy v grafu pracovního týdne.
@@ -53,3 +62,4 @@ Téma: Výtisk řidič 1/2 – událost !x(14)(18)
 - Auto-výhoz už vložené karty po změně dne, když mezitím vypršela (návod str. 113/149).
 - Tlačítko „Generovat pracovní týden“ odstraněno z UI; handleGenerateWorkWeek v App ponecháno.
 - Výtisk událostí řidiče 2: simulované záznamy zatím jen u slotu 1 (eventLog).
+- Displej: zbývající položky vozidla (rychlost, tech. data, karty, majitel, hmotnost, verze, senzor).

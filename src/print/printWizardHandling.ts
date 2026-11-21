@@ -1,15 +1,24 @@
 /**
- * Obsluha průvodce výtiskem a spuštění položek PRINT_*.
- * Přesunuto z App.tsx bez změny mapování, data, UTC a nedokončených akcí.
+ * Obsluha průvodce výtiskem/displejem a spuštění položek PRINT_* / DISP_*.
+ * Displej sdílí stejný průvodce (datum + UTC); po OK otevře browse na LCD místo papíru.
  */
 
 import type { PrintWizardState } from '../TachoTypes'
 import { utcDaysIntersectingCardActivities } from './prepareDriver1Print24h'
 
 export function driverPrintSlot(action: string): 1 | 2 | null {
-  if (action === 'PRINT_24H_D1' || action === 'PRINT_ACT_D1') return 1
-  if (action === 'PRINT_24H_D2' || action === 'PRINT_ACT_D2') return 2
+  if (action === 'PRINT_24H_D1' || action === 'PRINT_ACT_D1' || action === 'DISP_24H_D1') return 1
+  if (action === 'PRINT_24H_D2' || action === 'PRINT_ACT_D2' || action === 'DISP_24H_D2') return 2
   return null
+}
+
+function isEventOnlyAction(action: string): boolean {
+  return action === 'PRINT_EVENT_V'
+    || action === 'PRINT_EVENT_D1'
+    || action === 'PRINT_EVENT_D2'
+    || action === 'DISP_EVENT_V'
+    || action === 'DISP_EVENT_D1'
+    || action === 'DISP_EVENT_D2'
 }
 
 export type PrintWizardKeyAction = 'up' | 'down' | 'ok' | 'back'
@@ -22,6 +31,10 @@ export type PrintWizardKeyEffects = {
   openPrintVDiagram: (dayUtc: number) => void
   openPrintDriverCard: (dayUtc: number, isUtc: boolean, slot: 1 | 2) => void
   openPrintVehicle24h: (dayUtc: number, isUtc: boolean) => void
+  openDisplayDriverCard?: (dayUtc: number, isUtc: boolean, slot: 1 | 2) => void
+  openDisplayDriverEvents?: (slot: 1 | 2, isUtc: boolean) => void
+  openDisplayVehicleEvents?: (isUtc: boolean) => void
+  openDisplayVehicle24h?: (dayUtc: number, isUtc: boolean) => void
 }
 
 export function applyPrintWizardKey(
@@ -34,9 +47,7 @@ export function applyPrintWizardKey(
   const openDriver = prev.action.startsWith('PRINT_ACT_')
     ? effects.openPrintDriverActivities : effects.openPrintDriverCard
   if (action === 'back') {
-    if (prev.action === 'PRINT_EVENT_V' || prev.action === 'PRINT_EVENT_D1' || prev.action === 'PRINT_EVENT_D2') {
-      return null
-    }
+    if (isEventOnlyAction(prev.action)) return null
     if (prev.step === 'utc') return { ...prev, step: 'date' }
     return null
   }
@@ -60,9 +71,19 @@ export function applyPrintWizardKey(
       effects.openPrintVehicleEvents?.(prev.utcYes)
       return null
     }
+    if (prev.action === 'DISP_EVENT_V') {
+      effects.setCurrentMenuPath(prev.returnMenuPath)
+      effects.openDisplayVehicleEvents?.(prev.utcYes)
+      return null
+    }
     if (prev.action === 'PRINT_EVENT_D1' || prev.action === 'PRINT_EVENT_D2') {
       effects.setCurrentMenuPath(prev.returnMenuPath)
       effects.openPrintDriverEvents?.(prev.action === 'PRINT_EVENT_D1' ? 1 : 2, prev.utcYes)
+      return null
+    }
+    if (prev.action === 'DISP_EVENT_D1' || prev.action === 'DISP_EVENT_D2') {
+      effects.setCurrentMenuPath(prev.returnMenuPath)
+      effects.openDisplayDriverEvents?.(prev.action === 'DISP_EVENT_D1' ? 1 : 2, prev.utcYes)
       return null
     }
     if (prev.step === 'date') {
@@ -70,26 +91,45 @@ export function applyPrintWizardKey(
       if (dayUtc == null) return prev
       if (prev.requiresUtcConfirm) return { ...prev, step: 'utc' }
       effects.setCurrentMenuPath(prev.returnMenuPath)
-      if (prev.action === 'PRINT_V_DIAGRAM') {
-        effects.openPrintVDiagram(dayUtc)
-      } else if (driverSlot) {
-        openDriver?.(dayUtc, true, driverSlot)
-      } else if (prev.action === 'PRINT_24H_V') {
-        effects.openPrintVehicle24h(dayUtc, true)
-      }
+      finishDatedWizard(prev.action, dayUtc, true, driverSlot, openDriver, effects)
       return null
     }
     const dayUtc = prev.availableDatesUtc[prev.dateIndex]
     if (dayUtc == null) return prev
     effects.setCurrentMenuPath(prev.returnMenuPath)
-    if (driverSlot) {
-      openDriver?.(dayUtc, prev.utcYes, driverSlot)
-    } else if (prev.action === 'PRINT_24H_V') {
-      effects.openPrintVehicle24h(dayUtc, prev.utcYes)
-    }
+    finishDatedWizard(prev.action, dayUtc, prev.utcYes, driverSlot, openDriver, effects)
     return null
   }
   return prev
+}
+
+function finishDatedWizard(
+  action: string,
+  dayUtc: number,
+  isUtc: boolean,
+  driverSlot: 1 | 2 | null,
+  openDriver: PrintWizardKeyEffects['openPrintDriverCard'] | PrintWizardKeyEffects['openPrintDriverActivities'],
+  effects: PrintWizardKeyEffects,
+) {
+  if (action === 'PRINT_V_DIAGRAM') {
+    effects.openPrintVDiagram(dayUtc)
+    return
+  }
+  if (action === 'DISP_24H_D1' || action === 'DISP_24H_D2') {
+    if (driverSlot) effects.openDisplayDriverCard?.(dayUtc, isUtc, driverSlot)
+    return
+  }
+  if (action === 'DISP_24H_V') {
+    effects.openDisplayVehicle24h?.(dayUtc, isUtc)
+    return
+  }
+  if (driverSlot) {
+    openDriver?.(dayUtc, isUtc, driverSlot)
+    return
+  }
+  if (action === 'PRINT_24H_V') {
+    effects.openPrintVehicle24h(dayUtc, isUtc)
+  }
 }
 
 export type PrintMenuActionInput = {
@@ -101,7 +141,7 @@ export type PrintMenuActionInput = {
   simulatedUtcTime: number
   currentMenuPath: string[]
   vehicleActivities?: readonly { minuteStartUtc: number }[]
-  /** Doložené činnosti karty ve šachtě 1. Den přidají jen u výtisku 24h řidiče 1. */
+  /** Doložené činnosti karty ve šachtě. Den přidají u 24h řidiče. */
   cardActivities?: readonly { startUtc: number; endUtc: number; isManualEntry?: boolean }[]
 }
 
@@ -111,10 +151,10 @@ export type PrintMenuActionResult =
   | { type: 'openVDiagram' }
   | { type: 'openSpeed' }
 
-/** Vrátí obsluhu známé tiskové akce. Neznámá nebo nedokončená akce vrací null. */
+/** Vrátí obsluhu známé tiskové/displejové akce. Neznámá akce vrací null. */
 export function resolvePrintMenuAction(input: PrintMenuActionInput): PrintMenuActionResult | null {
   const { action, line2, requiresDate, requiresUtcConfirm, secondHistory, simulatedUtcTime, currentMenuPath } = input
-  if (action === 'PRINT_EVENT_V' || action === 'PRINT_EVENT_D1' || action === 'PRINT_EVENT_D2') {
+  if (isEventOnlyAction(action)) {
     return {
       type: 'dateWizard',
       state: {
@@ -126,7 +166,8 @@ export function resolvePrintMenuAction(input: PrintMenuActionInput): PrintMenuAc
   }
   const slot = driverPrintSlot(action)
   const activityDiagram = action.startsWith('PRINT_ACT_')
-  if (requiresDate && (slot || action === 'PRINT_V_DIAGRAM' || action === 'PRINT_24H_V')) {
+  const datedVehicle = action === 'PRINT_V_DIAGRAM' || action === 'PRINT_24H_V' || action === 'DISP_24H_V'
+  if (requiresDate && (slot || datedVehicle)) {
     const dayStarts = new Set<number>()
     for (const s of activityDiagram ? [] : secondHistory) {
       const d = new Date(s.timestampUtc)
@@ -139,7 +180,7 @@ export function resolvePrintMenuAction(input: PrintMenuActionInput): PrintMenuAc
         dayStarts.add(day)
       }
     }
-    if (action === 'PRINT_24H_V') {
+    if (action === 'PRINT_24H_V' || action === 'DISP_24H_V') {
       for (const entry of input.vehicleActivities ?? []) {
         const d = new Date(entry.minuteStartUtc)
         dayStarts.add(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))

@@ -106,6 +106,24 @@ Téma: VDOi – zkrácené 9h odpočinky podle hranic týdenních odpočinků
 - Nabídka dalšího denního odpočinku (9/11 h) bere tento zbývající počet; lhůta VDO24h se už neschovává jen kvůli otevřenému oknu.
 - Soubory: vdoCounterReducedDaily.ts (nový), vdoCounterOutlook.ts, App.tsx (undetermined → outlook).
 
+=== BLOK 1m – Dokončená úprava ===
+Datum: 2026-11-21
+Téma: Info bublina výhozu – správný text + spolehlivé zobrazení
+
+- Důvod (jízda / načítání) se ukládá při pokusu, ne odvozuje z aktuální fáze průvodce (po skončení loadu už nepadal text „během jízdy“).
+- Každý pokus má nové id bubliny (nezůstane schovaná po dřívějším Zavřít).
+- Načítání: výstraha do OK; jízda: zmizí po zastavení.
+- Soubory: App.tsx, InfoPanel.tsx.
+
+=== BLOK 1n – Dokončená úprava ===
+Datum: 2026-11-21
+Téma: Vložení karty za jízdy (EventFaultType 05)
+
+- Vložení za jízdy povoleno (jako DTCO); výstraha !(14)(2){slot} vložena při / jízdě, potvrzení OK.
+- Zápis CARD_INSERTION_WHILE_DRIVING do faultsAndEvents + eventLog; výtisk vozidla !05 a výtisk událostí řidiče; tabulka výstrah v grafu.
+- InfoPanel bublina s výukovým textem.
+- Soubory: TachoTypes, WarningDisplays, TachoDisplay, App, InfoPanel, vehicle/driverEventPrintRows, WorkWeekGraphView, překlady.
+
 === BLOK 2 – Nedokončeno / na příště ===
 - Trajekt při stání: zda přeskočit časy karet jako teď, nebo je ukázat i s aktivním trajektem.
 - Week-graph: chybějící výstrahy v grafu pracovního týdne.

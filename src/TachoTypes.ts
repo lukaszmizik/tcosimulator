@@ -58,18 +58,21 @@ export type FaultOrEvent = {
     averageKmh: number
     driver: Pick<CardData, 'name' | 'surname' | 'cardNumber'> | null
   }
+  /** Šachta u událostí vázaných na kartu (např. vložení za jízdy). */
+  slot?: 1 | 2
 } & (
-  | { kind: 'event'; type: 'DRIVING_WITHOUT_CARD_WARNING' | 'DRIVING_WITHOUT_VALID_CARD_WARNING' | 'EXCESS_SPEED_WARNING' | 'BREAK_WARNING_415' | 'BREAK_WARNING_430' }
+  | { kind: 'event'; type: 'DRIVING_WITHOUT_CARD_WARNING' | 'DRIVING_WITHOUT_VALID_CARD_WARNING' | 'EXCESS_SPEED_WARNING' | 'BREAK_WARNING_415' | 'BREAK_WARNING_430' | 'CARD_INSERTION_WHILE_DRIVING' }
   | { kind: 'fault'; type: string }
 )
 
 export type EventLogEntry = {
   id: number | string
-  type: 'DRIVING_WITHOUT_CARD' | 'DRIVING_WITHOUT_VALID_CARD'
+  type: 'DRIVING_WITHOUT_CARD' | 'DRIVING_WITHOUT_VALID_CARD' | 'CARD_INSERTION_WHILE_DRIVING'
   startTime: number
   endTime?: number
   /** Událost během nedokončeného manuálního zadávání (přerušení rozjezdem). */
   duringIncompleteManualEntry?: boolean
+  slot?: 1 | 2
 }
 
 /** Denní stav tachometru pro blok [9]. Nejde o vzorek každých 100 ms. */

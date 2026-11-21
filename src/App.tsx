@@ -354,8 +354,17 @@ export default function App() {
   const [excessSpeedWarningActive, setExcessSpeedWarningActive] = useState(false)
   /** Přepsání: zobraz výstrahu "XX" – volá se povelem zobrazVystrahu("XX") */
   const [overrideWarningCode, setOverrideWarningCode] = useState<string | null>(null)
-  /** Výstraha „výhoz není možný“ – zobrazí se jen po pokusu o vyjmutí karty během jízdy, zruší se po zastavení */
-  const [ejectionBlockedWarningActive, setEjectionBlockedWarningActive] = useState(false)
+  /** Výstraha „výhoz není možný“ – důvod se ukládá při pokusu (ne odvozuje ze stavu), jinak špatný text v bublině. */
+  type EjectionBlockedReason = 'driving' | 'loading'
+  const [ejectionBlockedReason, setEjectionBlockedReason] = useState<EjectionBlockedReason | null>(null)
+  const ejectionBlockedWarningActive = ejectionBlockedReason != null
+  const ejectionBlockedSeqRef = useRef(0)
+  const [ejectionBlockedBubbleId, setEjectionBlockedBubbleId] = useState(0)
+  const showEjectionBlocked = useCallback((reason: EjectionBlockedReason) => {
+    ejectionBlockedSeqRef.current += 1
+    setEjectionBlockedBubbleId(ejectionBlockedSeqRef.current)
+    setEjectionBlockedReason(reason)
+  }, [])
   const activeNoCardIdRef = useRef<string | null>(null)
   const [dragOverSlot, setDragOverSlot] = useState<1 | 2 | null>(null)
   /** Čas posledního vyjmutí karty (pro „Posled. vyjmutí“ v sekvenci vložení). */
@@ -405,6 +414,8 @@ export default function App() {
   const [expiryNote, setExpiryNote] = useState<{ slot: 1 | 2; days: number } | null>(null)
   /** Po změně dne vypršela vložená karta – hláška !(14){slot} neplatná / karta (auto-výhoz bez žádosti). */
   const [expiredInsertedCardWarningSlot, setExpiredInsertedCardWarningSlot] = useState<1 | 2 | null>(null)
+  /** Výstraha „vložena při jízdě“ !(14)(2){slot} – EventFaultType 05. */
+  const [insertionWhileDrivingWarningSlot, setInsertionWhileDrivingWarningSlot] = useState<1 | 2 | null>(null)
   const pendingExpiredEjectSlotsRef = useRef<Set<1 | 2>>(new Set())
   useEffect(() => {
     if (!expiryNote) return
@@ -769,13 +780,12 @@ export default function App() {
     getCurrentLocationCountryCode: () => currentLocationCountryCodeRefForWizard.current ?? null,
   })
 
-  /** Zruš výstrahu „výhoz není možný“, jakmile už neplatí jízda ani načítání karty */
+  /** Jízda: výstraha zmizí po zastavení. Načítání: zůstane do OK (text bubliny drží uložený důvod). */
   useEffect(() => {
-    if (!ejectionBlockedWarningActive) return
-    const stillLoading =
-      cardInsertionState != null && isCardLoadingPhase(cardInsertionState.phase)
-    if (currentSpeed === 0 && !stillLoading) setEjectionBlockedWarningActive(false)
-  }, [currentSpeed, cardInsertionState, ejectionBlockedWarningActive])
+    if (ejectionBlockedReason === 'driving' && currentSpeed === 0) {
+      setEjectionBlockedReason(null)
+    }
+  }, [currentSpeed, ejectionBlockedReason])
 
   const pendingInsertionRef = useRef<CardInsertionState | null>(null)
   const startOrQueueInsertion = useCallback((next: CardInsertionState) => {
@@ -1562,6 +1572,7 @@ export default function App() {
     }
     if (isPrintoutActive) return
     if (menuCountryInputState?.phase === 'confirmSaved' || menuLoadUnloadConfirmState) return
+    if (insertionWhileDrivingWarningSlot || excessSpeedWarningActive || ejectionBlockedWarningActive || expiredInsertedCardWarningSlot) return
     if (cardInsertionState) {
       handleCardInsertionKey('up')
       return
@@ -1574,7 +1585,7 @@ export default function App() {
       handlePrintWizardKey('up')
       return
     }
-    if (drivingWithoutCardWarningActive || drivingWithoutValidCardWarningActive || ignitionWarningActive || excessSpeedWarningActive || ejectionBlockedWarningActive) return
+    if (drivingWithoutCardWarningActive || drivingWithoutValidCardWarningActive || ignitionWarningActive) return
     if (menuCountryInputState) {
       handleMenuCountryInputKey('up')
       return
@@ -1586,7 +1597,7 @@ export default function App() {
     }
     if (visibleItems.length === 0) return
     setSelectedIndex((prev) => stepMenuIndex(prev, visibleItems.length, 'up'))
-  }, [ignitionOn, wakeDisplayFromStandby, displayMode, card1Inserted, card2Inserted, visibleItems.length, cardInsertionState, cardWithdrawalState, printWizardState, displayBrowseState, menuCountryInputState, menuLoadUnloadConfirmState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, drivingWithoutCardWarningActive, drivingWithoutValidCardWarningActive, ignitionWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, isPrintoutActive, browseOperatingTimes])
+  }, [ignitionOn, wakeDisplayFromStandby, displayMode, card1Inserted, card2Inserted, visibleItems.length, cardInsertionState, cardWithdrawalState, printWizardState, displayBrowseState, menuCountryInputState, menuLoadUnloadConfirmState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, drivingWithoutCardWarningActive, drivingWithoutValidCardWarningActive, ignitionWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, insertionWhileDrivingWarningSlot, expiredInsertedCardWarningSlot, isPrintoutActive, browseOperatingTimes])
 
   const handleDown = useCallback(() => {
     if (!ignitionOn) {
@@ -1599,6 +1610,7 @@ export default function App() {
     }
     if (isPrintoutActive) return
     if (menuCountryInputState?.phase === 'confirmSaved' || menuLoadUnloadConfirmState) return
+    if (insertionWhileDrivingWarningSlot || excessSpeedWarningActive || ejectionBlockedWarningActive || expiredInsertedCardWarningSlot) return
     if (cardInsertionState) {
       handleCardInsertionKey('down')
       return
@@ -1611,7 +1623,7 @@ export default function App() {
       handlePrintWizardKey('down')
       return
     }
-    if (drivingWithoutCardWarningActive || drivingWithoutValidCardWarningActive || ignitionWarningActive || excessSpeedWarningActive || ejectionBlockedWarningActive) return
+    if (drivingWithoutCardWarningActive || drivingWithoutValidCardWarningActive || ignitionWarningActive) return
     if (menuCountryInputState) {
       handleMenuCountryInputKey('down')
       return
@@ -1623,7 +1635,7 @@ export default function App() {
     }
     if (visibleItems.length === 0) return
     setSelectedIndex((prev) => stepMenuIndex(prev, visibleItems.length, 'down'))
-  }, [ignitionOn, wakeDisplayFromStandby, displayMode, card1Inserted, card2Inserted, visibleItems.length, cardInsertionState, cardWithdrawalState, printWizardState, displayBrowseState, menuCountryInputState, menuLoadUnloadConfirmState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, drivingWithoutCardWarningActive, drivingWithoutValidCardWarningActive, ignitionWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, isPrintoutActive, browseOperatingTimes])
+  }, [ignitionOn, wakeDisplayFromStandby, displayMode, card1Inserted, card2Inserted, visibleItems.length, cardInsertionState, cardWithdrawalState, printWizardState, displayBrowseState, menuCountryInputState, menuLoadUnloadConfirmState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, drivingWithoutCardWarningActive, drivingWithoutValidCardWarningActive, ignitionWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, insertionWhileDrivingWarningSlot, expiredInsertedCardWarningSlot, isPrintoutActive, browseOperatingTimes])
 
   const handleOK = useCallback(() => {
     if (!ignitionOn) {
@@ -1643,9 +1655,14 @@ export default function App() {
       setExpiredInsertedCardWarningSlot(null)
       return
     }
-    if (ejectionBlockedWarningActive) {
+    if (insertionWhileDrivingWarningSlot != null) {
       addEntry(t.actions.stiskOk, t.actions.potvrzeniVarovani)
-      setEjectionBlockedWarningActive(false)
+      setInsertionWhileDrivingWarningSlot(null)
+      return
+    }
+    if (ejectionBlockedReason != null) {
+      addEntry(t.actions.stiskOk, t.actions.potvrzeniVarovani)
+      setEjectionBlockedReason(null)
       return
     }
     if (drivingWithoutCardWarningActive) {
@@ -1876,7 +1893,7 @@ export default function App() {
     }
     setMenuComingSoonInfo({ id: `menu-coming-soon-${Date.now()}` })
     addEntry(t.actions.stiskOk, t.infoPanel.menuComingSoon)
-  }, [card1Data, card2Data, driverCardStateByTemplateId, currentMenuId, languagePage, languageDraft, languageCard, language, setLanguage, t, ignitionOn, wakeDisplayFromStandby, displayMode, currentSpeed, selectedItem, menusById, currentMenuPath, countries, spanishRegions, secondHistory, activityHistory, simulatedUtcTime, overrideWarningCode, drivingWithoutCardWarningActive, ignitionWarningActive, breakWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, expiredInsertedCardWarningSlot, cardInsertionState, cardWithdrawalState, printWizardState, displayBrowseState, menuCountryInputState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, openMenuCountryInput, confirmMenuLoadUnload, isPrintoutActive, printState, addEntry, getCardInsertionOkDetail])
+  }, [card1Data, card2Data, driverCardStateByTemplateId, currentMenuId, languagePage, languageDraft, languageCard, language, setLanguage, t, ignitionOn, wakeDisplayFromStandby, displayMode, currentSpeed, selectedItem, menusById, currentMenuPath, countries, spanishRegions, secondHistory, activityHistory, simulatedUtcTime, overrideWarningCode, drivingWithoutCardWarningActive, ignitionWarningActive, breakWarningActive, excessSpeedWarningActive, ejectionBlockedReason, expiredInsertedCardWarningSlot, insertionWhileDrivingWarningSlot, cardInsertionState, cardWithdrawalState, printWizardState, displayBrowseState, menuCountryInputState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, openMenuCountryInput, confirmMenuLoadUnload, isPrintoutActive, printState, addEntry, getCardInsertionOkDetail])
 
   const handleBack = useCallback(() => {
     if (!ignitionOn) {
@@ -1898,6 +1915,7 @@ export default function App() {
       setOverrideWarningCode(null)
       return
     }
+    if (insertionWhileDrivingWarningSlot || excessSpeedWarningActive || ejectionBlockedWarningActive || expiredInsertedCardWarningSlot) return
     if (cardInsertionState) {
       addEntry(t.actions.stiskZpet)
       handleCardInsertionKey('back')
@@ -1913,7 +1931,7 @@ export default function App() {
       handlePrintWizardKey('back')
       return
     }
-    if (drivingWithoutCardWarningActive || drivingWithoutValidCardWarningActive || ignitionWarningActive || excessSpeedWarningActive || ejectionBlockedWarningActive) return
+    if (drivingWithoutCardWarningActive || drivingWithoutValidCardWarningActive || ignitionWarningActive || excessSpeedWarningActive || ejectionBlockedWarningActive || insertionWhileDrivingWarningSlot) return
     if (menuCountryInputState) {
       addEntry(t.actions.stiskZpet, t.actions.navratZeZadaniZeme)
       handleMenuCountryInputKey('back')
@@ -1944,7 +1962,7 @@ export default function App() {
       setCurrentMenuPath((path) => leaveSubmenu(path).path)
       setSelectedIndex(leaveSubmenu(currentMenuPath).index)
     }
-  }, [languagePage, languageDraft, t, ignitionOn, wakeDisplayFromStandby, displayMode, canGoBack, vdoCounterActive, overrideWarningCode, cardInsertionState, cardWithdrawalState, printWizardState, displayBrowseState, menuCountryInputState, menuLoadUnloadConfirmState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, leaveMenuLoadUnloadByBack, drivingWithoutCardWarningActive, drivingWithoutValidCardWarningActive, ignitionWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, isPrintoutActive, printState, addEntry])
+  }, [languagePage, languageDraft, t, ignitionOn, wakeDisplayFromStandby, displayMode, canGoBack, vdoCounterActive, overrideWarningCode, cardInsertionState, cardWithdrawalState, printWizardState, displayBrowseState, menuCountryInputState, menuLoadUnloadConfirmState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, leaveMenuLoadUnloadByBack, drivingWithoutCardWarningActive, drivingWithoutValidCardWarningActive, ignitionWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, insertionWhileDrivingWarningSlot, expiredInsertedCardWarningSlot, isPrintoutActive, printState, addEntry])
 
   const cycleLeftActivity = useCallback(() => {
     setLeftActivityId((id) => getNextActivity(id))
@@ -1992,14 +2010,14 @@ export default function App() {
             cardData,
           })
         } else if ((cardData && moving) || loadingThisSlot) {
-          setEjectionBlockedWarningActive(true)
+          showEjectionBlocked(loadingThisSlot ? 'loading' : 'driving')
           /* karta zůstane v tachografu – výhoz se neprovede (jízda / načítání) */
         } else {
           runEjectForSlot(1)
         }
       }
     }, 100)
-  }, [t, clearLongPressTimer, runEjectForSlot, isPrintoutActive, addEntry])
+  }, [t, clearLongPressTimer, runEjectForSlot, isPrintoutActive, addEntry, showEjectionBlocked])
 
   const handleButton1PointerUp = useCallback(() => {
     if (isPrintoutActive) return
@@ -2041,14 +2059,14 @@ export default function App() {
             cardData,
           })
         } else if ((cardData && moving) || loadingThisSlot) {
-          setEjectionBlockedWarningActive(true)
+          showEjectionBlocked(loadingThisSlot ? 'loading' : 'driving')
           /* karta zůstane v tachografu – výhoz se neprovede (jízda / načítání) */
         } else {
           runEjectForSlot(2)
         }
       }
     }, 100)
-  }, [t, clearLongPressTimer, runEjectForSlot, isPrintoutActive, addEntry])
+  }, [t, clearLongPressTimer, runEjectForSlot, isPrintoutActive, addEntry, showEjectionBlocked])
 
   const handleButton2PointerUp = useCallback(() => {
     if (isPrintoutActive) return
@@ -2076,6 +2094,28 @@ export default function App() {
 
   const handleSlotDragLeave = useCallback(() => {
     setDragOverSlot(null)
+  }, [])
+
+  const recordInsertionWhileDriving = useCallback((slot: 1 | 2) => {
+    if (currentSpeedRef.current <= 0) return
+    const id = crypto.randomUUID()
+    const at = simulatedUtcTimeRef.current
+    setInsertionWhileDrivingWarningSlot(slot)
+    setFaultsAndEvents((prev) => [...prev, {
+      id,
+      timestampUtc: at,
+      endUtc: at,
+      kind: 'event',
+      type: 'CARD_INSERTION_WHILE_DRIVING',
+      slot,
+    }])
+    setEventLog((prev) => [...prev, {
+      id,
+      type: 'CARD_INSERTION_WHILE_DRIVING',
+      startTime: at,
+      endTime: at,
+      slot,
+    }])
   }, [])
 
   const insertCardIntoSlot = useCallback((cardId: string, slot: 1 | 2) => {
@@ -2108,12 +2148,14 @@ export default function App() {
         setCard1Inserted(true)
         setDriverCardInsertedAtUtc(simulatedUtcTimeRef.current)
         setDrivingWithoutCardWarningActive(false)
+        recordInsertionWhileDriving(1)
         startOrQueueInsertion(createInitialCardInsertionState(1, cardData, simulatedUtcTimeRef.current, countries, wizardOptions))
       }
       if (slot === 2) {
         setCard2Data(cardData)
         setCard2Inserted(true)
         setCard2InsertedAt(Date.now())
+        recordInsertionWhileDriving(2)
         startOrQueueInsertion(createInitialCardInsertionState(2, cardData, simulatedUtcTimeRef.current, countries, wizardOptions))
       }
       setDragOverSlot(null)
@@ -2145,18 +2187,20 @@ export default function App() {
       setCard1Inserted(true)
       setDriverCardInsertedAtUtc(simulatedUtcTimeRef.current)
       setDrivingWithoutCardWarningActive(false)
+      recordInsertionWhileDriving(1)
       startOrQueueInsertion(createInitialCardInsertionState(1, cardData, simulatedUtcTime, countries, { skipReadyToDriveScreen: skipReadyToDrive, initialCountryCode: gpsCountry, timeOffsetMs, existingManualEntryBuffer: templateId === CARD1_TEMPLATE_ID ? card1Manual : card2Manual }))
     }
     if (slot === 2) {
       setCard2Data(cardData)
       setCard2Inserted(true)
       setCard2InsertedAt(Date.now())
+      recordInsertionWhileDriving(2)
       startOrQueueInsertion(createInitialCardInsertionState(2, cardData, simulatedUtcTime, countries, { skipReadyToDriveScreen: skipReadyToDrive, initialCountryCode: gpsCountry, timeOffsetMs, existingManualEntryBuffer: templateId === CARD1_TEMPLATE_ID ? card1Manual : card2Manual }))
     }
     setDragOverSlot(null)
     setCardsOpen(false)
     setCardPickerSlot(null)
-  }, [ignitionOn, displayAwakeFromStandby, simulatedUtcTime, timeOffsetMs, countries, card1Data, card2Data, driverCardStateByTemplateId, card1Manual, card2Manual, addEntry, startOrQueueInsertion, virtualLocation, virtualCardNames, expiryByCard])
+  }, [ignitionOn, displayAwakeFromStandby, simulatedUtcTime, timeOffsetMs, countries, card1Data, card2Data, driverCardStateByTemplateId, card1Manual, card2Manual, addEntry, startOrQueueInsertion, virtualLocation, virtualCardNames, expiryByCard, recordInsertionWhileDriving])
 
   const handleSlotDrop = (e: React.DragEvent, slot: 1 | 2) => {
     e.preventDefault()
@@ -2719,8 +2763,9 @@ export default function App() {
     setSplitFirstPartTakenByDriver({ 1: false, 2: false })
     setBreakWarningActive(null)
     setExcessSpeedWarningActive(false)
-    setEjectionBlockedWarningActive(false)
+    setEjectionBlockedReason(null)
     setExpiredInsertedCardWarningSlot(null)
+    setInsertionWhileDrivingWarningSlot(null)
     pendingExpiredEjectSlotsRef.current.clear()
     setOverrideWarningCode(null)
     overspeedRunRef.current = null
@@ -2938,6 +2983,7 @@ export default function App() {
     excessSpeedWarningActive,
     ejectionBlockedWarningActive,
     expiredInsertedCardWarningSlot,
+    insertionWhileDrivingWarningSlot,
     overrideWarningCode,
     menuCountryInputState,
     menuLoadUnloadConfirmState,
@@ -2997,7 +3043,9 @@ export default function App() {
     crewRuleInterruptedByCard2Exit,
     drivingWithoutCardWarningActive,
     excessSpeedWarningActive,
-    ejectionBlockedWarningActive,
+    ejectionBlockedReason,
+    ejectionBlockedBubbleId,
+    insertionWhileDrivingWarningSlot,
     breakWarningActive,
     cardInsertionState,
     lastEjectionTimeBySlot,
@@ -3301,6 +3349,7 @@ export default function App() {
     || excessSpeedWarningActive
     || ejectionBlockedWarningActive
     || expiredInsertedCardWarningSlot
+    || insertionWhileDrivingWarningSlot
     || cardInsertionState
     || cardWithdrawalState
     || (drivingWithoutCardWarningActive && !(outModeActive && currentSpeed === 0 && (!hasDrivenSinceOutActivation || (outStoppedAtUtc != null && simulatedUtcTime - outStoppedAtUtc >= 10000))))

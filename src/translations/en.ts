@@ -80,6 +80,7 @@ export const en: Translations = {
     publishDataConsentInfo: 'When using the card for the first time, you will be prompted to give consent for the processing of personal data, including special categories of personal data. You can withdraw your consent at any time through the device menu.',
     ejectionBlockedWarning: 'This is an error! You cannot eject the card while driving. Ejection is only possible after the vehicle has stopped.',
     ejectionBlockedDuringLoading: 'You tried to eject the card while it was being read. The tachograph is currently reading or transferring card data – ejection is not possible (35)(14). Wait until reading finishes, then eject the card. Confirm the warning with OK.',
+    insertionWhileDrivingWarning: 'You inserted the driver card only after driving had begun !(14)(2). This is not permitted – insert the card only when stationary. The event (EventFaultType 05) is stored in the tachograph memory and on the card and appears on the events printout. Confirm the warning with OK.',
     excessSpeedWarning: 'Excess speed (39)(39) has been recorded. The vehicle\'s design speed was exceeded. This event is automatically recorded in the tachograph memory!',
     menuComingSoon: 'This menu item is not yet active. Coming soon:)',
     outModeActiveInfo: 'OUT mode has been activated. Driving time (2) is recorded as other work (9) in this mode. Familiarize yourself with the conditions under which this mode can be used.',
@@ -154,6 +155,8 @@ export const en: Translations = {
     excessSpeed: 'excess speed',
     ejectionBlockedL1: 'ejection not',
     ejectionBlockedL2: 'possible',
+    insertionWhileDrivingL1: 'insertion while',
+    insertionWhileDrivingL2: 'driving',
   },
   actionLog: {
     header: 'Action log', // 36
@@ -242,6 +245,7 @@ export const en: Translations = {
     shiftSumRestPlaceholder: '----',
     shiftLengthLabel: 'Length of current shift:',
     faultDrivingWithoutCard: 'Driving without card',
+    faultInsertionWhileDriving: 'Card insertion while driving',
     faultDrivingWithoutValidCard: 'Driving without valid card',
     faultExcessSpeed: '(39)(39) Excess speed',
     faultBreakWarning415: 'Driving time warning 4:15 (VDO)',

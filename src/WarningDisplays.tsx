@@ -98,3 +98,21 @@ export function ExpiredInsertedCardWarningDisplay({
     </div>
   )
 }
+
+/** Karta vložena po zahájení jízdy – !(14)(2){slot} vložena při / jízdě (EventFaultType 05, kód 046/064). */
+export function InsertionWhileDrivingWarningDisplay({
+  symbolMap,
+  slot,
+}: {
+  symbolMap: SymbolMap | null
+  slot: 1 | 2
+}) {
+  const { t } = useLanguage()
+  const l1 = parseSymbols(`!(14)(2)${slot}\u00A0${t.tachoDisplay.insertionWhileDrivingL1}`, symbolMap)
+  return (
+    <div className="lcd-two-rows lcd-card-warning-blink">
+      <div className="lcd-row lcd-row-warning-inline">{l1}</div>
+      <div className="lcd-row lcd-row-warning-inline">{t.tachoDisplay.insertionWhileDrivingL2}</div>
+    </div>
+  )
+}

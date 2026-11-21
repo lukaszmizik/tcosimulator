@@ -30,6 +30,7 @@ import {
   EjectionBlockedWarningDisplay,
   ExcessSpeedWarningDisplay,
   ExpiredInsertedCardWarningDisplay,
+  InsertionWhileDrivingWarningDisplay,
   OverrideWarningDisplay,
 } from './WarningDisplays'
 import type { DrivingBreakDisplay } from './drivingBreakDisplay'
@@ -50,6 +51,8 @@ export type TachoDisplayProps = {
   ejectionBlockedWarningActive?: boolean
   /** Vložená karta vypršela po změně dne – auto-výhoz; šachta pro !(14){slot}. */
   expiredInsertedCardWarningSlot?: 1 | 2 | null
+  /** Karta vložena za jízdy – !(14)(2){slot} vložena při / jízdě. */
+  insertionWhileDrivingWarningSlot?: 1 | 2 | null
   /** Přepsání: zobraz výstrahu "XX" – zobrazí danou výstrahu bez ohledu na kontext */
   overrideWarningCode?: string | null
   menuCountryInputState: MenuCountryInputState | null
@@ -195,7 +198,7 @@ function LoadUnloadConfirmDisplay() {
 
 export function TachoDisplay(props: TachoDisplayProps) {
   const { language } = useLanguage()
-  const { symbolMap, cardInsertionState, cardWithdrawalState, drivingWithoutCardWarningActive, drivingWithoutValidCardWarningActive, breakWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, expiredInsertedCardWarningSlot, overrideWarningCode, menuCountryInputState, menuLoadUnloadConfirmState, printWizardState, displayBrowseState, printStartedToastUntil, displayMode, showOutOnL2 = false } = props
+  const { symbolMap, cardInsertionState, cardWithdrawalState, drivingWithoutCardWarningActive, drivingWithoutValidCardWarningActive, breakWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, expiredInsertedCardWarningSlot, insertionWhileDrivingWarningSlot, overrideWarningCode, menuCountryInputState, menuLoadUnloadConfirmState, printWizardState, displayBrowseState, printStartedToastUntil, displayMode, showOutOnL2 = false } = props
 
   if (typeof window !== 'undefined' && window.location.search.includes('debug=1')) {
     // Diagnostika: která větev se vykresluje (otevři konzoli F12)
@@ -203,6 +206,7 @@ export function TachoDisplay(props: TachoDisplayProps) {
       overrideWarningCode ? 'override' :
       excessSpeedWarningActive ? 'excessSpeed' :
       ejectionBlockedWarningActive ? 'ejectionBlocked' :
+      insertionWhileDrivingWarningSlot ? 'insertionWhileDriving' :
       showOutOnL2 && props.displayMode === 'operating' ? 'OUT_OperatingDisplay' :
       cardInsertionState ? 'cardInsertion' :
       cardWithdrawalState ? 'cardWithdrawal' :
@@ -230,6 +234,10 @@ export function TachoDisplay(props: TachoDisplayProps) {
   }
   if (expiredInsertedCardWarningSlot) {
     return <ExpiredInsertedCardWarningDisplay symbolMap={symbolMap} slot={expiredInsertedCardWarningSlot} />
+  }
+  /** Vložení karty za jízdy – před průvodcem vložení, potvrzení OK. */
+  if (insertionWhileDrivingWarningSlot) {
+    return <InsertionWhileDrivingWarningDisplay symbolMap={symbolMap} slot={insertionWhileDrivingWarningSlot} />
   }
   /** Režim OUT (bez vložené karty): na hlavní obrazovce zobrazit nápis OUT místo symbolů aktivit. V menu zůstane menu. */
   if (!props.expiryNote && showOutOnL2 && props.displayMode === 'operating') {

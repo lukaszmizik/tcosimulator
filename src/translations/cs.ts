@@ -81,6 +81,7 @@ export const cs: Translations = {
     excessSpeedWarning: 'Byla zaznamenána (39)(39) příliš vysoká rychlost. Došlo k překročení konstrukční rychlosti vozidla. Tato událost je automaticky zaznamenána do paměti tachografu!',
     ejectionBlockedWarning: 'Toto je chyba! Nemůžeš vytahovat kartu během jízdy. Výhoz je možný až po zastavení vozidla.',
     ejectionBlockedDuringLoading: 'Pokusil jsi se vysunout kartu během načítání. Tachograf právě čte nebo přenáší data karty – výhoz není možný (35)(14). Počkej na dokončení načítání a teprve potom kartu vysuň. Výstrahu potvrď tlačítkem OK.',
+    insertionWhileDrivingWarning: 'Vložil jsi kartu řidiče až po zahájení jízdy !(14)(2). Toto je nepřípustné – karta se má vkládat jen v klidu. Událost (EventFaultType 05) se zapisuje do paměti tachografu i na kartu a objeví se ve výtisku událostí. Výstrahu potvrď tlačítkem OK.',
     menuComingSoon: 'Tato položka zatím není aktivní. Coming soon:)',
     outModeActiveInfo: 'Byl aktivován režim OUT. Doba řízení (2) je v tomto režimu zaznamenávána jako jiná práce (9). Seznamte se s podmínkami, za nichž lze tento režim používat.',
   },
@@ -154,6 +155,8 @@ export const cs: Translations = {
     excessSpeed: 'vys. rychlost',
     ejectionBlockedL1: 'výhoz není',
     ejectionBlockedL2: 'možný',
+    insertionWhileDrivingL1: 'vložena při',
+    insertionWhileDrivingL2: 'jízdě',
   },
   actionLog: {
     header: 'Log akcí', // 36
@@ -242,6 +245,7 @@ export const cs: Translations = {
     shiftSumRestPlaceholder: '----',
     shiftLengthLabel: 'Délka aktuální směny:',
     faultDrivingWithoutCard: 'Jízda bez vložené karty',
+    faultInsertionWhileDriving: 'Vložení karty za jízdy',
     faultDrivingWithoutValidCard: 'Jízda bez platné karty',
     faultExcessSpeed: '(39)(39) Příliš vysoká rychlost',
     faultBreakWarning415: 'Výstraha doby řízení 4:15 (VDO)',

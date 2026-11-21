@@ -5,7 +5,7 @@ import type { VehiclePrintCard } from './vehicleDayPrintRows'
 
 const DAY = 86_400_000
 
-type EventKind = 'DRIVING_WITHOUT_CARD_WARNING' | 'EXCESS_SPEED_WARNING'
+type EventKind = 'DRIVING_WITHOUT_CARD_WARNING' | 'EXCESS_SPEED_WARNING' | 'CARD_INSERTION_WHILE_DRIVING'
 
 type PrintableEntry = {
   record: FaultOrEvent
@@ -87,15 +87,17 @@ export function buildVehicleEventPrintRows(input: {
   if (profile.registration) add('  ', profile.registrationNation, ' /', profile.registration)
   if (profile.load) add(profile.load === 'passengers' ? 50 : 51)
 
-  // DTCO 4.1b: !04 jízda bez karty + (39)(39) příliš vysoká rychlost (dříve filtr jen !04).
+  // DTCO 4.1: !04 jízda bez karty, !05 vložení karty za jízdy, (39)(39) vysoká rychlost.
   const noCard = collectTypedEvents(records, printedAtUtc, 'DRIVING_WITHOUT_CARD_WARNING', [27, 2, 14], '!04')
+  const insertionWhileDriving = collectTypedEvents(records, printedAtUtc, 'CARD_INSERTION_WHILE_DRIVING', [27, 14, 2], '!05')
   const speeding = collectTypedEvents(records, printedAtUtc, 'EXCESS_SPEED_WARNING', [39, 39], null)
   const dayOf = (record: FaultOrEvent) => Math.floor(record.timestampUtc / DAY)
   const countFor = (type: EventKind, record: FaultOrEvent) =>
     records.filter(r => r.kind === 'event' && r.type === type
       && dayOf(r) === dayOf(record) && r.timestampUtc <= printedAtUtc).length
 
-  const entries = [...noCard, ...speeding]
+  const entries = [...noCard, ...insertionWhileDriving, ...speeding]
+    .sort((a, b) => b.record.timestampUtc - a.record.timestampUtc)
   if (entries.length > 0) {
     separator(27, 24)
     entries.forEach(({ record, elapsed, purpose, pictograms, typeCode }, index) => {

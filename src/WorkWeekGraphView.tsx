@@ -1105,10 +1105,11 @@ export function WorkWeekGraphView({ days, countryMarkers, manualEntryBuffer, las
                     {f.kind === 'fault' ? t.workWeek.faultKind : t.workWeek.eventKind} ·
                     {(f.type === 'DRIVING_WITHOUT_CARD_WARNING' ? t.workWeek.faultDrivingWithoutCard
                       : f.type === 'DRIVING_WITHOUT_VALID_CARD_WARNING' ? t.workWeek.faultDrivingWithoutValidCard
-                        : f.type === 'EXCESS_SPEED_WARNING' ? t.workWeek.faultExcessSpeed
-                          : f.type === 'BREAK_WARNING_415' ? t.workWeek.faultBreakWarning415
-                            : f.type === 'BREAK_WARNING_430' ? t.workWeek.faultBreakWarning430
-                              : null) ?? f.type}
+                        : f.type === 'CARD_INSERTION_WHILE_DRIVING' ? t.workWeek.faultInsertionWhileDriving
+                          : f.type === 'EXCESS_SPEED_WARNING' ? t.workWeek.faultExcessSpeed
+                            : f.type === 'BREAK_WARNING_415' ? t.workWeek.faultBreakWarning415
+                              : f.type === 'BREAK_WARNING_430' ? t.workWeek.faultBreakWarning430
+                                : null) ?? f.type}
                   </span>
                   {f.type === 'DRIVING_WITHOUT_CARD_WARNING' && (
                     <span>

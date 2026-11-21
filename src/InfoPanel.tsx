@@ -13,7 +13,7 @@ import type { VdoNamedScreen } from './slot1DddCounter'
 import type { Translations } from './translations/types'
 import type { SymbolMap } from './TachoTypes'
 import { ACTIVITY_SYMBOLS } from './TachoTypes'
-import { segmentToMsUtc, isCardLoadingPhase } from './CardLogic'
+import { segmentToMsUtc } from './CardLogic'
 import type { VehicleCheckResult } from './vehiclePreDepartureCheck'
 import { parseSymbols, ACTIVITY_ID_TO_BG } from './Symbols'
 
@@ -362,8 +362,12 @@ export function useInfoPanelItems(props: {
   card1Inserted: boolean
   drivingWithoutCardWarningActive: boolean
   excessSpeedWarningActive?: boolean
-  /** Po pokusu o vyjmutí karty během jízdy – zobrazí infobox s výstrahou */
-  ejectionBlockedWarningActive?: boolean
+  /** Důvod výstrahy výhozu – uložený při pokusu, ne odvozený ze stavu průvodce */
+  ejectionBlockedReason?: 'driving' | 'loading' | null
+  /** Unikátní id bubliny (každý pokus znovu zobrazí info) */
+  ejectionBlockedBubbleId?: number
+  /** Šachta výstrahy „vložena při jízdě“ */
+  insertionWhileDrivingWarningSlot?: 1 | 2 | null
   breakWarningActive: string | null
   cardInsertionState: CardInsertionState | null
   lastEjectionTimeBySlot: { 1: number | null; 2: number | null }
@@ -384,7 +388,9 @@ export function useInfoPanelItems(props: {
     card1Inserted,
     drivingWithoutCardWarningActive,
     excessSpeedWarningActive = false,
-    ejectionBlockedWarningActive = false,
+    ejectionBlockedReason = null,
+    ejectionBlockedBubbleId = 0,
+    insertionWhileDrivingWarningSlot = null,
     breakWarningActive,
     cardInsertionState,
     lastEjectionTimeBySlot,
@@ -434,15 +440,21 @@ export function useInfoPanelItems(props: {
     })
   }
 
-  if (ejectionBlockedWarningActive) {
-    const duringLoading =
-      cardInsertionState != null && isCardLoadingPhase(cardInsertionState.phase)
+  if (ejectionBlockedReason != null) {
     items.push({
-      id: duringLoading ? 'ejection-blocked-loading' : 'ejection-blocked',
+      id: `ejection-blocked-${ejectionBlockedReason}-${ejectionBlockedBubbleId}`,
       type: 'warning',
-      message: duringLoading
+      message: ejectionBlockedReason === 'loading'
         ? t.infoPanel.ejectionBlockedDuringLoading
         : t.infoPanel.ejectionBlockedWarning,
+    })
+  }
+
+  if (insertionWhileDrivingWarningSlot != null) {
+    items.push({
+      id: `insertion-while-driving-${insertionWhileDrivingWarningSlot}`,
+      type: 'warning',
+      message: t.infoPanel.insertionWhileDrivingWarning,
     })
   }
 

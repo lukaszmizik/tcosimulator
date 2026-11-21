@@ -85,6 +85,8 @@ export type Translations = {
     ejectionBlockedWarning: string
     /** Výstraha: nelze vytahovat kartu během načítání / přenosu dat */
     ejectionBlockedDuringLoading: string
+    /** Výstraha: karta vložena až po zahájení jízdy */
+    insertionWhileDrivingWarning: string
     menuComingSoon: string
     outModeActiveInfo: string
   }
@@ -161,6 +163,10 @@ export type Translations = {
     ejectionBlockedL1: string
     /** L2: „možný“ (výhoz není možný) */
     ejectionBlockedL2: string
+    /** L1 za !(14)(2){slot}: „vložena při“ */
+    insertionWhileDrivingL1: string
+    /** L2: „jízdě“ */
+    insertionWhileDrivingL2: string
   }
   actionLog: {
     header: string
@@ -227,6 +233,7 @@ export type Translations = {
     shiftLengthLabel: string
     faultDrivingWithoutCard: string
     faultDrivingWithoutValidCard: string
+    faultInsertionWhileDriving: string
     faultExcessSpeed: string
     faultBreakWarning415: string
     faultBreakWarning430: string

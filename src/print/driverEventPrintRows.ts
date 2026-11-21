@@ -29,7 +29,7 @@ function fromDdd(item: DddCardIncident, kind: 'event' | 'fault'): DriverEventPri
   }
 }
 
-/** Simulované záznamy z eventLog (jízda bez karty / bez platné karty) → formát karty. */
+/** Simulované záznamy z eventLog → formát karty. */
 export function driverEventsFromEventLog(
   log: readonly EventLogEntry[],
   printedAtUtc: number,
@@ -40,7 +40,8 @@ export function driverEventsFromEventLog(
       kind: 'event' as const,
       fromUtc: entry.startTime,
       toUtc: entry.endTime ?? null,
-      pictograms: [27, 2, 14],
+      // !(14)(2) vložení za jízdy; jinak !(2)(14) jízda bez karty
+      pictograms: entry.type === 'CARD_INSERTION_WHILE_DRIVING' ? [27, 14, 2] : [27, 2, 14],
       registration: null,
     }))
 }

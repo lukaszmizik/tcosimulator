@@ -472,6 +472,8 @@ export default function App() {
   const ferryDrivingMsRef = useRef(0)
   /** Čas nad 90 km/h – po 1 min zobrazí varování překročení rychlosti */
   const overspeedRunRef = useRef<OverspeedRun | null>(null)
+  /** Id otevřeného EXCESS_SPEED_WARNING v faultsAndEvents (endUtc null → uzavře se při poklesu). */
+  const activeOverspeedIdRef = useRef<string | null>(null)
   setCard1InsertedRef.current = setCard1Inserted
   setCard2InsertedRef.current = setCard2Inserted
   card1DataRef.current = card1Data
@@ -1201,16 +1203,53 @@ export default function App() {
       card1InsertedRef.current ? card1DataRef.current : null)
     overspeedRunRef.current = next
 
+    // Záznam do paměti hned při vzniku výstrahy (dřív se psal až po poklesu pod 90 → ve výtisku chyběl).
     if (qualifiesAsOverspeed(next) && !qualifiesAsOverspeed(previous)) {
       setExcessSpeedWarningActive(true)
-    }
-    if (!next && qualifiesAsOverspeed(previous)) {
-      const { startUtc, elapsedMs: durationMs, speedTime, maxKmh, driver } = previous
       const id = crypto.randomUUID()
+      activeOverspeedIdRef.current = id
       setFaultsAndEvents(records => [...records, {
-        id, timestampUtc: startUtc, endUtc: atUtc, kind: 'event', type: 'EXCESS_SPEED_WARNING',
-        overspeed: { durationMs, maxKmh, averageKmh: speedTime / durationMs, driver },
+        id,
+        timestampUtc: next.startUtc,
+        endUtc: null,
+        kind: 'event',
+        type: 'EXCESS_SPEED_WARNING',
+        overspeed: {
+          durationMs: next.elapsedMs,
+          maxKmh: next.maxKmh,
+          averageKmh: next.speedTime / next.elapsedMs,
+          driver: next.driver,
+        },
       }])
+    } else if (qualifiesAsOverspeed(next) && activeOverspeedIdRef.current) {
+      const id = activeOverspeedIdRef.current
+      setFaultsAndEvents(records => records.map(record =>
+        record.id === id
+          ? {
+            ...record,
+            overspeed: {
+              durationMs: next.elapsedMs,
+              maxKmh: next.maxKmh,
+              averageKmh: next.speedTime / next.elapsedMs,
+              driver: next.driver,
+            },
+          }
+          : record,
+      ))
+    }
+    if (!next && previous && activeOverspeedIdRef.current) {
+      const id = activeOverspeedIdRef.current
+      activeOverspeedIdRef.current = null
+      const { elapsedMs: durationMs, speedTime, maxKmh, driver } = previous
+      setFaultsAndEvents(records => records.map(record =>
+        record.id === id
+          ? {
+            ...record,
+            endUtc: atUtc,
+            overspeed: { durationMs, maxKmh, averageKmh: speedTime / durationMs, driver },
+          }
+          : record,
+      ))
     }
   }, [])
 
@@ -2627,6 +2666,7 @@ export default function App() {
     setEjectionBlockedWarningActive(false)
     setOverrideWarningCode(null)
     overspeedRunRef.current = null
+    activeOverspeedIdRef.current = null
     const now = Date.now()
     simulatedUtcTimeRef.current = now
     dayOdometersRef.current = resetDayOdometers(now, odometerKmRef.current)

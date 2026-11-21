@@ -54,6 +54,16 @@ Téma: Menu Displej – prohlížení výtisku na LCD
 - Symbol tiskárny (18) se pro displej mění na (20); ↑/↓ listuje, Zpět ukončí.
 - Soubory: printDisplayBrowse.ts, printWizardHandling, TachoDisplay, App, menu_structure.
 
+=== BLOK 1g – Dokončená úprava ===
+Datum: 2026-11-21
+Téma: Překročení rychlosti – ztráta ve výtisku událostí
+
+- Ztráta 1: záznam do faultsAndEvents se psal až po poklesu pod 90 (při stále vysoké rychlosti v paměti nebyl).
+- Ztráta 2: buildVehicleEventPrintRows filtroval jen DRIVING_WITHOUT_CARD_WARNING (!04).
+- Oprava: zápis při vzniku výstrahy (endUtc null) + uzavření při poklesu; výtisk vozidlo–událost tiskne i (39)(39).
+- Výtisk řidič–událost: overspeed sem z eventLog nejde (jen jízda bez karty); detail je na výtisku (39)(39) / VU.
+- Soubory: App.tsx (trackOverspeed), vehicleEventPrintRows.ts.
+
 === BLOK 2 – Nedokončeno / na příště ===
 - Trajekt při stání: zda přeskočit časy karet jako teď, nebo je ukázat i s aktivním trajektem.
 - Week-graph: chybějící výstrahy v grafu pracovního týdne.

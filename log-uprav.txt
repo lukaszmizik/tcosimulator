@@ -97,6 +97,15 @@ Téma: Tlačítko „Zobrazit data z karty“ vedle Reset
 - Přesunuto z details „Data / scénáře“ do reset-module (desktop i mobil ihned po ruce).
 - Soubory: ControlPanel.tsx, dashboard.css.
 
+=== BLOK 1l – Dokončená úprava ===
+Datum: 2026-11-21
+Téma: VDOi – zkrácené 9h odpočinky podle hranic týdenních odpočinků
+
+- Počet zbývajících zkrácení (max 3) se počítá v otevřeném období od konce posledního týdenního odpočinku (≥24 h) po „teď“ (bez týdenního od začátku záznamu).
+- Reset při probíhajícím ≥24 h odpočinku; null při dírách/nejednoznačném týdenním; v osádce null (9 h je standard).
+- Nabídka dalšího denního odpočinku (9/11 h) bere tento zbývající počet; lhůta VDO24h se už neschovává jen kvůli otevřenému oknu.
+- Soubory: vdoCounterReducedDaily.ts (nový), vdoCounterOutlook.ts, App.tsx (undetermined → outlook).
+
 === BLOK 2 – Nedokončeno / na příště ===
 - Trajekt při stání: zda přeskočit časy karet jako teď, nebo je ukázat i s aktivním trajektem.
 - Week-graph: chybějící výstrahy v grafu pracovního týdne.

@@ -3275,6 +3275,7 @@ export default function App() {
       remainingDrivingMs: slot1DrivingUndocumented ? null : remainingDrivingMs,
       requiredBreakMs,
       extensionsRemaining: slot1LcdProps.slot1DebugDailyExtensionsRemaining ?? null,
+      undetermined: slot1CounterIntervals.undetermined,
     })
   }, [
     slot1CounterIntervals,

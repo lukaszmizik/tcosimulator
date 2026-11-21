@@ -16,11 +16,11 @@ import type { DrivingBreakInterval } from './drivingBreakDisplay'
 import { drivingBreakIntervalsToActivities } from './vdoCounterActivityAdapter'
 import {
   DAILY_REST_MIN_11H_MS,
-  MAX_REDUCED_DAILY_REST_PER_PERIOD,
   REDUCED_DAILY_REST_MIN_MS,
   REDUCED_WEEKLY_REST_MIN_MS,
   STANDARD_WEEKLY_REST_MIN_MS,
 } from './VDOCounter'
+import { resolveReducedDailyRemaining } from './vdoCounterReducedDaily'
 
 const HOUR_MS = 60 * 60 * 1000
 const SIX_PERIODS_MS = 6 * 24 * HOUR_MS
@@ -36,7 +36,7 @@ export type VdoCounterOutlook = {
   nextWeeklyRestMs: number | null
   /** Zbývající čas do nejpozdějšího začátku týdenního odpočinku. */
   latestWeeklyRestStartMs: number | null
-  /** Zbývající počet zkrácení denního odpočinku na 9 h (max 3). */
+  /** Zbývající počet zkrácení denního odpočinku na 9 h (max 3) v období mezi týdenními odpočinky. */
   reducedDailyRemaining: number | null
   /** Zbývající náhrada za zkrácený týdenní odpočinek. */
   compensationMs: number | null
@@ -101,6 +101,8 @@ export function buildVdoCounterOutlook(input: {
   requiredBreakMs: number | null
   /** Zbývající prodloužení 10 h z denní osy (pro kontext, ne pro L2). */
   extensionsRemaining?: number | null
+  /** Díry / unknown úseky – při překryvu s plovoucím týdnem nelze určit počet zkrácení. */
+  undetermined?: readonly { startMs: number; endMs: number }[]
 }): VdoCounterOutlook {
   const empty: VdoCounterOutlook = {
     nextDailyRestMs: null,
@@ -117,15 +119,28 @@ export function buildVdoCounterOutlook(input: {
   const activities = drivingBreakIntervalsToActivities(input.intervals, input.slot)
   const restIntervals = findRestIntervals(activities)
   const candidates = classifyRestCandidates(restIntervals)
-  const unknowns = activities
+  const unknownsFromActivities = activities
     .filter((activity) => activity.kind === 'unknown')
     .map((activity) => ({ startUtc: activity.startUtc, endUtc: activity.endUtc }))
+  const unknownsFromUndetermined = (input.undetermined ?? []).map((item) => ({
+    startUtc: item.startMs,
+    endUtc: item.endMs,
+  }))
+  const unknowns = [...unknownsFromActivities, ...unknownsFromUndetermined]
   const endUtc = recordEndUtc(input.intervals, input.nowMs)
+
+  const weeklyCandidates = classifyWeeklyRestCandidates(candidates)
+  const reducedDailyRemaining = resolveReducedDailyRemaining({
+    intervals: input.intervals,
+    weeklyCandidates,
+    unknowns,
+    nowMs: input.nowMs,
+    isMultiManning: input.isMultiManning,
+  })
 
   const anchor = lastDailyRestEndMs(input.intervals, input.nowMs) ?? earliestActivityStart(input.intervals)
   let nextDailyRestMs: number | null = null
   let latestDailyRestStartMs: number | null = null
-  let reducedUsed: number | null = null
 
   if (anchor != null) {
     const chain = buildDailyRestChain(
@@ -148,24 +163,18 @@ export function buildVdoCounterOutlook(input: {
     if (open) {
       const windowMs = open.windowMode === 'crew_30h' ? CREW_WINDOW_MS : DAILY_WINDOW_MS
       const deadline = open.windowStartUtc + windowMs
-      latestDailyRestStartMs = Math.max(0, deadline - input.nowMs)
-      if (open.status === 'history_incomplete' || open.status === 'insufficient_data') {
-        nextDailyRestMs = null
-        latestDailyRestStartMs = null
-      } else {
-        const path = chain.paths[0]
-        reducedUsed = path?.reducedCount ?? 0
-        const canReduce = reducedUsed < MAX_REDUCED_DAILY_REST_PER_PERIOD
-        nextDailyRestMs = canReduce ? REDUCED_DAILY_REST_MIN_MS : DAILY_REST_MIN_11H_MS
-        // Osádka: standardní denní odpočinek 9 h
-        if (input.isMultiManning || open.windowMode === 'crew_30h') {
-          nextDailyRestMs = REDUCED_DAILY_REST_MIN_MS
-        }
+      // Lhůtu známe i v otevřeném okně; null jen při dírách v období.
+      if (open.status !== 'insufficient_data') {
+        latestDailyRestStartMs = Math.max(0, deadline - input.nowMs)
+      }
+      // Osádka: standardní denní odpočinek 9 h. Jinak nabídka podle zbývajících zkrácení.
+      if (input.isMultiManning || open.windowMode === 'crew_30h') {
+        nextDailyRestMs = REDUCED_DAILY_REST_MIN_MS
+      } else if (reducedDailyRemaining != null) {
+        nextDailyRestMs = reducedDailyRemaining > 0 ? REDUCED_DAILY_REST_MIN_MS : DAILY_REST_MIN_11H_MS
       }
     }
   }
-
-  const weeklyCandidates = classifyWeeklyRestCandidates(candidates)
   const assignment = buildWeeklyRestAssignment({
     candidates: weeklyCandidates,
     unknownIntervals: unknowns,
@@ -206,10 +215,6 @@ export function buildVdoCounterOutlook(input: {
   } else {
     compensationMs = 0
   }
-
-  const reducedDailyRemaining = reducedUsed == null
-    ? null
-    : Math.max(0, MAX_REDUCED_DAILY_REST_PER_PERIOD - reducedUsed)
 
   const remainingDriving = input.remainingDrivingMs
   const breakMs = input.requiredBreakMs

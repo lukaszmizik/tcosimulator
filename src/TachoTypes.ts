@@ -59,7 +59,7 @@ export type FaultOrEvent = {
     driver: Pick<CardData, 'name' | 'surname' | 'cardNumber'> | null
   }
 } & (
-  | { kind: 'event'; type: 'DRIVING_WITHOUT_CARD_WARNING' | 'DRIVING_WITHOUT_VALID_CARD_WARNING' | 'EXCESS_SPEED_WARNING' }
+  | { kind: 'event'; type: 'DRIVING_WITHOUT_CARD_WARNING' | 'DRIVING_WITHOUT_VALID_CARD_WARNING' | 'EXCESS_SPEED_WARNING' | 'BREAK_WARNING_415' | 'BREAK_WARNING_430' }
   | { kind: 'fault'; type: string }
 )
 

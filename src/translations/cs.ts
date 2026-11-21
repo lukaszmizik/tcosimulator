@@ -60,8 +60,8 @@ export const cs: Translations = {
     standbyModeInfo: 'Zařízení je v režimu Stand-by. Zapni zapalování tlačítkem Start.\nVše je ve vývoji, případné chyby mi nahlaš na lukas@zmizik.com',
     insertCardToSlot1: 'Pro zahájení řízení klepni na slot 1 a vyber kartu, nebo ji do slotu přetáhni.', // 1
     drivingWithoutCard: 'Jízda bez karty – vlož kartu řidiče do slotu 1. Tato výstraha se zapisuje do paměti tachografu.', // 2
-    break415: 'Výstraha 4:15 – proveď pauzu 15 minut nebo 30 minut (pokud jsi už měl 15m).', // 3
-    break430: 'Výstraha 4:30 – Překročil jsi dobu řízení! Neprodleně udělej přestávku 45 minut. Tato událost se zapíše do paměti jako (27)(38) Porušení bezpečnosti.', // 4
+    break415: 'Výstraha 4:15 – proveď pauzu 15 minut nebo 30 minut (pokud jsi už měl 15m). Zobrazení výstrahy je viditelné ve VDO datech při dálkovém stažení (není to zákonná událost VU).', // 3
+    break430: 'Výstraha 4:30 – Překročil jsi dobu řízení! Neprodleně udělej přestávku 45 minut. Zobrazení výstrahy je viditelné ve VDO datech při dálkovém stažení (není to zákonná událost typu porušení bezpečnosti).', // 4
     supplementActivities: 'Nyní jsi povinen doplnit aktivity na svou kartu.', // 5
     lastWithdrawal: 'Poslední vytažení karty bylo', // 6
     endCountryFound: 'Našel jsem záznam o ukončení směny v', // 7
@@ -243,6 +243,8 @@ export const cs: Translations = {
     faultDrivingWithoutCard: 'Jízda bez vložené karty',
     faultDrivingWithoutValidCard: 'Jízda bez platné karty',
     faultExcessSpeed: '(39)(39) Příliš vysoká rychlost',
+    faultBreakWarning415: 'Výstraha doby řízení 4:15 (VDO)',
+    faultBreakWarning430: 'Výstraha doby řízení 4:30 (VDO)',
     recordedLocationTypes: {
       gps_3h: 'automatická detekce každé 3h',
       start_country: 'výchozí země',

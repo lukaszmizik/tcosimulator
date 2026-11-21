@@ -341,6 +341,7 @@ export default function App() {
   const [drivingWithoutValidCardWarningActive, setDrivingWithoutValidCardWarningActive] = useState(false)
   /** Varování pracovní doby – 4:15 nebo 4:30. null = nezobrazovat. */
   const [breakWarningActive, setBreakWarningActive] = useState<'415' | '430' | null>(null)
+  // Zobrazení 4:15/4:30 → záznam do faultsAndEvents (tabulka pod grafem / VDO přehled). Nejde o zákonnou událost VU.
   /** Varování: 10h prodloužená směna nedostupná (2× v týdnu již vyčerpáno) */
   /** Varování: překročení rychlosti >90 km/h déle než 1 min – L1 (39)(39) vys. rychlost, L2 vpravo "30" */
   const [excessSpeedWarningActive, setExcessSpeedWarningActive] = useState(false)
@@ -603,6 +604,21 @@ export default function App() {
   useEffect(() => {
     if (currentSpeed === 0) setEjectionBlockedWarningActive(false)
   }, [currentSpeed])
+
+  /** Výstraha 4:15/4:30 se dřív jen ukazovala na LCD – do tabulky pod grafem se nezapisovala. */
+  useEffect(() => {
+    if (breakWarningActive !== '415' && breakWarningActive !== '430') return
+    const type = breakWarningActive === '415' ? 'BREAK_WARNING_415' : 'BREAK_WARNING_430'
+    setFaultsAndEvents((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        timestampUtc: simulatedUtcTimeRef.current,
+        kind: 'event',
+        type,
+      },
+    ])
+  }, [breakWarningActive])
 
   useEffect(() => {
     loadCountries().then(({ countries: c, spanishRegions: r }) => {

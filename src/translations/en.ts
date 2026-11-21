@@ -60,8 +60,8 @@ export const en: Translations = {
     standbyModeInfo: 'Device is in Stand-by mode. Turn on ignition with the Start button.\nEverything is under development, please report any bugs to lukas@zmizik.com',
     insertCardToSlot1: 'To start driving, insert any card into slot no. 1 by dragging.', // 1
     drivingWithoutCard: 'Driving without card – insert driver card into slot 1. This warning is recorded in the tachograph memory.', // 2
-    break415: 'Warning 4:15 – take a 15 or 30 minute break (if you already had 15m).', // 3
-    break430: 'Warning 4:30 – You have exceeded the driving time! Take a 45 minute break immediately. This event is recorded in memory as (27)(38) Safety violation.', // 4
+    break415: 'Warning 4:15 – take a 15 or 30 minute break (if you already had 15m). That the warning was shown is visible in VDO data on remote download (it is not a legal VU event).', // 3
+    break430: 'Warning 4:30 – You have exceeded the driving time! Take a 45 minute break immediately. That the warning was shown is visible in VDO data on remote download (it is not a legal “security breach” event).', // 4
     supplementActivities: 'You must now supplement activities on your card.', // 5
     lastWithdrawal: 'Last card withdrawal was', // 6
     endCountryFound: 'I found a shift end record at', // 7
@@ -243,6 +243,8 @@ export const en: Translations = {
     faultDrivingWithoutCard: 'Driving without card',
     faultDrivingWithoutValidCard: 'Driving without valid card',
     faultExcessSpeed: '(39)(39) Excess speed',
+    faultBreakWarning415: 'Driving time warning 4:15 (VDO)',
+    faultBreakWarning430: 'Driving time warning 4:30 (VDO)',
     recordedLocationTypes: {
       gps_3h: 'automatic detection every 3h',
       start_country: 'start country',

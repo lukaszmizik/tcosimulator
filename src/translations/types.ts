@@ -226,6 +226,8 @@ export type Translations = {
     faultDrivingWithoutCard: string
     faultDrivingWithoutValidCard: string
     faultExcessSpeed: string
+    faultBreakWarning415: string
+    faultBreakWarning430: string
     recordedLocationTypes: Record<string, string>
   }
   cardPanel: {

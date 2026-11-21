@@ -292,17 +292,16 @@ export function buildDriverCardPrintRows(input: DailyCardPrintInput): PrintRow[]
       typeLabel: item.type === 'DRIVING_WITHOUT_CARD' ? 'Jízda bez karty' : 'Jízda bez platné karty',
     }, 27)
   }
-  separator()
-  add(4, 37, ' ', '.'.repeat(21))
-  add(4, '  ', '.'.repeat(21))
-  add(2, '  ', '.'.repeat(21))
-  separator(18)
-  add('24h', 14, 18)
+  // Firma před podpisy (volitelně). Typ výtisku 24h(14)(18) je jen v záhlaví – na konci neopakovat.
   if (profile.companyName || profile.companyAddress || profile.companyId) {
     separator(3)
     if (profile.companyName) add(profile.companyName)
     if (profile.companyAddress) add(profile.companyAddress)
     if (profile.companyId) add('IČO ', profile.companyId)
   }
+  separator()
+  add(4, 37, ' ', '.'.repeat(21))
+  add(4, '  ', '.'.repeat(21))
+  add(2, '  ', '.'.repeat(21))
   return rows
 }

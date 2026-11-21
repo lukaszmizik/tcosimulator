@@ -19,6 +19,23 @@ Téma: Běh na pozadí (checkbox)
 - Vypnuto: čas při minimalizaci prakticky stojí (původní chování).
 - Soubory: ControlPanel.tsx, useSimulationSecondClock.ts, App.tsx, translations.
 
+=== BLOK 1c – Dokončená úprava ===
+Datum: 2026-11-21
+Téma: Konec 24h výtisku karty řidiče
+
+- Odstraněno závěrečné opakování `24h(14)(18)` (typ výtisku zůstává jen v záhlaví).
+- Výtisk končí řádky pro ruční podpis; volitelná firma je před podpisy.
+- Soubor: print/driverCardPrintRows.ts.
+
+=== BLOK 1d – Dokončená úprava ===
+Datum: 2026-11-21
+Téma: Výstrahy 4:15/4:30 – InfoPanel + tabulka pod grafem
+
+- InfoPanel: text už netvrdí zápis (27)(38); uvádí viditelnost ve VDO datech při dálkovém stažení.
+- Při zobrazení 4:15/4:30 se zapíše BREAK_WARNING_* do faultsAndEvents → tabulka pod WorkWeek grafem.
+- Dříve se výstraha jen ukazovala na LCD a do tabulky se nedostala (ztráta u setBreakWarningActive).
+- Soubory: App.tsx, TachoTypes.ts, WorkWeekGraphView.tsx, translations.
+
 === BLOK 2 – Nedokončeno / na příště ===
 - Trajekt při stání: zda přeskočit časy karet jako teď, nebo je ukázat i s aktivním trajektem.
 - Week-graph: chybějící výstrahy v grafu pracovního týdne.

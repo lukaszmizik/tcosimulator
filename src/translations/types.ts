@@ -238,6 +238,8 @@ export type Translations = {
     faultBreakWarning415: string
     faultBreakWarning430: string
     recordedLocationTypes: Record<string, string>
+    openDay: string
+    backToWeek: string
   }
   cardPanel: {
     title: string

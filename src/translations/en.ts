@@ -260,6 +260,8 @@ export const en: Translations = {
       load_unload: 'loading/unloading',
       border_crossing: 'border crossing',
     },
+    openDay: 'Open day {date}',
+    backToWeek: '← Back to week',
   },
   cardPanel: {
     title: 'Driver cards',

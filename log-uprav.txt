@@ -148,6 +148,15 @@ Téma: Tmavá šablona grafu + kotvy
 - Trajekt/nakládka/vykládka: SymbolTacho1 (světlý stroke).
 - Soubory: src/WorkWeekGraphView.tsx, src/index.css, vendor/cardviewer-overrides (WorkWeekGraphView, outModeGraphLayer, index.css).
 
+=== BLOK 1r – Dokončená úprava ===
+Datum: 2026-11-21
+Téma: Graf – bez pinche, klikací den + vodorovný scroll
+
+- Pinch zoom na grafu vypnutý (`touch-action: manipulation`).
+- Klik na řádek dne otevře zvětšený denní pohled (širší osa).
+- Denní pohled: vodorovný scroll + tlačítko „Zpět na týden“.
+- Soubory: src/WorkWeekGraphView.tsx, src/index.css, src/translations/{cs,en,ru,types}.ts, vendor/cardviewer-overrides/src/index.css.
+
 === BLOK 2 – Nedokončeno / na příště ===
 - Week-graph: chybějící výstrahy v grafu pracovního týdne.
 - Jednotný graf i pro virtuální kartu (teď jde do starého WorkWeekGraphView; chybí most historie → SimulatorSlotGraphInput + přepínač v handleShowCardData; odloženo).

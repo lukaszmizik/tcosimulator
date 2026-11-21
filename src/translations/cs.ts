@@ -260,6 +260,8 @@ export const cs: Translations = {
       load_unload: 'nakládka/vykládka',
       border_crossing: 'průjezd hranic',
     },
+    openDay: 'Otevřít den {date}',
+    backToWeek: '← Zpět na týden',
   },
   cardPanel: {
     title: 'Karty řidičů',

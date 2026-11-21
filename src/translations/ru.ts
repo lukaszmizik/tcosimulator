@@ -261,6 +261,8 @@ export const ru: Translations = {
       load_unload: 'погрузка/разгрузка',
       border_crossing: 'пересечение границы',
     },
+    openDay: 'Открыть день {date}',
+    backToWeek: '← Назад к неделе',
   },
   cardPanel: {
     title: 'Карты водителей',

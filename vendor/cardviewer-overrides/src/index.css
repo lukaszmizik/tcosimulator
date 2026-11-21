@@ -1014,6 +1014,7 @@ body {
   align-items: center;
   justify-content: center;
   z-index: 10000;
+  touch-action: manipulation;
 }
 
 .work-week-graph-overlay.is-embedded {
@@ -1317,6 +1318,7 @@ body {
   position: relative;
   width: 100%;
   user-select: none;
+  touch-action: manipulation;
 }
 
 .graph-day-row-hit {
@@ -1361,7 +1363,7 @@ body {
 .day-graph-pan-viewport {
   max-width: 100%;
   cursor: grab;
-  touch-action: pan-y;
+  touch-action: manipulation;
 }
 
 .day-graph-pan-viewport:active {
@@ -2370,6 +2372,7 @@ body {
   max-width: 100%;
   background: #0a101c;
   border-radius: 8px;
+  touch-action: manipulation;
 }
 
 .work-week-graph-day-name,

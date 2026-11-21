@@ -64,12 +64,36 @@ Téma: Překročení rychlosti – ztráta ve výtisku událostí
 - Výtisk řidič–událost: overspeed sem z eventLog nejde (jen jízda bez karty); detail je na výtisku (39)(39) / VU.
 - Soubory: App.tsx (trackOverspeed), vehicleEventPrintRows.ts.
 
+=== BLOK 1h – Dokončená úprava ===
+Datum: 2026-11-21
+Téma: Blikající h Counter + auto-výhoz prošlé vložené karty
+
+- VDO Counter: bliká „h“ u aktivní části (řízení → zbývající řízení; odpočinek → zbývající přestávka). Návod: The flashing h means this display part is currently active.
+- Vložená karta po změně dne neplatná: při stání zápis + výhoz bez žádosti; při jízdě se odloží do zastavení. Hláška !(14){slot} neplatná / karta (OK potvrdí).
+- Soubory: TachoDisplay.tsx, WarningDisplays.tsx, App.tsx (isTrainingCardExpired).
+
+=== BLOK 1i – Dokončená úprava ===
+Datum: 2026-11-21
+Téma: Po zastavení automaticky práce (ne odpočinek)
+
+- Návod DTCO 4.1 str. 55 (Automatic setting): jízda → řízení / pohotovost; zastavení → práce / pohotovost.
+- Dříve simulátor po zastavení nastavil REST; teď WORK. Přestávku/odpočinek musí řidič zvolit ručně (tlačítko aktivity).
+- Platí i v režimu OUT (dřív OUT už dával WORK, mimo OUT dával REST).
+- Soubory: App.tsx (setDrivingMode), useDrivingInterval.ts (komentáře).
+
+=== BLOK 1j – Dokončená úprava ===
+Datum: 2026-11-21
+Téma: Výhoz během načítání karty → výstraha „výhoz není možný“
+
+- Long-press výhoz během fází čtení/přenosu (welcome, loading, lastRemoval, finalize*, itsVdoConfirmSaved) už neruší průvodce; zobrazí !(35)(14) výhoz není / možný (stejně jako za jízdy).
+- Výstraha se zruší OK, nebo když skončí jízda i načítání (dřív se při stání hned schovala i během loadu).
+- InfoPanel: samostatná bublina při výhozu během načítání (ejectionBlockedDuringLoading) vs. během jízdy.
+- Soubory: CardLogic.ts (isCardLoadingPhase), App.tsx, InfoPanel.tsx, překlady infoPanel cs/en/ru.
+
 === BLOK 2 – Nedokončeno / na příště ===
 - Trajekt při stání: zda přeskočit časy karet jako teď, nebo je ukázat i s aktivním trajektem.
 - Week-graph: chybějící výstrahy v grafu pracovního týdne.
-- Blikající h u aktivní části Counteru (odloženo za funkční pole).
 - Jednotný graf i pro virtuální kartu (teď jde do starého WorkWeekGraphView; chybí most historie → SimulatorSlotGraphInput + přepínač v handleShowCardData; odloženo).
-- Auto-výhoz už vložené karty po změně dne, když mezitím vypršela (návod str. 113/149).
 - Tlačítko „Generovat pracovní týden“ odstraněno z UI; handleGenerateWorkWeek v App ponecháno.
 - Výtisk událostí řidiče 2: simulované záznamy zatím jen u slotu 1 (eventLog).
 - Displej: zbývající položky vozidla (rychlost, tech. data, karty, majitel, hmotnost, verze, senzor).

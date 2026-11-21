@@ -81,8 +81,10 @@ export type Translations = {
     duplicateDataWarning: string
     publishDataConsentInfo: string
     excessSpeedWarning: string
-    /** Výstraha: nelze vytahovat kartu během jízdy (zobrazí se po pokusu o vyjmutí za jízdy) */
+    /** Výstraha: nelze vytahovat kartu během jízdy */
     ejectionBlockedWarning: string
+    /** Výstraha: nelze vytahovat kartu během načítání / přenosu dat */
+    ejectionBlockedDuringLoading: string
     menuComingSoon: string
     outModeActiveInfo: string
   }

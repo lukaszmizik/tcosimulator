@@ -29,6 +29,7 @@ import {
   DrivingWithoutCardWarningDisplay,
   EjectionBlockedWarningDisplay,
   ExcessSpeedWarningDisplay,
+  ExpiredInsertedCardWarningDisplay,
   OverrideWarningDisplay,
 } from './WarningDisplays'
 import type { DrivingBreakDisplay } from './drivingBreakDisplay'
@@ -47,6 +48,8 @@ export type TachoDisplayProps = {
   excessSpeedWarningActive?: boolean
   /** Výstraha: při jízdě nelze vysunout kartu – L1 (35)(14) výhoz není, L2 možný */
   ejectionBlockedWarningActive?: boolean
+  /** Vložená karta vypršela po změně dne – auto-výhoz; šachta pro !(14){slot}. */
+  expiredInsertedCardWarningSlot?: 1 | 2 | null
   /** Přepsání: zobraz výstrahu "XX" – zobrazí danou výstrahu bez ohledu na kontext */
   overrideWarningCode?: string | null
   menuCountryInputState: MenuCountryInputState | null
@@ -166,6 +169,20 @@ function formatOverviewTime(ms: number | null | undefined): string {
   return typeof ms === 'number' ? formatDurationHm(ms) : '--h--'
 }
 
+/** Návod VDO Counter: blikající „h“ = právě aktivní část displeje. */
+function DurationWithActiveH({ text, active }: { text: string; active: boolean }) {
+  const match = /^(.*?)(h)(.*)$/.exec(text)
+  if (!match) return <span>{text}</span>
+  const [, before, h, after] = match
+  return (
+    <span>
+      {before}
+      <span className={active ? 'lcd-field-blink' : undefined}>{h}</span>
+      {after}
+    </span>
+  )
+}
+
 function LoadUnloadConfirmDisplay() {
   const { t } = useLanguage()
   return (
@@ -178,7 +195,7 @@ function LoadUnloadConfirmDisplay() {
 
 export function TachoDisplay(props: TachoDisplayProps) {
   const { language } = useLanguage()
-  const { symbolMap, cardInsertionState, cardWithdrawalState, drivingWithoutCardWarningActive, drivingWithoutValidCardWarningActive, breakWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, overrideWarningCode, menuCountryInputState, menuLoadUnloadConfirmState, printWizardState, displayBrowseState, printStartedToastUntil, displayMode, showOutOnL2 = false } = props
+  const { symbolMap, cardInsertionState, cardWithdrawalState, drivingWithoutCardWarningActive, drivingWithoutValidCardWarningActive, breakWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, expiredInsertedCardWarningSlot, overrideWarningCode, menuCountryInputState, menuLoadUnloadConfirmState, printWizardState, displayBrowseState, printStartedToastUntil, displayMode, showOutOnL2 = false } = props
 
   if (typeof window !== 'undefined' && window.location.search.includes('debug=1')) {
     // Diagnostika: která větev se vykresluje (otevři konzoli F12)
@@ -210,6 +227,9 @@ export function TachoDisplay(props: TachoDisplayProps) {
   /** Při jízdě nelze vysunout kartu – blikající výstraha (35)(14) výhoz není / možný */
   if (ejectionBlockedWarningActive) {
     return <EjectionBlockedWarningDisplay symbolMap={symbolMap} />
+  }
+  if (expiredInsertedCardWarningSlot) {
+    return <ExpiredInsertedCardWarningDisplay symbolMap={symbolMap} slot={expiredInsertedCardWarningSlot} />
   }
   /** Režim OUT (bez vložené karty): na hlavní obrazovce zobrazit nápis OUT místo symbolů aktivit. V menu zůstane menu. */
   if (!props.expiryNote && showOutOnL2 && props.displayMode === 'operating') {
@@ -904,6 +924,9 @@ function OperatingDisplay(props: TachoDisplayProps) {
       ? '?'
       : displayedActivityId === 'DRIVING' ? '(2)' : displayedActivityId === 'WORK' ? '(9)' : displayedActivityId === 'AVAILABILITY' ? '(7)' : '(8)'
     const afterText = knownTime(afterMs, true)
+    // Aktivní část: při řízení zbývající řízení; při odpočinku odpočítávaná přestávka (návod: blikající h).
+    const blinkDrivingH = displayedActivityId === 'DRIVING' && drivingText.includes('h')
+    const blinkBreakH = displayedActivityId === 'REST' && breakText.includes('h') && !tachoState.ferryTrainModeActive
     return (
       <div
         className={`lcd-two-rows lcd-vdo-counter ${tachoState.isMultiManning ? 'lcd-multi-manning' : ''} ${isStandby ? 'lcd-standby' : ''}`}
@@ -922,13 +945,13 @@ function OperatingDisplay(props: TachoDisplayProps) {
           </span>
           <span className="lcd-row-right">
             {parseSymbols('(2)(41)', symbolMap)}
-            <span>{drivingText}</span>
+            <DurationWithActiveH text={drivingText} active={blinkDrivingH} />
           </span>
         </div>
         <div className="lcd-row lcd-row-vdo">
           <span className="lcd-row-left">
             {parseSymbols('(8)(41)', symbolMap)}
-            <span>{breakText}</span>
+            <DurationWithActiveH text={breakText} active={blinkBreakH} />
           </span>
           {l2Kind === 'after' && afterMs != null && (
             <span className="lcd-row-right">

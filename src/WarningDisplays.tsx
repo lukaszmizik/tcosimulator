@@ -80,3 +80,21 @@ export function EjectionBlockedWarningDisplay({ symbolMap }: { symbolMap: Symbol
     </div>
   )
 }
+
+/** Vložená karta vypršela po změně dne – !(14){slot} neplatná / karta (návod str. 113). */
+export function ExpiredInsertedCardWarningDisplay({
+  symbolMap,
+  slot,
+}: {
+  symbolMap: SymbolMap | null
+  slot: 1 | 2
+}) {
+  const { t } = useLanguage()
+  const l1 = parseSymbols(`!(14)${slot}\u00A0${t.cardWizard.invalidCardL1}`, symbolMap)
+  return (
+    <div className="lcd-two-rows lcd-card-warning-blink">
+      <div className="lcd-row lcd-row-warning-inline">{l1}</div>
+      <div className="lcd-row lcd-row-warning-inline">{t.cardWizard.invalidCardL2}</div>
+    </div>
+  )
+}

@@ -3,7 +3,7 @@
  */
 
 import type { CountryEntry } from './data/countriesLoader'
-import type { ActivityId, CardData, CardInsertionState, EditorActivityId, ManualEntrySegment } from './TachoTypes'
+import type { ActivityId, CardData, CardInsertionPhase, CardInsertionState, EditorActivityId, ManualEntrySegment } from './TachoTypes'
 import { ACTIVITY_SYMBOLS, MANUAL_ACTIVITIES, UNKNOWN_ACTIVITY_SYMBOL } from './TachoTypes'
 import { FIRST_INSERTION_OFFSET_MS, VIRTUAL_CARD_VALIDITY_DATES } from './Constants'
 
@@ -17,6 +17,22 @@ export function formatLcdOdometer(km: number): string {
   const padding = parts.filter(({ type }) => type === 'group').length
   const number = parts.filter(({ type }) => type !== 'group').map(({ value }) => value).join('')
   return '\u00a0'.repeat(padding) + number + 'km'
+}
+
+/** Fáze, kdy DTCO čte/přenáší data karty – výhoz není možný (stejná výstraha jako za jízdy). */
+const CARD_LOADING_PHASES: ReadonlySet<CardInsertionPhase> = new Set([
+  'welcome',
+  'loading',
+  'lastRemoval',
+  'finalizeStep1',
+  'finalizeStep2',
+  'finalizeStep3',
+  'finalizeStep4',
+  'itsVdoConfirmSaved',
+])
+
+export function isCardLoadingPhase(phase: CardInsertionPhase): boolean {
+  return CARD_LOADING_PHASES.has(phase)
 }
 
 export const DRIVING_SYMBOL = '\u0053'

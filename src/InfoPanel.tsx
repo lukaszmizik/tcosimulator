@@ -13,7 +13,7 @@ import type { VdoNamedScreen } from './slot1DddCounter'
 import type { Translations } from './translations/types'
 import type { SymbolMap } from './TachoTypes'
 import { ACTIVITY_SYMBOLS } from './TachoTypes'
-import { segmentToMsUtc } from './CardLogic'
+import { segmentToMsUtc, isCardLoadingPhase } from './CardLogic'
 import type { VehicleCheckResult } from './vehiclePreDepartureCheck'
 import { parseSymbols, ACTIVITY_ID_TO_BG } from './Symbols'
 
@@ -435,10 +435,14 @@ export function useInfoPanelItems(props: {
   }
 
   if (ejectionBlockedWarningActive) {
+    const duringLoading =
+      cardInsertionState != null && isCardLoadingPhase(cardInsertionState.phase)
     items.push({
-      id: 'ejection-blocked',
+      id: duringLoading ? 'ejection-blocked-loading' : 'ejection-blocked',
       type: 'warning',
-      message: t.infoPanel.ejectionBlockedWarning,
+      message: duringLoading
+        ? t.infoPanel.ejectionBlockedDuringLoading
+        : t.infoPanel.ejectionBlockedWarning,
     })
   }
 

@@ -5,7 +5,7 @@ import { loadCountries, type CountryEntry } from './data/countriesLoader'
 import { buildSymbolMapFromFile } from './Symbols'
 import { buildMenusById, applyMenuTranslations, ENTRY_MENU_ID } from './MenuStructure'
 import { clampMenuIndex, enterMenuRoot, enterSubmenu, leaveSubmenu, stepMenuIndex, visibleMenuItems } from './menu/menuCursor'
-import { createInitialCardInsertionState, activityFromChar, getNextActivity, getActivityCode, utcMsToSegment, trainingValidityBeginUtc } from './CardLogic'
+import { createInitialCardInsertionState, activityFromChar, getNextActivity, getActivityCode, utcMsToSegment, trainingValidityBeginUtc, isTrainingCardExpired, isCardLoadingPhase } from './CardLogic'
 import { EDITOR_FIELD_ORDER } from './CardLogic'
 import { getVirtualLocationForDistance } from './VirtualRoute'
 import { FaceplateFrame } from './FaceplateFrame'
@@ -403,6 +403,9 @@ export default function App() {
   const [card2Manual, setDriver2ManualEntryBuffer] = useState<ManualEntrySegment[]>(() => loadCard2ManualEntryBuffer())
   const [expiryByCard, setExpiryByCard] = useState<Partial<Record<'zmizik' | 'novak', number>>>({})
   const [expiryNote, setExpiryNote] = useState<{ slot: 1 | 2; days: number } | null>(null)
+  /** Po změně dne vypršela vložená karta – hláška !(14){slot} neplatná / karta (auto-výhoz bez žádosti). */
+  const [expiredInsertedCardWarningSlot, setExpiredInsertedCardWarningSlot] = useState<1 | 2 | null>(null)
+  const pendingExpiredEjectSlotsRef = useRef<Set<1 | 2>>(new Set())
   useEffect(() => {
     if (!expiryNote) return
     const timer = window.setTimeout(() => setExpiryNote(null), 3000)
@@ -498,18 +501,26 @@ export default function App() {
   const setFerryTrainModeActiveRef = useRef(setFerryTrainModeActive)
   setFerryTrainModeActiveRef.current = setFerryTrainModeActive
 
-  /** isMoving true → slot 1 na Řízení (DRIVING). isMoving false → přepne slot 1 (a při režimu osádky i slot 2) na Odpočinek (REST); symbol Řízení nesmí zůstat aktivní při zastavení.
-   * Okamžitá aktualizace refů je nutná, aby interval (100 ms) viděl správnou aktivitu dříve než React vykreslí – jinak L1 vpravo neodečítá čas přestávky. */
-  const setDrivingMode = useCallback((isMoving: boolean, alsoSetSlot2ToRest: boolean = false) => {
+  /**
+   * Automatické aktivity podle jízdy (návod DTCO 4.1 str. 55 – Automatic setting):
+   * jízda → řidič 1 = řízení, řidič 2 = pohotovost;
+   * zastavení → řidič 1 = práce, řidič 2 = pohotovost.
+   * Přestávku/odpočinek musí řidič zvolit ručně.
+   */
+  const setDrivingMode = useCallback((isMoving: boolean, syncSlot2: boolean = false) => {
     if (isMoving) {
       leftActivityIdRef.current = 'DRIVING'
       setLeftActivityId('DRIVING')
+      if (syncSlot2) {
+        rightActivityIdRef.current = 'AVAILABILITY'
+        setRightActivityId('AVAILABILITY')
+      }
     } else {
-      leftActivityIdRef.current = 'REST'
-      setLeftActivityId('REST')
-      if (alsoSetSlot2ToRest) {
-        rightActivityIdRef.current = 'REST'
-        setRightActivityId('REST')
+      leftActivityIdRef.current = 'WORK'
+      setLeftActivityId('WORK')
+      if (syncSlot2) {
+        rightActivityIdRef.current = 'AVAILABILITY'
+        setRightActivityId('AVAILABILITY')
       }
     }
   }, [])
@@ -583,20 +594,16 @@ export default function App() {
     if (currentSpeed > 0) {
       setOutStoppedAtUtc(null)
       setDrivingMode(true)
-      if (!wasMoving) setRightActivityId('AVAILABILITY')
+      // Jízda: řidič 2 = pohotovost ()
+      if (!wasMoving) {
+        rightActivityIdRef.current = 'AVAILABILITY'
+        setRightActivityId('AVAILABILITY')
+      }
       if (outModeActive) setHasDrivenSinceOutActivation(true)
     } else if (wasMoving && isStopped) {
-      if (outModeActive) {
-        leftActivityIdRef.current = 'WORK'
-        setLeftActivityId('WORK')
-        if (isMultiManning) {
-          rightActivityIdRef.current = 'REST'
-          setRightActivityId('REST')
-        }
-        setOutStoppedAtUtc(simulatedUtcTime)
-      } else {
-        setDrivingMode(false, isMultiManning)
-      }
+      // Zastavení: řidič 1 = práce (); v osádce řidič 2 = pohotovost (). Přestávku zvolí ručně.
+      setDrivingMode(false, isMultiManning)
+      if (outModeActive) setOutStoppedAtUtc(simulatedUtcTime)
     }
   }, [currentSpeed, isMultiManning, setDrivingMode, outModeActive, simulatedUtcTime])
 
@@ -620,10 +627,13 @@ export default function App() {
     }
   }, [outModeActive, currentSpeed, outStoppedAtUtc, simulatedUtcTime])
 
-  /** Po zastavení vozidla zruš výstrahu „výhoz není možný“ */
+  /** Zruš výstrahu „výhoz není možný“, jakmile už neplatí jízda ani načítání karty */
   useEffect(() => {
-    if (currentSpeed === 0) setEjectionBlockedWarningActive(false)
-  }, [currentSpeed])
+    if (!ejectionBlockedWarningActive) return
+    const stillLoading =
+      cardInsertionState != null && isCardLoadingPhase(cardInsertionState.phase)
+    if (currentSpeed === 0 && !stillLoading) setEjectionBlockedWarningActive(false)
+  }, [currentSpeed, cardInsertionState, ejectionBlockedWarningActive])
 
   /** Výstraha 4:15/4:30 se dřív jen ukazovala na LCD – do tabulky pod grafem se nezapisovala. */
   useEffect(() => {
@@ -873,6 +883,43 @@ export default function App() {
     if (result.type === 'ejectWithCountry') performCardEjectWithCountry(prev)
     return result.type
   }, [countries.length, performCardEjectWithCountry])
+
+  /** Návod: vložená karta neplatná po změně dne → po zastavení zápis a výhoz bez žádosti. */
+  const autoEjectExpiredInsertedCard = useCallback((slot: 1 | 2, cardData: CardData) => {
+    if (cardWithdrawalStateRef.current || cardInsertionStateRef.current) return
+    const routeToTachographCode: Record<string, string> = { CZ: 'CZ', AT: 'A', DE: 'D', CH: 'CH', FR: 'F', ES: 'E' }
+    const gpsCountry = virtualLocationRef.current?.country ?? 'CZ'
+    const countryCode = routeToTachographCode[gpsCountry] ?? gpsCountry
+    const countryIndex = Math.max(0, countriesRef.current.findIndex((c) => c.code === countryCode))
+    setExpiredInsertedCardWarningSlot(slot)
+    performCardEjectWithCountry({
+      slot,
+      phase: 'done',
+      phaseStartTime: Date.now(),
+      cardName: cardData.name,
+      cardSurname: cardData.surname,
+      countryIndex,
+      cardData,
+    })
+  }, [performCardEjectWithCountry])
+
+  useEffect(() => {
+    const consider = (slot: 1 | 2, card: CardData | null) => {
+      if (!card || !isTrainingCardExpired(card.trainingExpiryUtc, simulatedUtcTime)) {
+        pendingExpiredEjectSlotsRef.current.delete(slot)
+        return
+      }
+      if (currentSpeed > 0) {
+        pendingExpiredEjectSlotsRef.current.add(slot)
+        return
+      }
+      if (cardWithdrawalState || cardInsertionState) return
+      pendingExpiredEjectSlotsRef.current.delete(slot)
+      autoEjectExpiredInsertedCard(slot, card)
+    }
+    consider(1, card1Data)
+    consider(2, card2Data)
+  }, [simulatedUtcTime, currentSpeed, card1Data, card2Data, cardWithdrawalState, cardInsertionState, autoEjectExpiredInsertedCard])
 
   const minuteAccumulatorRef = useRef<MinuteAccumulator | null>(null)
   const recordDddMinuteRef = useRef<(cardNumber: string, entry: ActivityHistoryEntry) => void>(() => {})
@@ -1591,6 +1638,11 @@ export default function App() {
       setExcessSpeedWarningActive(false)
       return
     }
+    if (expiredInsertedCardWarningSlot != null) {
+      addEntry(t.actions.stiskOk, t.actions.potvrzeniVarovani)
+      setExpiredInsertedCardWarningSlot(null)
+      return
+    }
     if (ejectionBlockedWarningActive) {
       addEntry(t.actions.stiskOk, t.actions.potvrzeniVarovani)
       setEjectionBlockedWarningActive(false)
@@ -1824,7 +1876,7 @@ export default function App() {
     }
     setMenuComingSoonInfo({ id: `menu-coming-soon-${Date.now()}` })
     addEntry(t.actions.stiskOk, t.infoPanel.menuComingSoon)
-  }, [card1Data, card2Data, driverCardStateByTemplateId, currentMenuId, languagePage, languageDraft, languageCard, language, setLanguage, t, ignitionOn, wakeDisplayFromStandby, displayMode, currentSpeed, selectedItem, menusById, currentMenuPath, countries, spanishRegions, secondHistory, activityHistory, simulatedUtcTime, overrideWarningCode, drivingWithoutCardWarningActive, ignitionWarningActive, breakWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, cardInsertionState, cardWithdrawalState, printWizardState, displayBrowseState, menuCountryInputState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, openMenuCountryInput, confirmMenuLoadUnload, isPrintoutActive, printState, addEntry, getCardInsertionOkDetail])
+  }, [card1Data, card2Data, driverCardStateByTemplateId, currentMenuId, languagePage, languageDraft, languageCard, language, setLanguage, t, ignitionOn, wakeDisplayFromStandby, displayMode, currentSpeed, selectedItem, menusById, currentMenuPath, countries, spanishRegions, secondHistory, activityHistory, simulatedUtcTime, overrideWarningCode, drivingWithoutCardWarningActive, ignitionWarningActive, breakWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, expiredInsertedCardWarningSlot, cardInsertionState, cardWithdrawalState, printWizardState, displayBrowseState, menuCountryInputState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, openMenuCountryInput, confirmMenuLoadUnload, isPrintoutActive, printState, addEntry, getCardInsertionOkDetail])
 
   const handleBack = useCallback(() => {
     if (!ignitionOn) {
@@ -1923,7 +1975,9 @@ export default function App() {
         addEntry(`${t.actions.podrzeniTlacitka} 1 - ${t.actions.vysunutiKartyZeSachty} 1`)
         const cardData = card1DataRef.current
         const moving = currentSpeedRef.current > 0
-        if (cardData && !cardInsertionStateRef.current && !cardWithdrawalStateRef.current && !moving) {
+        const insertion = cardInsertionStateRef.current
+        const loadingThisSlot = insertion?.slot === 1 && isCardLoadingPhase(insertion.phase)
+        if (cardData && !insertion && !cardWithdrawalStateRef.current && !moving) {
           const routeToTachographCode: Record<string, string> = { CZ: 'CZ', AT: 'A', DE: 'D', CH: 'CH', FR: 'F', ES: 'E' }
           const gpsCountry = virtualLocationRef.current?.country ?? 'CZ'
           const countryCode = routeToTachographCode[gpsCountry] ?? gpsCountry
@@ -1937,9 +1991,9 @@ export default function App() {
             countryIndex,
             cardData,
           })
-        } else if (cardData && moving) {
+        } else if ((cardData && moving) || loadingThisSlot) {
           setEjectionBlockedWarningActive(true)
-          /* karta zůstane v tachografu – výhoz se neprovede */
+          /* karta zůstane v tachografu – výhoz se neprovede (jízda / načítání) */
         } else {
           runEjectForSlot(1)
         }
@@ -1970,7 +2024,9 @@ export default function App() {
         addEntry(`${t.actions.podrzeniTlacitka} 2 - ${t.actions.vysunutiKartyZeSachty} 2`)
         const cardData = card2DataRef.current
         const moving = currentSpeedRef.current > 0
-        if (cardData && !cardInsertionStateRef.current && !cardWithdrawalStateRef.current && !moving) {
+        const insertion = cardInsertionStateRef.current
+        const loadingThisSlot = insertion?.slot === 2 && isCardLoadingPhase(insertion.phase)
+        if (cardData && !insertion && !cardWithdrawalStateRef.current && !moving) {
           const routeToTachographCode: Record<string, string> = { CZ: 'CZ', AT: 'A', DE: 'D', CH: 'CH', FR: 'F', ES: 'E' }
           const gpsCountry = virtualLocationRef.current?.country ?? 'CZ'
           const countryCode = routeToTachographCode[gpsCountry] ?? gpsCountry
@@ -1984,9 +2040,9 @@ export default function App() {
             countryIndex,
             cardData,
           })
-        } else if (cardData && moving) {
+        } else if ((cardData && moving) || loadingThisSlot) {
           setEjectionBlockedWarningActive(true)
-          /* karta zůstane v tachografu – výhoz se neprovede */
+          /* karta zůstane v tachografu – výhoz se neprovede (jízda / načítání) */
         } else {
           runEjectForSlot(2)
         }
@@ -2664,6 +2720,8 @@ export default function App() {
     setBreakWarningActive(null)
     setExcessSpeedWarningActive(false)
     setEjectionBlockedWarningActive(false)
+    setExpiredInsertedCardWarningSlot(null)
+    pendingExpiredEjectSlotsRef.current.clear()
     setOverrideWarningCode(null)
     overspeedRunRef.current = null
     activeOverspeedIdRef.current = null
@@ -2879,6 +2937,7 @@ export default function App() {
     breakWarningActive,
     excessSpeedWarningActive,
     ejectionBlockedWarningActive,
+    expiredInsertedCardWarningSlot,
     overrideWarningCode,
     menuCountryInputState,
     menuLoadUnloadConfirmState,
@@ -3240,6 +3299,7 @@ export default function App() {
     overrideWarningCode
     || excessSpeedWarningActive
     || ejectionBlockedWarningActive
+    || expiredInsertedCardWarningSlot
     || cardInsertionState
     || cardWithdrawalState
     || (drivingWithoutCardWarningActive && !(outModeActive && currentSpeed === 0 && (!hasDrivenSinceOutActivation || (outStoppedAtUtc != null && simulatedUtcTime - outStoppedAtUtc >= 10000))))

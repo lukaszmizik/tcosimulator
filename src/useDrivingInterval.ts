@@ -131,7 +131,7 @@ export function useDrivingInterval(params: UseDrivingIntervalParams) {
         curr = Math.max(0, Math.min(125, curr))
         const avgSpeed = (currentSpeedRef.current + curr) / 2
         currentSpeedRef.current = curr
-        /** Při rychlosti pod prahem považuj za zastavené → spustí setDrivingMode(false) a přepne na REST pro L1 vpravo */
+        /** Při rychlosti pod prahem považuj za zastavené → setDrivingMode(false) → práce () pro řidiče 1 */
         setCurrentSpeed(curr <= SPEED_STOPPED_THRESHOLD_KMH ? 0 : curr)
         deltaKm = (avgSpeed * SIM_DT_MS) / 3600000
         odometerKmRef.current += deltaKm
@@ -141,7 +141,7 @@ export function useDrivingInterval(params: UseDrivingIntervalParams) {
       }
       noteDayKmRef.current(simulatedUtcTimeRef.current, deltaKm)
 
-      /** Rychlost pod prahem = v klidu → použij manuální aktivitu (REST), aby L1 vpravo správně odečítal přestávku */
+      /** Rychlost pod prahem = v klidu → manuální aktivita (po zastavení práce; přestávku volí řidič) */
       const isDriving = curr > SPEED_STOPPED_THRESHOLD_KMH
       trackOverspeed(ignition ? curr : 0, simulatedUtcTimeRef.current, SIM_DT_MS)
       // Režim trajekt: konec při 1 min jízdy – ferryDrivingMsRef navázán na stejnou detekci jízdy jako aktivity

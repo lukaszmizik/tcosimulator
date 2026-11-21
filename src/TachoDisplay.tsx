@@ -140,6 +140,10 @@ export type TachoDisplayProps = {
   slot1DebugFerryRestMs?: number | null
   /** Součet přes přerušení je podmíněný: záznamy nepotvrzují lůžko a značka trajektu ho nedokazuje. */
   slot1DebugFerryRestConditional?: boolean
+  /** true: v aktuálním období jsou nedoložené úseky – místo aktivity se ukáže ?. */
+  slot1DebugUnknownActivity?: boolean
+  /** Výhled odpočinků pro hlavní Counter, VDO24h, týden a VDOi. */
+  vdoOutlook?: import('./vdoCounterOutlook').VdoCounterOutlook | null
 }
 
 function activitySymbol(activityId: string): string {
@@ -429,11 +433,22 @@ function MenuCountryInputDisplay(props: TachoDisplayProps) {
   )
 }
 
-function Vdo24hDisplay(props: { symbolMap: SymbolMap | null; dailyRemainingMs: number | null | undefined }) {
+function Vdo24hDisplay(props: {
+  symbolMap: SymbolMap | null
+  dailyRemainingMs: number | null | undefined
+  nextDailyRestMs?: number | null
+  latestDailyRestStartMs?: number | null
+}) {
   const { t } = useLanguage()
   const missing = t.workWeek.shiftSumRestPlaceholder
   const dailyText = typeof props.dailyRemainingMs === 'number'
     ? formatDurationHhMm(props.dailyRemainingMs, true)
+    : missing
+  const restText = typeof props.nextDailyRestMs === 'number'
+    ? formatDurationHhMm(props.nextDailyRestMs, true)
+    : missing
+  const deadlineText = typeof props.latestDailyRestStartMs === 'number'
+    ? formatDurationHhMm(props.latestDailyRestStartMs, true)
     : missing
   return (
     <div className="lcd-two-rows lcd-vdo-counter" data-vdo-screen="vdo24h" data-vdo24h-daily-ms={props.dailyRemainingMs ?? ''}>
@@ -447,22 +462,33 @@ function Vdo24hDisplay(props: { symbolMap: SymbolMap | null; dailyRemainingMs: n
       <div className="lcd-row lcd-row-vdo">
         <span className="lcd-row-left">
           {parseSymbols('(8)', props.symbolMap)}
-          <span>{missing}</span>
+          <span>{restText}</span>
         </span>
         <span className="lcd-row-right">
           {parseSymbols('(17)', props.symbolMap)}
-          <span>{missing}</span>
+          <span>{deadlineText}</span>
         </span>
       </div>
     </div>
   )
 }
 
-function VdoWeekDisplay(props: { symbolMap: SymbolMap | null; weeklyRemainingMs: number | null | undefined }) {
+function VdoWeekDisplay(props: {
+  symbolMap: SymbolMap | null
+  weeklyRemainingMs: number | null | undefined
+  nextWeeklyRestMs?: number | null
+  latestWeeklyRestStartMs?: number | null
+}) {
   const { t } = useLanguage()
   const missing = t.workWeek.shiftSumRestPlaceholder
   const weeklyText = typeof props.weeklyRemainingMs === 'number'
     ? formatDurationHhMm(props.weeklyRemainingMs, true)
+    : missing
+  const restText = typeof props.nextWeeklyRestMs === 'number'
+    ? formatDurationHhMm(props.nextWeeklyRestMs, true)
+    : missing
+  const deadlineText = typeof props.latestWeeklyRestStartMs === 'number'
+    ? formatDurationHhMm(props.latestWeeklyRestStartMs, true)
     : missing
   return (
     <div className="lcd-two-rows lcd-vdo-counter" data-vdo-screen="vdoWeek" data-vdo-week-remaining-ms={props.weeklyRemainingMs ?? ''}>
@@ -479,21 +505,30 @@ function VdoWeekDisplay(props: { symbolMap: SymbolMap | null; weeklyRemainingMs:
       <div className="lcd-row lcd-row-vdo">
         <span className="lcd-row-left">
           {parseSymbols('(8)', props.symbolMap)}
-          <span>{missing}</span>
+          <span>{restText}</span>
         </span>
         <span className="lcd-row-right">
           {parseSymbols('(17)', props.symbolMap)}
-          <span>{missing}</span>
+          <span>{deadlineText}</span>
         </span>
       </div>
     </div>
   )
 }
 
-function VdoiDisplay(props: { symbolMap: SymbolMap | null; extensionsRemaining: number | null | undefined }) {
+function VdoiDisplay(props: {
+  symbolMap: SymbolMap | null
+  extensionsRemaining: number | null | undefined
+  reducedDailyRemaining?: number | null
+  compensationMs?: number | null
+}) {
   const { t } = useLanguage()
   const missing = t.workWeek.shiftSumRestPlaceholder
   const extensionsText = typeof props.extensionsRemaining === 'number' ? String(props.extensionsRemaining) : missing
+  const reducedText = typeof props.reducedDailyRemaining === 'number' ? String(props.reducedDailyRemaining) : missing
+  const compensationText = typeof props.compensationMs === 'number'
+    ? formatDurationHhMm(props.compensationMs, true)
+    : missing
   return (
     <div className="lcd-two-rows lcd-vdo-counter" data-vdo-screen="vdoi" data-vdo-extensions-remaining={props.extensionsRemaining ?? ''}>
       <div className="lcd-row lcd-row-vdo">
@@ -501,12 +536,12 @@ function VdoiDisplay(props: { symbolMap: SymbolMap | null; extensionsRemaining: 
         <span className="lcd-row-right">
           {parseSymbols('(8)', props.symbolMap)}
           <span>9h</span>
-          <span>{missing}</span>
+          <span>{reducedText}</span>
         </span>
       </div>
       <div className="lcd-row lcd-row-vdo">
         <span className="lcd-row-left">
-          <span>{missing}</span>
+          <span>{compensationText}</span>
         </span>
         <span className="lcd-row-right">
           {parseSymbols('(2)', props.symbolMap)}
@@ -559,20 +594,76 @@ function OperatingDisplay(props: TachoDisplayProps) {
 
   const displayedSpeed = isStandby ? 0 : currentSpeed
 
-  /** Bez karty zůstává základní obrazovka, i když byl Counter před vysunutím otevřený. */
+  /** Bez karty zůstává základní obrazovka, i když byl Counter před vysunutím otevřený.
+   * Výjimka: časy šachet (vdoCard) ukazují poslední stav i bez vložené karty. */
   const anyCard = card1Inserted || card2Inserted
+
+  /** Časy karty / šachty – vždy podle indexu (1 = šachta 1, 2 = šachta 2), i bez karty. */
+  if (vdoCounterActive && vdoNamedScreen === 'vdoCard') {
+    const cardDriver: 1 | 2 = operatingScreenIndex === 1 ? 2 : 1
+    const displayedActivityId = cardDriver === 1 ? tachoState.leftActivityId : tachoState.rightActivityId
+    const activityDurationMs = activityDurationMsByDriver[cardDriver]
+    const slotSymbol = driverSymbol(cardDriver)
+    return (
+      <div className={`lcd-two-rows lcd-vdo-counter ${tachoState.isMultiManning ? 'lcd-multi-manning' : ''} ${isStandby ? 'lcd-standby' : ''}`} data-vdo-screen="vdoCard" data-standby={isStandby || undefined} data-driven-ms={drivenSinceRestMs ?? ''} data-recognized-break-ms={recognizedBreakMs ?? ''} data-activity-ms={activityDurationMs ?? ''}>
+        <div className="lcd-row lcd-row-vdo">
+          <span className="lcd-row-left">
+            {parseSymbols(`${slotSymbol}(2)`, symbolMap)}
+            <span>{formatOverviewTime(drivenSinceRestMs)}</span>
+          </span>
+          <span className="lcd-row-right">
+            {parseSymbols('(10)', symbolMap)}
+            <span>{formatOverviewTime(recognizedBreakMs)}</span>
+          </span>
+        </div>
+        <div className="lcd-row lcd-row-vdo">
+          <span className="lcd-row-left">
+            {parseSymbols(`${slotSymbol}(2)(58)`, symbolMap)}
+            <span>{formatOverviewTime(props.slot1DebugFortnightSumMs)}</span>
+          </span>
+          <span className="lcd-row-right">
+            {parseSymbols(activitySymbol(displayedActivityId), symbolMap)}
+            <span>{formatOverviewTime(activityDurationMs)}</span>
+          </span>
+        </div>
+      </div>
+    )
+  }
+
+  const outlook = props.vdoOutlook ?? null
 
   /** VDO counter – zobraz jen po stisku šipky; jinak vždy základní obrazovka */
   if (anyCard && vdoCounterActive && vdoNamedScreen === 'vdoi') {
-    return <VdoiDisplay symbolMap={symbolMap} extensionsRemaining={props.slot1DebugDailyExtensionsRemaining} />
+    return (
+      <VdoiDisplay
+        symbolMap={symbolMap}
+        extensionsRemaining={props.slot1DebugDailyExtensionsRemaining}
+        reducedDailyRemaining={outlook?.reducedDailyRemaining}
+        compensationMs={outlook?.compensationMs}
+      />
+    )
   }
 
   if (anyCard && vdoCounterActive && vdoNamedScreen === 'vdoWeek') {
-    return <VdoWeekDisplay symbolMap={symbolMap} weeklyRemainingMs={props.slot1DebugWeeklyRemainingMs} />
+    return (
+      <VdoWeekDisplay
+        symbolMap={symbolMap}
+        weeklyRemainingMs={props.slot1DebugWeeklyRemainingMs}
+        nextWeeklyRestMs={outlook?.nextWeeklyRestMs}
+        latestWeeklyRestStartMs={outlook?.latestWeeklyRestStartMs}
+      />
+    )
   }
 
   if (anyCard && vdoCounterActive && vdoNamedScreen === 'vdo24h') {
-    return <Vdo24hDisplay symbolMap={symbolMap} dailyRemainingMs={props.slot1DebugDailyRemainingMs} />
+    return (
+      <Vdo24hDisplay
+        symbolMap={symbolMap}
+        dailyRemainingMs={props.slot1DebugDailyRemainingMs}
+        nextDailyRestMs={outlook?.nextDailyRestMs}
+        latestDailyRestStartMs={outlook?.latestDailyRestStartMs}
+      />
+    )
   }
 
   if (anyCard && vdoCounterActive && vdoNamedScreen === 'driveRest') {
@@ -690,12 +781,8 @@ function OperatingDisplay(props: TachoDisplayProps) {
                 ) : (
                   <>
                     <TachoIcon code={leftEdgeChar} />
-                    {card1Inserted && (
-                      <>
-                        <TachoIcon code={SPECIAL_SYMBOLS.CARD_SYMBOL} />
-                        <span className="lcd-icon" style={{ fontFamily: TACHO_FONT }}>{getIconChar('card')}</span>
-                      </>
-                    )}
+                    {/* Jen symbol 14 (načtená karta) – druhý TachoFont „card“ posouval počítadlo o 1 znak doprava. */}
+                    {card1Inserted && <TachoIcon code={SPECIAL_SYMBOLS.CARD_SYMBOL} />}
                   </>
                 )}
               </div>
@@ -738,6 +825,7 @@ function OperatingDisplay(props: TachoDisplayProps) {
     let breakMs: number | null = null
     let afterMs: number | null = null
     let rightKind: 'missing' | 'fulfilled' | 'next' | 'until-break' = 'missing'
+    let l2Kind: 'break' | 'daily' | 'weekly' | 'after' = 'break'
     if (debugBreak?.phase === 'driving') {
       drivingMs = capDriving(debugBreak.remainingDrivingMs)
       const resting = (driver === 1 ? tachoState.leftActivityId : tachoState.rightActivityId) === 'REST'
@@ -745,9 +833,15 @@ function OperatingDisplay(props: TachoDisplayProps) {
       if (resting && blockReset) {
         breakMs = 0
         rightKind = 'fulfilled'
+        l2Kind = 'break'
+      } else if (outlook && !tachoState.ferryTrainModeActive && (outlook.l2Kind === 'daily' || outlook.l2Kind === 'weekly')) {
+        breakMs = outlook.l2RestMs
+        rightKind = 'next'
+        l2Kind = outlook.l2Kind
       } else {
         breakMs = debugBreak.requiredBreakMs
         rightKind = 'next'
+        l2Kind = 'break'
       }
       drivingText = knownTime(drivingMs, true)
       breakText = knownTime(breakMs, true)
@@ -760,6 +854,7 @@ function OperatingDisplay(props: TachoDisplayProps) {
       breakMs = debugBreak.remainingBreakMs
       afterMs = capDriving(debugBreak.drivingAfterBreakMs)
       rightKind = 'until-break'
+      l2Kind = 'after'
       drivingText = knownTime(drivingMs, true)
       breakText = knownTime(breakMs, true)
       if (props.slot1DebugDrivingKnown === false) {
@@ -773,37 +868,13 @@ function OperatingDisplay(props: TachoDisplayProps) {
       breakText = knownTime(breakMs, true)
       afterMs = null
       rightKind = breakMs == null ? 'missing' : 'next'
+      l2Kind = 'break'
     }
     const displayedActivityId = driver === 1 ? tachoState.leftActivityId : tachoState.rightActivityId
-    const activityMark = displayedActivityId === 'DRIVING' ? '(2)' : displayedActivityId === 'WORK' ? '(9)' : displayedActivityId === 'AVAILABILITY' ? '(7)' : '(8)'
-    if (vdoNamedScreen === 'vdoCard') {
-      const activityDurationMs = activityDurationMsByDriver[driver as 1 | 2]
-      const slotSymbol = driverSymbol(driver as 1 | 2)
-      return (
-        <div className={`lcd-two-rows lcd-vdo-counter ${tachoState.isMultiManning ? 'lcd-multi-manning' : ''} ${isStandby ? 'lcd-standby' : ''}`} data-vdo-screen="vdoCard" data-standby={isStandby || undefined} data-driven-ms={drivenSinceRestMs ?? ''} data-recognized-break-ms={recognizedBreakMs ?? ''} data-activity-ms={activityDurationMs ?? ''}>
-          <div className="lcd-row lcd-row-vdo">
-            <span className="lcd-row-left">
-              {parseSymbols(`${slotSymbol}(2)`, symbolMap)}
-              <span>{formatOverviewTime(drivenSinceRestMs)}</span>
-            </span>
-            <span className="lcd-row-right">
-              {parseSymbols('(10)', symbolMap)}
-              <span>{formatOverviewTime(recognizedBreakMs)}</span>
-            </span>
-          </div>
-          <div className="lcd-row lcd-row-vdo">
-            <span className="lcd-row-left">
-              {parseSymbols(`${slotSymbol}(2)(58)`, symbolMap)}
-              <span>{formatOverviewTime(props.slot1DebugFortnightSumMs)}</span>
-            </span>
-            <span className="lcd-row-right">
-              {parseSymbols(activitySymbol(displayedActivityId), symbolMap)}
-              <span>{formatOverviewTime(activityDurationMs)}</span>
-            </span>
-          </div>
-        </div>
-      )
-    }
+    const activityMark = props.slot1DebugUnknownActivity
+      ? '?'
+      : displayedActivityId === 'DRIVING' ? '(2)' : displayedActivityId === 'WORK' ? '(9)' : displayedActivityId === 'AVAILABILITY' ? '(7)' : '(8)'
+    const afterText = knownTime(afterMs, true)
     return (
       <div
         className={`lcd-two-rows lcd-vdo-counter ${tachoState.isMultiManning ? 'lcd-multi-manning' : ''} ${isStandby ? 'lcd-standby' : ''}`}
@@ -812,12 +883,13 @@ function OperatingDisplay(props: TachoDisplayProps) {
         data-lcd-driving-ms={drivingMs ?? ''}
         data-lcd-break-ms={breakMs ?? ''}
         data-lcd-after-ms={afterMs ?? undefined}
+        data-lcd-l2-kind={l2Kind}
         data-lcd-ferry-rest={props.slot1DebugFerryRestConditional ? 'conditional' : tachoState.ferryTrainModeActive ? 'recorded' : undefined}
       >
         <div className="lcd-row lcd-row-vdo">
           <span className="lcd-row-left">
             VDO
-            {parseSymbols(activityMark, symbolMap)}
+            {activityMark === '?' ? <span>?</span> : parseSymbols(activityMark, symbolMap)}
           </span>
           <span className="lcd-row-right">
             {parseSymbols('(2)(41)', symbolMap)}
@@ -829,6 +901,12 @@ function OperatingDisplay(props: TachoDisplayProps) {
             {parseSymbols('(8)(41)', symbolMap)}
             <span>{breakText}</span>
           </span>
+          {l2Kind === 'after' && afterMs != null && (
+            <span className="lcd-row-right">
+              {parseSymbols('(8)(2)', symbolMap)}
+              <span>{afterText}</span>
+            </span>
+          )}
         </div>
       </div>
     )
@@ -868,12 +946,7 @@ function OperatingDisplay(props: TachoDisplayProps) {
               ) : (
                 <>
                   <TachoIcon code={leftEdgeChar} />
-                  {card1Inserted && (
-                    <>
-                      <TachoIcon code={SPECIAL_SYMBOLS.CARD_SYMBOL} />
-                      <span className="lcd-icon" style={{ fontFamily: TACHO_FONT }}>{getIconChar('card')}</span>
-                    </>
-                  )}
+                  {card1Inserted && <TachoIcon code={SPECIAL_SYMBOLS.CARD_SYMBOL} />}
                 </>
               )}
             </div>

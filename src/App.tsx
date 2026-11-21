@@ -114,7 +114,8 @@ import { buildSlot1VirtualCardDrivingBreak, buildSlot1VirtualCounterIntervals } 
 import { buildSlot1DddDrivingBreakIntervals, buildSlot1DddOutSources, describeSlot1WeekCoverage } from './slot1DddDrivingBreak'
 import { slot1DddCalendarRemaining, slot1DddDailyRemaining, weekStartUtc } from './slot1DddDailyRemaining'
 import { workingTimeDisplay } from './workingTimeDisplay'
-import { counterCardSlot, counterIndexAfterCardRemoval, slot1CounterLcdProps, vdo24hEntryAvailable, vdoCounterClosesWithoutCard, buildTimesSequence, timesLocationFrom, stepTimesLocation, type VdoNamedScreen } from './slot1DddCounter'
+import { cardTimesSlot, counterCardSlot, counterIndexAfterCardRemoval, slot1CounterLcdProps, vdo24hEntryAvailable, vdoCounterClosesWithoutCard, buildTimesSequence, timesLocationFrom, stepTimesLocation, type VdoNamedScreen } from './slot1DddCounter'
+import { buildVdoCounterOutlook } from './vdoCounterOutlook'
 import { parseSymbols } from './Symbols'
 import { isWarningCode } from './data/warnings'
 import { LANGUAGE_PAGE, languages, recalledLanguage, rememberLanguage } from './firstLevelDisplay'
@@ -286,6 +287,8 @@ export default function App() {
   }, [languageSaved])
   useEffect(() => {
     if (!vdoCounterClosesWithoutCard(card1Inserted, card2Inserted) || operatingScreenIndex >= 2) return
+    // Časy šachet zůstávají i bez karty (poslední stav šachty).
+    if (vdoNamedScreen === 'vdoCard') return
     setVdoCounterActive(false)
     setVdoNamedScreen(null)
   }, [card1Inserted, card2Inserted, operatingScreenIndex, vdoCounterActive, vdoNamedScreen])
@@ -2802,20 +2805,23 @@ export default function App() {
     })
   }, [card1Inserted, card1Data?.templateId, cardActivityHistoryByTemplateId, secondHistory, simulatedUtcTime])
   const slot1CounterIntervals = useMemo(() => {
+    const slotInserted = (slot: 1 | 2) => (slot === 1 ? card1Inserted : card2Inserted)
     const slot = vdoNamedScreen === 'driveRest'
       ? (card1Inserted ? 1 : null)
-      : card1Inserted && card2Inserted
-        ? counterCardSlot(operatingScreenIndex, card1Inserted, card2Inserted)
-        : card1Inserted
-          ? 1
-          : card2Inserted
-            ? 2
-            : null
+      : vdoNamedScreen === 'vdoCard'
+        ? cardTimesSlot(operatingScreenIndex)
+        : card1Inserted && card2Inserted
+          ? counterCardSlot(operatingScreenIndex, card1Inserted, card2Inserted)
+          : card1Inserted
+            ? 1
+            : card2Inserted
+              ? 2
+              : null
     if (slot == null) return null
-    const data = slot === 1 ? card1Data : card2Data
+    const data = slotInserted(slot) ? (slot === 1 ? card1Data : card2Data) : null
     const manual = slot === 1 ? driver1ManualEntryBuffer : driver2ManualEntryBuffer
-    const evaluated = data?.cardNumber && !data.templateId
-      ? evaluateRecordedOut({
+    if (data?.cardNumber && !data.templateId) {
+      return evaluateRecordedOut({
         ...buildSlot1DddOutSources({
           cards: dddCards,
           cardNumber: data.cardNumber,
@@ -2827,23 +2833,37 @@ export default function App() {
         vehicleEvents: outModeEvents,
         nowMs: simulatedUtcTime,
       })
-      : data?.templateId
-        ? evaluateRecordedOut({
-          imported: [],
-          vehicle: buildSlot1VirtualCounterIntervals({
-            cardHistory: cardActivityHistoryByTemplateId[data.templateId] ?? [],
-            manual,
-            secondSamples: secondHistory,
-            nowMs: simulatedUtcTime,
-            driverSlot: slot,
-            cardId: data.templateId,
-          }),
-          vehicleEvents: outModeEvents,
+    }
+    if (data?.templateId) {
+      return evaluateRecordedOut({
+        imported: [],
+        vehicle: buildSlot1VirtualCounterIntervals({
+          cardHistory: cardActivityHistoryByTemplateId[data.templateId] ?? [],
+          manual,
+          secondSamples: secondHistory,
           nowMs: simulatedUtcTime,
-        })
-        : null
-    return evaluated
-  }, [card1Inserted, card2Inserted, operatingScreenIndex, vdoNamedScreen, outModeEvents, card1Data, card2Data, dddCards, secondHistory, simulatedUtcTime, cardActivityHistoryByTemplateId, driver1ManualEntryBuffer, driver2ManualEntryBuffer])
+          driverSlot: slot,
+          cardId: data.templateId,
+        }),
+        vehicleEvents: outModeEvents,
+        nowMs: simulatedUtcTime,
+      })
+    }
+    // Bez karty: poslední stav šachty z paměti vozidla (součet dvojitého týdne se na LCD skryje).
+    return evaluateRecordedOut({
+      imported: [],
+      vehicle: buildSlot1VirtualCounterIntervals({
+        cardHistory: activityHistory,
+        manual: [],
+        secondSamples: secondHistory,
+        nowMs: simulatedUtcTime,
+        driverSlot: slot,
+        cardId: null,
+      }),
+      vehicleEvents: outModeEvents,
+      nowMs: simulatedUtcTime,
+    })
+  }, [card1Inserted, card2Inserted, operatingScreenIndex, vdoNamedScreen, outModeEvents, card1Data, card2Data, dddCards, secondHistory, simulatedUtcTime, cardActivityHistoryByTemplateId, driver1ManualEntryBuffer, driver2ManualEntryBuffer, activityHistory])
   const slot1FerryRest = useMemo(() => {
     const slot = card1Inserted && card2Inserted
       ? counterCardSlot(operatingScreenIndex, card1Inserted, card2Inserted)
@@ -2980,6 +3000,16 @@ export default function App() {
     tachoState.ferryTrainModeActive,
     outModeActive,
   ])
+  const vdoCardViewSlot = vdoNamedScreen === 'vdoCard' ? cardTimesSlot(operatingScreenIndex) : null
+  const vdoCardViewHasCard = vdoCardViewSlot === 1
+    ? card1Inserted
+    : vdoCardViewSlot === 2
+      ? card2Inserted
+      : false
+  /** Bez karty ve šachtě se součet řízení dvojitého týdne nezobrazuje (--h--). */
+  const cardTimesCalendar = vdoCardViewSlot != null && !vdoCardViewHasCard && slot1DddCalendar
+    ? { ...slot1DddCalendar, fortnightSumMs: null, fortnightRemainingMs: null }
+    : slot1DddCalendar
   const slot1LcdProps = slot1CounterLcdProps({
     diagnostics: showDebugPanel,
     context: {
@@ -2997,11 +3027,52 @@ export default function App() {
     },
     dddBreak: slot1DddBreak,
     daily: slot1DddDaily,
-    calendar: slot1DddCalendar,
+    calendar: cardTimesCalendar,
     virtualDebugBreak: card1Data?.templateId === CARD1_TEMPLATE_ID ? slot1DebugBreak : null,
   })
+  const cardTimesFortnightSumMs = vdoCardViewSlot != null && !vdoCardViewHasCard
+    ? null
+    : slot1LcdProps.slot1DebugFortnightSumMs
 
-  const teachDriver: 1 | 2 = operatingScreenIndex === 1 && card2Inserted ? 2 : 1
+  const vdoOutlookSlot: 1 | 2 = vdoNamedScreen === 'vdoCard'
+    ? cardTimesSlot(operatingScreenIndex)
+    : (counterCardSlot(operatingScreenIndex, card1Inserted, card2Inserted) ?? (card1Inserted ? 1 : 2))
+  const vdoOutlook = useMemo(() => {
+    if (!slot1CounterIntervals || !slot1DddBreak) return null
+    const remainingDrivingMs = slot1DddBreak.phase === 'driving'
+      ? slot1DddBreak.remainingDrivingMs
+      : slot1DddBreak.drivingIfStartNowMs
+    const requiredBreakMs = slot1DddBreak.phase === 'driving'
+      ? slot1DddBreak.requiredBreakMs
+      : slot1DddBreak.remainingBreakMs
+    return buildVdoCounterOutlook({
+      intervals: slot1CounterIntervals.intervals,
+      nowMs: simulatedUtcTime,
+      slot: vdoOutlookSlot,
+      isMultiManning,
+      remainingDrivingMs: slot1DrivingUndocumented ? null : remainingDrivingMs,
+      requiredBreakMs,
+      extensionsRemaining: slot1LcdProps.slot1DebugDailyExtensionsRemaining ?? null,
+    })
+  }, [
+    slot1CounterIntervals,
+    slot1DddBreak,
+    simulatedUtcTime,
+    vdoOutlookSlot,
+    isMultiManning,
+    slot1DrivingUndocumented,
+    slot1LcdProps.slot1DebugDailyExtensionsRemaining,
+  ])
+  const slot1UnknownActivity = Boolean(
+    slot1CounterIntervals
+    && undeterminedOverlaps(slot1CounterIntervals.undetermined, simulatedUtcTime - 60_000, simulatedUtcTime + 1),
+  )
+
+  const teachDriver: 1 | 2 = vdoNamedScreen === 'vdoCard'
+    ? cardTimesSlot(operatingScreenIndex)
+    : operatingScreenIndex === 1 && card2Inserted
+      ? 2
+      : 1
   const lcdTeachCovered = Boolean(
     overrideWarningCode
     || excessSpeedWarningActive
@@ -3022,7 +3093,8 @@ export default function App() {
       vdoCounterActive,
       vdoNamedScreen,
       operatingScreenIndex,
-      cardInserted: card1Inserted || card2Inserted,
+      // Časy šachet jdou i bez karty; ostatní VDO obrazovky potřebují kartu.
+      cardInserted: card1Inserted || card2Inserted || vdoNamedScreen === 'vdoCard',
     }),
     covered: lcdTeachCovered,
     driver: teachDriver,
@@ -3291,12 +3363,14 @@ export default function App() {
                   slot1DebugDailyRemainingMs={slot1LcdProps.slot1DebugDailyRemainingMs}
                   slot1DebugWeeklyRemainingMs={slot1LcdProps.slot1DebugWeeklyRemainingMs}
                   slot1DebugFortnightRemainingMs={slot1LcdProps.slot1DebugFortnightRemainingMs}
-                  slot1DebugFortnightSumMs={slot1LcdProps.slot1DebugFortnightSumMs}
+                  slot1DebugFortnightSumMs={cardTimesFortnightSumMs}
                   slot1DebugDailyExtensionsRemaining={slot1LcdProps.slot1DebugDailyExtensionsRemaining}
                   slot1DebugOtherWorkMs={slot1LcdProps.slot1DebugOtherWorkMs}
                   slot1DebugDrivingKnown={!slot1DrivingUndocumented}
                   slot1DebugFerryRestMs={slot1FerryRestMs}
                   slot1DebugFerryRestConditional={slot1FerryRestConditional}
+                  slot1DebugUnknownActivity={slot1UnknownActivity}
+                  vdoOutlook={vdoOutlook}
                   drivenSinceRestMs={drivenSinceRestMs}
                   recognizedBreakMs={recognizedBreakMs}
                   activityDurationMsByDriver={activityDurationMsByDriver}

@@ -8,7 +8,7 @@ import type { CardInsertionState } from './TachoTypes'
 import type { CountryEntry } from './data/countriesLoader'
 import type { SymbolMap, TachoState } from './TachoTypes'
 import { ACTIVITY_SYMBOLS, SPECIAL_SYMBOLS } from './TachoTypes'
-import { parseSymbols, getIconChar, TachoIcon, TACHO_FONT } from './Symbols'
+import { parseSymbols, TachoIcon } from './Symbols'
 import { formatLcdOdometer, getActivityCode, utcMsToSegment } from './CardLogic'
 
 export type CardInsertionDisplay2Props = {
@@ -316,7 +316,7 @@ export function CardInsertionDisplay2(props: CardInsertionDisplay2Props) {
         <div className="lcd-row">
           <div className="lcd-row-sides">
             <TachoIcon code={leftEdgeChar} />
-            {showSlot1Card && (cs.slot === 1 ? cardSymbolEl : <><TachoIcon code={SPECIAL_SYMBOLS.CARD_SYMBOL} /><span className="lcd-icon" style={{ fontFamily: TACHO_FONT }}>{getIconChar('card')}</span></>)}
+            {showSlot1Card && (cs.slot === 1 ? cardSymbolEl : <TachoIcon code={SPECIAL_SYMBOLS.CARD_SYMBOL} />)}
           </div>
           <div className="lcd-row-center">
             {formatLcdOdometer(odometerKm)}

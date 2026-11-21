@@ -38,7 +38,8 @@ export type TimesLocation =
 
 /**
  * Za jízdy: přehled řízení a odpočinku, hlavní Counter a počitadlo pracovní doby.
- * Při stání: časy každé šachty zvlášť, potom Counter a při jiné práci nebo pohotovosti VDO24h, týden a VDOi.
+ * Při stání: časy obou šachet (i bez karty – poslední stav šachty), potom Counter jen u vložených karet
+ * a při jiné práci nebo pohotovosti VDO24h, týden a VDOi.
  * Trajekt časy karet neotvírá.
  */
 export function buildTimesSequence(input: {
@@ -59,7 +60,7 @@ export function buildTimesSequence(input: {
   }
   const steps: TimesLocation[] = []
   if (!input.ferry) {
-    for (const slot of slots) steps.push({ kind: 'card', slot })
+    steps.push({ kind: 'card', slot: 1 }, { kind: 'card', slot: 2 })
   }
   if (input.counterOn) {
     for (const slot of slots) {
@@ -71,6 +72,11 @@ export function buildTimesSequence(input: {
   }
   for (const index of [UTC_PAGE, LANGUAGE_PAGE, MAIN_MENU_PAGE]) steps.push({ kind: 'info', index })
   return steps
+}
+
+/** Šachta pro obrazovku časů karty: index 0 → šachta 1, index 1 → šachta 2. */
+export function cardTimesSlot(index: number): 1 | 2 {
+  return index === 1 ? 2 : 1
 }
 
 export function timesLocationFrom(active: boolean, named: VdoNamedScreen | null, index: number): TimesLocation {
@@ -209,7 +215,10 @@ export function normalInsertedCardCounter(input: Slot1DddCounterContext): boolea
   return false
 }
 
-/** Po vysunutí poslední karty se Counter zavře a neukáže předchozí hodnoty. */
+/**
+ * Po vysunutí poslední karty se Counter a VDO24h/Week/i zavřou.
+ * Obrazovka časů šachet (vdoCard) zůstává – ukazuje poslední stav šachty.
+ */
 export function vdoCounterClosesWithoutCard(card1Inserted: boolean, card2Inserted: boolean): boolean {
   return !card1Inserted && !card2Inserted
 }

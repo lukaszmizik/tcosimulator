@@ -1,0 +1,16 @@
+=== BLOK 1 – Dokončená úprava ===
+Datum: 2026-11-21
+Téma: VDO Counter (hlavní + VDO24h / týden / VDOi)
+
+- Fáze odpočinku: L2 vpravo ukazuje budoucí řízení po přestávce (afterMs); ? při nedoloženém úseku.
+- Adaptér intervalů → cardviewer Activity[]; outlook přes dailyRestChain / weeklyRest / compensation.
+- L2 při řízení přepíná přestávka / denní / týdenní odpočinek podle urgency.
+- VDO24h, VDO week a VDOi doplněny z outlook + stávajících daily/calendar zbytků.
+- Soubory: vdoCounterActivityAdapter.ts, vdoCounterOutlook.ts, TachoDisplay.tsx, App.tsx.
+
+(Předchozí: časy šachet bez karty + per-slot data řidiče 2.)
+
+=== BLOK 2 – Nedokončeno / na příště ===
+- Trajekt při stání: zda přeskočit časy karet jako teď, nebo je ukázat i s aktivním trajektem.
+- Week-graph: chybějící výstrahy v grafu pracovního týdne.
+- Blikající h u aktivní části Counteru (odloženo za funkční pole).

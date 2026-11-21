@@ -368,6 +368,13 @@ body {
 .lcd-card-insertion .lcd-row:last-child .lcd-row-center {
   white-space: nowrap;
 }
+/* L2: stejně široké boky (minmax 0), ať se počítadlo neposouvá při symbolu karty / OUT */
+.lcd-card-insertion .lcd-row:last-child {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+}
+.lcd-card-insertion .lcd-row:last-child > .lcd-row-sides {
+  min-width: 0;
+}
 
 .lcd-loading-row {
   justify-content: flex-start;

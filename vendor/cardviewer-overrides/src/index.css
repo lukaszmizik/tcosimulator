@@ -1026,9 +1026,11 @@ body {
 
 .work-week-graph-window {
   position: relative;
-  background: #fff;
-  border-radius: 7px;
-  box-shadow: 0 7px 28px rgba(0, 0, 0, 0.25);
+  background: #0f172a;
+  color: #e2e8f0;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.35);
   padding: 43px 22px 22px;
   width: min(98vw, 1080px);
   height: min(96vh, 810px);
@@ -1046,7 +1048,7 @@ body {
   height: auto;
   min-height: calc(100svh - 140px);
   max-height: none;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.35);
   border-radius: 12px;
   padding: 2rem 2rem 2.25rem;
 }
@@ -1058,9 +1060,9 @@ body {
   width: 32px;
   height: 32px;
   padding: 0;
-  background: #f0f0f0;
-  color: #333;
-  border: 1px solid #999;
+  background: #1e293b;
+  color: #e2e8f0;
+  border: 1px solid #475569;
   border-radius: 50%;
   font-size: 20px;
   line-height: 1;
@@ -1071,7 +1073,7 @@ body {
 }
 
 .work-week-graph-close:hover {
-  background: #e0e0e0;
+  background: #334155;
 }
 
 .work-week-graph-reset {
@@ -1081,15 +1083,15 @@ body {
   padding: 6px 12px;
   font-size: 12px;
   font-family: inherit;
-  background: #f0f0f0;
-  color: #333;
-  border: 1px solid #999;
+  background: #1e293b;
+  color: #e2e8f0;
+  border: 1px solid #475569;
   border-radius: 4px;
   cursor: pointer;
 }
 
 .work-week-graph-reset:hover {
-  background: #e0e0e0;
+  background: #334155;
 }
 
 .work-week-graph-header {
@@ -1104,7 +1106,7 @@ body {
   margin: 0;
   font-size: 20px;
   font-weight: 700;
-  color: #111;
+  color: #f8fafc;
   letter-spacing: 0.02em;
 }
 
@@ -1118,15 +1120,15 @@ body {
   padding: 6px 12px;
   font-size: 12px;
   font-family: inherit;
-  border: 1px solid #999;
+  border: 1px solid #475569;
   border-radius: 6px;
-  background: #f5f5f5;
-  color: #333;
+  background: #1e293b;
+  color: #e2e8f0;
   cursor: pointer;
 }
 
 .work-week-graph-nav-btn:hover:not(:disabled) {
-  background: #e8e8e8;
+  background: #334155;
 }
 
 .work-week-graph-nav-btn:disabled {
@@ -1136,13 +1138,13 @@ body {
 
 .work-week-graph-nav-info {
   font-size: 12px;
-  color: #666;
+  color: #94a3b8;
 }
 
 .work-week-graph-nav-calendar {
   font-size: 14px;
   font-weight: 600;
-  color: #222;
+  color: #cbd5e1;
   min-width: 180px;
   text-align: center;
 }
@@ -1299,9 +1301,9 @@ body {
 }
 
 .work-week-graph-nav-btn.is-tool-active {
-  color: #312e81;
-  background: #e0e7ff;
-  border-color: #6366f1;
+  color: #e0f2fe;
+  background: #0c4a6e;
+  border-color: #38bdf8;
 }
 
 .graph-zoom-range {
@@ -1552,7 +1554,7 @@ body {
 
 .time-scale-select-label {
   font-size: 12px;
-  color: #555;
+  color: #94a3b8;
   white-space: nowrap;
 }
 
@@ -1560,17 +1562,17 @@ body {
   padding: 6px 10px;
   font-size: 12px;
   font-family: inherit;
-  border: 1px solid #999;
+  border: 1px solid #475569;
   border-radius: 6px;
-  background: #fff;
-  color: #222;
+  background: #1e293b;
+  color: #e2e8f0;
   cursor: pointer;
 }
 
 .graph-clock-mode-info {
   margin-left: 6px;
   font-size: 12px;
-  color: #555;
+  color: #94a3b8;
   white-space: nowrap;
 }
 
@@ -1594,7 +1596,7 @@ body {
 
 .work-week-graph-legend-label {
   font-size: 16px;
-  color: #444;
+  color: #94a3b8;
 }
 
 .work-week-graph-legend-item .tacho-icon {
@@ -1620,10 +1622,10 @@ body {
 .card-history-title {
   margin: 0 0 6px;
   padding-left: 10px;
-  border-left: 3px solid var(--card-history-accent, #6366f1);
+  border-left: 3px solid var(--card-history-accent, #38bdf8);
   font-size: 15px;
   font-weight: 600;
-  color: #0f172a;
+  color: #e2e8f0;
 }
 
 .card-history--vehicles {
@@ -1706,18 +1708,18 @@ body {
 .work-week-graph-legend-summary {
   margin-top: 8px;
   padding-top: 8px;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid #1e293b;
 }
 
 .work-week-graph-legend-summary-label {
   font-weight: 600;
-  color: #333;
+  color: #cbd5e1;
   margin-right: 8px;
 }
 
 .work-week-graph-legend-sum {
   font-weight: 600;
-  color: #222;
+  color: #e2e8f0;
   margin-left: 2px;
 }
 
@@ -1728,23 +1730,24 @@ body {
 .work-week-graph-legend-shift-length-value {
   padding: 2px 6px;
   border-radius: 4px;
-  background: rgba(100, 149, 237, 0.15);
+  background: rgba(56, 189, 248, 0.15);
   font-weight: 600;
-  color: #222;
+  color: #e2e8f0;
 }
 
 .day-driving-panel {
   margin: 12px 0 4px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #1e293b;
   border-radius: 12px;
-  background: transparent;
+  background: #111827;
 }
 
 .weekly-driving-panel {
   margin: 8px 0 4px;
   padding: 12px 14px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #1e293b;
   border-radius: 12px;
+  background: #111827;
 }
 
 .weekly-driving-title,
@@ -1961,7 +1964,7 @@ body {
   line-height: 1.3;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  color: #0f172a;
+  color: #e2e8f0;
 }
 
 .day-driving-note {
@@ -2029,7 +2032,7 @@ body {
 .work-week-graph-table-wrapper {
   margin: 12px 0;
   font-size: 12px;
-  color: #333;
+  color: #cbd5e1;
   max-height: 320px;
   overflow: auto;
   -webkit-overflow-scrolling: touch;
@@ -2038,8 +2041,8 @@ body {
 .work-week-graph-table {
   width: 100%;
   border-collapse: collapse;
-  background: #f8f8f8;
-  border: 1px solid #e0e0e0;
+  background: #111827;
+  border: 1px solid #1e293b;
   border-radius: 6px;
   overflow: hidden;
 }
@@ -2048,8 +2051,9 @@ body {
   text-align: left;
   padding: 10px 12px;
   font-weight: 600;
-  background: #eee;
-  border-bottom: 1px solid #e0e0e0;
+  background: #1e293b;
+  color: #e2e8f0;
+  border-bottom: 1px solid #334155;
 }
 
 .crew-mode-dot {
@@ -2065,21 +2069,21 @@ body {
 .work-week-graph-table td {
   padding: 10px 12px;
   vertical-align: top;
-  border-bottom: 1px solid #e8e8e8;
+  border-bottom: 1px solid #1e293b;
 }
 
 .work-week-graph-table td:first-child {
-  border-right: 1px solid #e0e0e0;
+  border-right: 1px solid #1e293b;
   min-width: 240px;
 }
 
 .card-info-table-wrapper {
   max-height: none;
-  border: 1px solid #cbd5e1;
+  border: 1px solid #334155;
   border-radius: 10px;
-  background: #fff;
+  background: #111827;
   overflow: hidden;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
 }
 
 .card-info-face {
@@ -2356,7 +2360,7 @@ body {
   margin: 0 0 8px 0;
   font-size: 14px;
   font-weight: 600;
-  color: #333;
+  color: #cbd5e1;
 }
 
 .work-week-graph-svg {
@@ -2364,6 +2368,8 @@ body {
   width: 100%;
   height: auto;
   max-width: 100%;
+  background: #0a101c;
+  border-radius: 8px;
 }
 
 .work-week-graph-day-name,
@@ -2377,7 +2383,7 @@ body {
 
 .work-week-graph-empty {
   padding: 29px;
-  color: #666;
+  color: #94a3b8;
   text-align: center;
 }
 

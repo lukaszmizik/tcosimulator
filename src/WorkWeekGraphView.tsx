@@ -3,7 +3,7 @@
  * Každý den = řádek, hodiny 0–24, aktivity jako barevné segmenty.
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type ReactNode } from 'react'
 import { useLanguage } from './translations'
 import type { DayData, ParsedActivity, ActivityType, CountryMarker } from './workWeekTxtParser'
 import { parseTimeAndDate, getWeekStartMsLocal, localDayStart } from './workWeekTxtParser'
@@ -47,10 +47,23 @@ const ACTIVITY_STYLE: Record<ActivityType, { color: string; strokeWidth: number 
   neznámá: { color: '#888', strokeWidth: 5 },
 }
 
-const TICK_COLOR = '#999'
-const LABEL_COLOR = '#666'
-const ANCHOR_COLOR = '#000'
-const ANCHOR_STROKE = '#000'
+const TICK_COLOR = '#64748b'
+const LABEL_COLOR = '#94a3b8'
+const GRAPH_AXIS_COLOR = '#94a3b8'
+const DAY_SEP_COLOR = '#1e293b'
+const HOUR_STROKE = '#334155'
+const MINOR_STROKE = '#475569'
+const ROW_BG_A = '#0f172a'
+const ROW_BG_B = '#121a2b'
+const ANCHOR_SYMBOL = '#e2e8f0'
+const COUNTRY_START_COLOR = '#38bdf8'
+const COUNTRY_END_COLOR = '#a78bfa'
+const COUNTRY_BADGE_BG = '#0b1220'
+const OUT_MODE_GRAPH_COLOR = '#E86A00'
+const OUT_MODE_TEXT_COLOR = '#1a1208'
+const OUT_MODE_BAR_HEIGHT = 10
+const OUT_MODE_LABEL_MIN_WIDTH = 22
+
 function getActivityColor(act: ParsedActivity): string {
   const base = ACTIVITY_STYLE[act.type]
   if (!base) return '#888'
@@ -270,11 +283,6 @@ function getFerryTrainOnDay(events: FerryTrainEvent[], dayUtcMs: number): FerryT
   return events.filter((e) => e.minuteStartUtc >= dayUtcMs && e.minuteStartUtc < dayEndMs)
 }
 
-function getOutModeOnDay(events: OutModeEvent[], dayUtcMs: number): OutModeEvent[] {
-  const dayEndMs = localDayStart(dayUtcMs, 1)
-  return events.filter((e) => e.minuteStartUtc >= dayUtcMs && e.minuteStartUtc < dayEndMs)
-}
-
 /** Vrací období OUT (startMs, endMs) z párování activation–deactivation */
 function getOutModeRanges(events: OutModeEvent[]): Array<{ startMs: number; endMs: number }> {
   const sorted = [...events].sort((a, b) => a.minuteStartUtc - b.minuteStartUtc)
@@ -297,6 +305,76 @@ function drivingOverlapsOutPeriod(actStartMs: number, actEndMs: number, outRange
     if (actStartMs < r.endMs && actEndMs > r.startMs) return true
   }
   return false
+}
+
+function sliceOutRangeForDay(
+  range: { startMs: number; endMs: number },
+  dayUtcMs: number,
+): { startMs: number; endMs: number } | null {
+  const dayEndMs = localDayStart(dayUtcMs, 1)
+  const startMs = Math.max(range.startMs, dayUtcMs)
+  const endMs = Math.min(range.endMs, dayEndMs)
+  if (startMs >= endMs) return null
+  return { startMs, endMs }
+}
+
+function renderCountryAnchor(opts: {
+  key: string
+  x: number
+  yBase: number
+  code: string
+  isStart: boolean
+}): ReactNode {
+  const { key, x, yBase, code, isStart } = opts
+  const color = isStart ? COUNTRY_START_COLOR : COUNTRY_END_COLOR
+  const textFill = isStart ? '#e0f2fe' : '#ede9fe'
+  const rectH = 12
+  const rectW = Math.max(24, 8 + code.length * 7)
+  const stemTop = yBase + 2
+  const anchorBottom = yBase + ROW_HEIGHT / 2 + 7
+  if (isStart) {
+    const arrowX = x - 2 + rectW
+    return (
+      <g key={key}>
+        <line x1={x} y1={stemTop + rectH} x2={x} y2={anchorBottom} stroke={color} strokeWidth={1.5} strokeLinecap="round" />
+        <rect x={x - 2} y={stemTop} width={rectW} height={rectH} rx={3} fill={COUNTRY_BADGE_BG} stroke={color} strokeWidth={1.3} />
+        <text
+          x={x - 2 + rectW / 2 - 1}
+          y={stemTop + rectH / 2}
+          textAnchor="middle"
+          dominantBaseline="central"
+          fill={textFill}
+          fontSize={8}
+          fontFamily="sans-serif"
+          fontWeight={700}
+        >
+          {code}
+        </text>
+        <path d={`M${arrowX} ${stemTop + 2} L${arrowX + 5} ${stemTop + rectH / 2} L${arrowX} ${stemTop + rectH - 2} Z`} fill={color} />
+      </g>
+    )
+  }
+  const rectX = x + 2 - rectW
+  const arrowX = rectX
+  return (
+    <g key={key}>
+      <line x1={x} y1={stemTop + rectH} x2={x} y2={anchorBottom} stroke={color} strokeWidth={1.5} strokeLinecap="round" />
+      <rect x={rectX} y={stemTop} width={rectW} height={rectH} rx={3} fill={COUNTRY_BADGE_BG} stroke={color} strokeWidth={1.3} />
+      <text
+        x={rectX + rectW / 2 + 1}
+        y={stemTop + rectH / 2}
+        textAnchor="middle"
+        dominantBaseline="central"
+        fill={textFill}
+        fontSize={8}
+        fontFamily="sans-serif"
+        fontWeight={700}
+      >
+        {code}
+      </text>
+      <path d={`M${arrowX} ${stemTop + 2} L${arrowX - 5} ${stemTop + rectH / 2} L${arrowX} ${stemTop + rectH - 2} Z`} fill={color} />
+    </g>
+  )
 }
 
 const LOAD_UNLOAD_SYMBOL_ID: Record<VehicleLoadUnloadEvent['type'], number> = {
@@ -383,9 +461,6 @@ function GraphBlock({ days, countryMarkers, manualEntryBuffer, lastWithdrawalUtc
   const visibleFerryTrain = ferryTrainEvents.filter(
     (e) => e.type === 'activation' && e.minuteStartUtc >= visibleFirstDate && e.minuteStartUtc < visibleLastEnd
   )
-  const visibleOutMode = outModeEvents.filter(
-    (e) => e.minuteStartUtc >= visibleFirstDate && e.minuteStartUtc < visibleLastEnd
-  )
   const outModeRanges = getOutModeRanges(outModeEvents)
 
   const workShiftRanges = getWorkShiftRanges(countryMarkers)
@@ -405,11 +480,26 @@ function GraphBlock({ days, countryMarkers, manualEntryBuffer, lastWithdrawalUtc
             <line x1="0" y1="0" x2="4" y2="4" stroke="#c62828" strokeWidth="2.2" />
           </pattern>
         </defs>
+        <g id={`day-row-bg-${blockId}`}>
+          {visibleDays.map((_, i) => {
+            const y = MARGIN_TOP + i * ROW_HEIGHT
+            return (
+              <rect
+                key={`row-bg-${i}`}
+                x={0}
+                y={y}
+                width={width}
+                height={ROW_HEIGHT}
+                fill={i % 2 === 0 ? ROW_BG_A : ROW_BG_B}
+              />
+            )
+          })}
+        </g>
         <g id={`day-separators-${blockId}`}>
           {visibleDays.slice(0, -1).map((_, i) => {
             const y = MARGIN_TOP + (i + 1) * ROW_HEIGHT
             return (
-              <line key={i} x1={0} y1={y} x2={width} y2={y} stroke="#e0e0e0" strokeWidth={0.5} opacity={0.7} />
+              <line key={i} x1={0} y1={y} x2={width} y2={y} stroke={DAY_SEP_COLOR} strokeWidth={0.5} />
             )
           })}
         </g>
@@ -418,7 +508,7 @@ function GraphBlock({ days, countryMarkers, manualEntryBuffer, lastWithdrawalUtc
             if (q % 4 === 0) return null
             const x = LABEL_WIDTH + (q / QUARTERS_PER_DAY) * CHART_WIDTH
             return (
-              <line key={`top-q-${q}`} x1={x} y1={MARGIN_TOP - QUARTER_TICK_LEN} x2={x} y2={MARGIN_TOP} stroke="#bbb" strokeWidth={0.5} opacity={0.7} />
+              <line key={`top-q-${q}`} x1={x} y1={MARGIN_TOP - QUARTER_TICK_LEN} x2={x} y2={MARGIN_TOP} stroke={MINOR_STROKE} strokeWidth={0.5} opacity={0.7} />
             )
           })}
         </g>
@@ -427,8 +517,8 @@ function GraphBlock({ days, countryMarkers, manualEntryBuffer, lastWithdrawalUtc
             const x = LABEL_WIDTH + (i / 24) * CHART_WIDTH
             return (
               <g key={`top-${i}`}>
-                <line x1={x} y1={MARGIN_TOP - HOUR_TICK_LEN} x2={x} y2={MARGIN_TOP} stroke="#333" strokeWidth={1} />
-                <text x={x} y={11} textAnchor="middle" fill="#222" fontSize={8} fontFamily="sans-serif" fontWeight={600}>{i}</text>
+                <line x1={x} y1={MARGIN_TOP - HOUR_TICK_LEN} x2={x} y2={MARGIN_TOP} stroke={HOUR_STROKE} strokeWidth={1} />
+                <text x={x} y={11} textAnchor="middle" fill={GRAPH_AXIS_COLOR} fontSize={8} fontFamily="sans-serif" fontWeight={600}>{i}</text>
               </g>
             )
           })}
@@ -443,12 +533,12 @@ function GraphBlock({ days, countryMarkers, manualEntryBuffer, lastWithdrawalUtc
                 const rowTop = yBase + 3
                 return (
                   <g key={`tick-${i}`}>
-                    <line x1={x} y1={rowTop} x2={x} y2={rowTop + TICK_LEN} stroke={TICK_COLOR} strokeWidth="0.5" opacity={0.4} />
-                    <line x1={x} y1={yBase + ROW_HEIGHT - 3 - TICK_LEN} x2={x} y2={yBase + ROW_HEIGHT - 3} stroke={TICK_COLOR} strokeWidth="0.5" opacity={0.4} />
+                    <line x1={x} y1={rowTop} x2={x} y2={rowTop + TICK_LEN} stroke={TICK_COLOR} strokeWidth="0.5" opacity={0.35} />
+                    <line x1={x} y1={yBase + ROW_HEIGHT - 3 - TICK_LEN} x2={x} y2={yBase + ROW_HEIGHT - 3} stroke={TICK_COLOR} strokeWidth="0.5" opacity={0.35} />
                   </g>
                 )
               })}
-              <text x={6} y={yBase + ROW_HEIGHT / 2 + 4} fill="#333" fontSize={11} fontFamily="sans-serif" fontWeight={500}>{dayNames[new Date(day.dateUtc).getDay()]}</text>
+              <text x={6} y={yBase + ROW_HEIGHT / 2 + 4} fill={GRAPH_AXIS_COLOR} fontSize={11} fontFamily="sans-serif" fontWeight={500}>{dayNames[new Date(day.dateUtc).getDay()]}</text>
               <text x={6} y={yBase + ROW_HEIGHT / 2 + 14} fill={LABEL_COLOR} fontSize={9} fontFamily="sans-serif">{day.dateStr}</text>
               {getWorkShiftRangesForDay(workShiftRanges, day.dateUtc).map((range, ri) => {
                 const x1 = LABEL_WIDTH + timeToX(dayStart, range.startMs) * CHART_WIDTH
@@ -519,27 +609,49 @@ function GraphBlock({ days, countryMarkers, manualEntryBuffer, lastWithdrawalUtc
                   )
                 })
               })()}
+              {outModeRanges.map((range, ri) => {
+                const slice = sliceOutRangeForDay(range, day.dateUtc)
+                if (!slice) return null
+                const x1 = LABEL_WIDTH + timeToX(dayStart, slice.startMs) * CHART_WIDTH
+                const x2 = LABEL_WIDTH + timeToX(dayStart, slice.endMs) * CHART_WIDTH
+                const barW = Math.max(1, x2 - x1)
+                const maxStrokeHalf = 8
+                const rowCenter = yBase + ROW_HEIGHT / 2
+                const bandH = OUT_MODE_BAR_HEIGHT
+                const centerY = rowCenter + maxStrokeHalf + bandH / 2
+                const top = centerY - bandH / 2
+                return (
+                  <g key={`out-bar-${dayStart}-${ri}`} className="work-week-graph-out-mode">
+                    <rect x={x1} y={top} width={barW} height={bandH} fill={OUT_MODE_GRAPH_COLOR} />
+                    {barW >= OUT_MODE_LABEL_MIN_WIDTH && (
+                      <text
+                        x={x1 + barW / 2}
+                        y={top + bandH / 2}
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                        fill={OUT_MODE_TEXT_COLOR}
+                        fontSize={8}
+                        fontFamily="sans-serif"
+                        fontWeight={700}
+                      >
+                        OUT
+                      </text>
+                    )}
+                  </g>
+                )
+              })}
               {getMarkersOnDay(visibleMarkers, day.dateUtc).map((marker, i) => {
                 const ms = parseTimeAndDate(marker.timeStr, marker.dateStr)
                 const x = LABEL_WIDTH + timeToX(dayStart, ms) * CHART_WIDTH
                 const code = marker.countryCode ?? 'CZ'
                 const isStart = marker.activityId === 'START_COUNTRY'
-                const label = isStart ? `${code} ►` : `◄ ${code}`
-                const dx = isStart ? 7 : -7
-                const textAnchor = isStart ? 'start' : 'end'
-                const anchorBottom = yBase + ROW_HEIGHT / 2 + 7
-                return (
-                  <g
-                    key={`anchor-${dayStart}-${i}`}
-                    data-country-code={code}
-                    data-country-ms={ms}
-                    data-country-role={marker.activityId}
-                  >
-                    <text x={x} y={yBase + 8} dx={dx} textAnchor={textAnchor} fill={ANCHOR_STROKE} fontSize={8} fontFamily="sans-serif" fontWeight={600}>{label}</text>
-                    <line x1={x} y1={yBase + 3} x2={x} y2={anchorBottom} stroke={ANCHOR_STROKE} strokeWidth={1.5} strokeLinecap="round" />
-                    <circle cx={x} cy={yBase + 3} r={2.5} fill={ANCHOR_COLOR} />
-                  </g>
-                )
+                return renderCountryAnchor({
+                  key: `anchor-${dayStart}-${i}`,
+                  x,
+                  yBase,
+                  code,
+                  isStart,
+                })
               })}
               {getLoadUnloadOnDay(visibleLoadUnload, day.dateUtc).map((ev, i) => {
                 const x = LABEL_WIDTH + timeToX(dayStart, ev.minuteStartUtc) * CHART_WIDTH
@@ -548,8 +660,8 @@ function GraphBlock({ days, countryMarkers, manualEntryBuffer, lastWithdrawalUtc
                 const anchorBottom = yBase + ROW_HEIGHT / 2 + 7
                 return (
                   <g key={`loadunload-${dayStart}-${ev.minuteStartUtc}-${i}`}>
-                    <text x={x} y={yBase + 10} textAnchor="middle" fill={ANCHOR_STROKE} fontSize={12} fontFamily="SymbolTacho1">{symbolChar}</text>
-                    <line x1={x} y1={yBase + 14} x2={x} y2={anchorBottom} stroke={ANCHOR_STROKE} strokeWidth={1.5} strokeLinecap="round" />
+                    <text x={x} y={yBase + 10} textAnchor="middle" fill={ANCHOR_SYMBOL} fontSize={12} fontFamily="SymbolTacho1">{symbolChar}</text>
+                    <line x1={x} y1={yBase + 14} x2={x} y2={anchorBottom} stroke={ANCHOR_SYMBOL} strokeWidth={1.5} strokeLinecap="round" />
                   </g>
                 )
               })}
@@ -559,25 +671,8 @@ function GraphBlock({ days, countryMarkers, manualEntryBuffer, lastWithdrawalUtc
                 const anchorBottom = yBase + ROW_HEIGHT / 2 + 7
                 return (
                   <g key={`ferrytrain-${dayStart}-${ev.minuteStartUtc}-${i}`}>
-                    <text x={x} y={yBase + 10} textAnchor="middle" fill={ANCHOR_STROKE} fontSize={12} fontFamily="SymbolTacho1">{symbolChar}</text>
-                    <line x1={x} y1={yBase + 14} x2={x} y2={anchorBottom} stroke={ANCHOR_STROKE} strokeWidth={1.5} strokeLinecap="round" />
-                  </g>
-                )
-              })}
-              {getOutModeOnDay(visibleOutMode, day.dateUtc).map((ev, i) => {
-                const x = LABEL_WIDTH + timeToX(dayStart, ev.minuteStartUtc) * CHART_WIDTH
-                const label = ev.type === 'activation' ? 'OUT►' : '◄OUT'
-                const dx = ev.type === 'activation' ? 3 : -3
-                const textAnchor = ev.type === 'activation' ? 'start' : 'end'
-                const rowCenter = yBase + ROW_HEIGHT / 2
-                const anchorTop = rowCenter + 4
-                const anchorBottom = yBase + ROW_HEIGHT - 4
-                const textY = ev.type === 'activation' ? anchorBottom + 4 : anchorBottom - 2
-                return (
-                  <g key={`outmode-${dayStart}-${ev.minuteStartUtc}-${ev.type}-${i}`}>
-                    <line x1={x} y1={anchorTop} x2={x} y2={anchorBottom} stroke={ANCHOR_STROKE} strokeWidth={1} strokeLinecap="round" />
-                    <circle cx={x} cy={anchorBottom} r={1.5} fill={ANCHOR_COLOR} />
-                    <text x={x} y={textY} dx={dx} textAnchor={textAnchor} fill={ANCHOR_STROKE} fontSize={7} fontFamily="sans-serif" fontWeight={600}>{label}</text>
+                    <text x={x} y={yBase + 10} textAnchor="middle" fill={ANCHOR_SYMBOL} fontSize={12} fontFamily="SymbolTacho1">{symbolChar}</text>
+                    <line x1={x} y1={yBase + 14} x2={x} y2={anchorBottom} stroke={ANCHOR_SYMBOL} strokeWidth={1.5} strokeLinecap="round" />
                   </g>
                 )
               })}
@@ -588,7 +683,7 @@ function GraphBlock({ days, countryMarkers, manualEntryBuffer, lastWithdrawalUtc
           {Array.from({ length: QUARTERS_PER_DAY }, (_, q) => {
             if (q % 4 === 0) return null
             const x = LABEL_WIDTH + (q / QUARTERS_PER_DAY) * CHART_WIDTH
-            return <line key={`bot-q-${q}`} x1={x} y1={0} x2={x} y2={QUARTER_TICK_LEN} stroke="#bbb" strokeWidth={0.5} opacity={0.7} />
+            return <line key={`bot-q-${q}`} x1={x} y1={0} x2={x} y2={QUARTER_TICK_LEN} stroke={MINOR_STROKE} strokeWidth={0.5} opacity={0.7} />
           })}
         </g>
         <g id={`hour-ticks-bottom-${blockId}`} transform={`translate(0, ${height - MARGIN_BOTTOM})`}>
@@ -596,8 +691,8 @@ function GraphBlock({ days, countryMarkers, manualEntryBuffer, lastWithdrawalUtc
             const x = LABEL_WIDTH + (i / 24) * CHART_WIDTH
             return (
               <g key={`bot-${i}`}>
-                <line x1={x} y1={0} x2={x} y2={TICK_LEN} stroke="#333" strokeWidth={1} />
-                <text x={x} y={12} textAnchor="middle" fill="#222" fontSize={8} fontFamily="sans-serif" fontWeight={600}>{i}</text>
+                <line x1={x} y1={0} x2={x} y2={TICK_LEN} stroke={HOUR_STROKE} strokeWidth={1} />
+                <text x={x} y={12} textAnchor="middle" fill={GRAPH_AXIS_COLOR} fontSize={8} fontFamily="sans-serif" fontWeight={600}>{i}</text>
               </g>
             )
           })}

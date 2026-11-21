@@ -138,6 +138,16 @@ Téma: KB hlášení – jednotná okýnka 16×2 jako LCD
 - Náhledy hlášek ve Znalostní bázi mají pevnou šířku 16 znaků a 2 řádky (Casio font), všechna okýnka stejně velká.
 - Soubory: knowledgeBase.css, KnowledgeBase.tsx.
 
+=== BLOK 1q – Dokončená úprava ===
+Datum: 2026-11-21
+Téma: Tmavá šablona grafu + kotvy
+
+- Tmavý chrome grafu (#0f172a), střídavé řádky, světlé osy.
+- Země: obdélník s kódem + šipka (bez praporku).
+- OUT: text „OUT“ vycentrovaný v tlusté čáře úseku, bez štítků začátek/konec.
+- Trajekt/nakládka/vykládka: SymbolTacho1 (světlý stroke).
+- Soubory: src/WorkWeekGraphView.tsx, src/index.css, vendor/cardviewer-overrides (WorkWeekGraphView, outModeGraphLayer, index.css).
+
 === BLOK 2 – Nedokončeno / na příště ===
 - Week-graph: chybějící výstrahy v grafu pracovního týdne.
 - Jednotný graf i pro virtuální kartu (teď jde do starého WorkWeekGraphView; chybí most historie → SimulatorSlotGraphInput + přepínač v handleShowCardData; odloženo).

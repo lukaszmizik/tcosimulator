@@ -46,6 +46,8 @@ export type Translations = {
     decrementMinutes: string
     applyTimeTitle: string
     remoteDataDownloadActive: string
+    backgroundRunEnabled: string
+    backgroundRunTitle: string
     ignitionLabel: string
     stopIgnition: string
     drivingCannotStop: string

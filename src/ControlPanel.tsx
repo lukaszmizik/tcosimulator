@@ -21,6 +21,9 @@ export type ControlPanelProps = {
   onApplyTime: () => void
   remoteDataDownloadActive: boolean
   onRemoteDataDownloadActiveChange: (value: boolean) => void
+  /** Běh simulace na pozadí (dohánění času při minimalizaci). Výchozí vypnuto. */
+  backgroundRunEnabled: boolean
+  onBackgroundRunEnabledChange: (value: boolean) => void
   isDriving: boolean
   onStopIgnition: () => void
   onStopDisabledClick: () => void
@@ -69,6 +72,7 @@ export function ControlPanel(p: ControlPanelProps) {
     {p.infoPanels}
     <details className="dash-extras" onKeyDown={(event) => event.stopPropagation()}><summary>{t.controls.dataScenariosSettings}</summary>
       <label className="dash-check"><input type="checkbox" checked={p.remoteDataDownloadActive} onChange={e=>p.onRemoteDataDownloadActiveChange(e.target.checked)}/>{t.ui.remoteDataDownloadActive}</label>
+      <label className="dash-check" title={t.ui.backgroundRunTitle}><input type="checkbox" checked={p.backgroundRunEnabled} onChange={e=>p.onBackgroundRunEnabledChange(e.target.checked)}/>{t.ui.backgroundRunEnabled}</label>
       <div className="dash-tool-buttons">
         <button onClick={p.onSimulate4h10m} disabled={!p.ignitionOn || !p.cardInserted}>{t.ui.generate4h10mDriving}</button>
         <button onClick={p.onShowCardData}>{t.controls.showCardData}</button>

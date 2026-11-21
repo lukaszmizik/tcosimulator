@@ -44,6 +44,8 @@ export const ru: Translations = {
     decrementMinutes: 'Уменьшить минуты',
     applyTimeTitle: 'Применить установленное время на дисплей тахографа',
     remoteDataDownloadActive: 'Удалённая выгрузка данных',
+    backgroundRunEnabled: 'Работа в фоне',
+    backgroundRunTitle: 'При свёрнутом окне догонять время и записывать текущую деятельность. Без галочки время останавливается.',
     ignitionLabel: 'Зажигание',
     stopIgnition: 'Выключить зажигание',
     drivingCannotStop: 'Нельзя выключить Автомобиль во время движения',

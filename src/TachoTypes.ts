@@ -130,6 +130,8 @@ export type CardData = {
   /** Identita karty načtené z DDD. Šablony zmizik a novak ji nemají. */
   cardNumber?: string
   trainingExpiryUtc?: number
+  /** Začátek platnosti při tréninkovém přepsání expirace (typicky expiry − 5 let). */
+  trainingValidityBeginUtc?: number
   templateId?: 'zmizik' | 'novak'
   /** Po prvním úspěšném vložení se změní na false. */
   isFirstInsertion?: boolean

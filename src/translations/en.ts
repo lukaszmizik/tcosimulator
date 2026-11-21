@@ -44,6 +44,8 @@ export const en: Translations = {
     decrementMinutes: 'Decrement minutes',
     applyTimeTitle: 'Apply set time to tachograph display',
     remoteDataDownloadActive: 'Remote data download',
+    backgroundRunEnabled: 'Run in background',
+    backgroundRunTitle: 'When the window is minimized, catch up time and record the current activity. Unchecked = time pauses.',
     ignitionLabel: 'Ignition',
     stopIgnition: 'Stop ignition',
     drivingCannotStop: 'Cannot turn off vehicle while driving',

@@ -44,6 +44,8 @@ export const cs: Translations = {
     decrementMinutes: 'Zmenšit minuty',
     applyTimeTitle: 'Přenést nastavený čas na displej tachografu',
     remoteDataDownloadActive: 'Vzdálené stahování dat',
+    backgroundRunEnabled: 'Běh na pozadí',
+    backgroundRunTitle: 'Při minimalizaci okna dohánět čas a zapisovat aktuální činnost. Bez zaškrtnutí čas stojí.',
     ignitionLabel: 'Zapalování',
     stopIgnition: 'Vypnout zapalování',
     drivingCannotStop: 'V režimu jízdy nelze vozidlo vypnout',

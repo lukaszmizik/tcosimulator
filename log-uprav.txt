@@ -3,11 +3,21 @@ Datum: 2026-11-21
 Téma: Prošlá virtuální karta – profil + odmítnutí při vložení
 
 - Profil „Prošlá karta“ v přípravě virtuální karty (expiry = včerejší simulovaný den + modelový týden).
+- Při přepsané expiraci (prošlá / končící) je začátek platnosti = expiry − 5 let (vizuál karty, tisk, CardData).
 - Po načtení karty: pokud trainingExpiryUtc vypršela → fáze invalidCard, LCD `!(14){slot} neplatná` / `karta`.
 - Po OK (nebo při jízdě / idle) karta se neakceptuje a vysune bez zápisu do VU (událost se neukládá).
-- Soubory: VirtualCardNameSettings.tsx, CardLogic.ts, CardWizard2.tsx, CardInsertionDisplay2.tsx, App.tsx, translations.
+- Soubory: VirtualCardNameSettings.tsx, CardLogic.ts, CardWizard2.tsx, CardInsertionDisplay2.tsx, App.tsx, DriverCardVisual.tsx, translations.
 
 (Předchozí: VDO Counter; časy šachet bez karty.)
+
+=== BLOK 1b – Dokončená úprava ===
+Datum: 2026-11-21
+Téma: Běh na pozadí (checkbox)
+
+- V „Data, scénáře a další nastavení“ checkbox „Běh na pozadí“ (výchozí vypnuto).
+- Zapnuto: při škrcení tabu / návratu dohoní wall-clock, zapíše aktuální činnost po minutách, odometr a přestávky.
+- Vypnuto: čas při minimalizaci prakticky stojí (původní chování).
+- Soubory: ControlPanel.tsx, useSimulationSecondClock.ts, App.tsx, translations.
 
 === BLOK 2 – Nedokončeno / na příště ===
 - Trajekt při stání: zda přeskočit časy karet jako teď, nebo je ukázat i s aktivním trajektem.

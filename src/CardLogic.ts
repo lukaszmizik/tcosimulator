@@ -23,11 +23,21 @@ export const DRIVING_SYMBOL = '\u0053'
 
 export const EDITOR_FIELD_ORDER: CardInsertionState['editorBlinkField'][] = ['activity', 'day', 'month', 'year', 'hour', 'minute']
 
+/** Standardní délka platnosti karty řidiče (roky). */
+export const DRIVER_CARD_VALIDITY_YEARS = 5
+
 /** Platnost končí dnem `expiryUtc` (začátek dne UTC). Další kalendářní den je karta neplatná. */
 export function isTrainingCardExpired(expiryUtc: number | undefined | null, nowMs: number): boolean {
   if (expiryUtc == null) return false
   const dayMs = 86_400_000
   return Math.floor(nowMs / dayMs) > Math.floor(expiryUtc / dayMs)
+}
+
+/** Začátek platnosti = konec platnosti minus 5 kalendářních let (stejný den UTC). */
+export function trainingValidityBeginUtc(expiryUtc: number): number {
+  const d = new Date(expiryUtc)
+  d.setUTCFullYear(d.getUTCFullYear() - DRIVER_CARD_VALIDITY_YEARS)
+  return d.getTime()
 }
 
 export function nowToSegment(d: Date): ManualEntrySegment & { day: number; month: number; year: number; hour: number; minute: number } {
@@ -83,8 +93,10 @@ export function createInitialCardInsertionState(
   const dayMs = 86_400_000
   const currentLocalDay = Math.floor((simulatedUtcTime + offset) / dayMs)
   const controlStartUtc = (currentLocalDay - 56) * dayMs - offset
-  const validityStartUtc = firstInsertion && cardData.templateId
-    ? Date.parse(VIRTUAL_CARD_VALIDITY_DATES[cardData.templateId].from) - offset
+  const validityStartUtc = firstInsertion && (cardData.trainingValidityBeginUtc != null || cardData.templateId)
+    ? (cardData.trainingValidityBeginUtc != null
+      ? cardData.trainingValidityBeginUtc - offset
+      : Date.parse(VIRTUAL_CARD_VALIDITY_DATES[cardData.templateId!].from) - offset)
     : undefined
   const firstManualEntryStartUtc = validityStartUtc == null
     ? undefined

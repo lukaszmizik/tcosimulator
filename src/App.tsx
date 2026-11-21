@@ -5,7 +5,7 @@ import { loadCountries, type CountryEntry } from './data/countriesLoader'
 import { buildSymbolMapFromFile } from './Symbols'
 import { buildMenusById, applyMenuTranslations, ENTRY_MENU_ID } from './MenuStructure'
 import { clampMenuIndex, enterMenuRoot, enterSubmenu, leaveSubmenu, stepMenuIndex, visibleMenuItems } from './menu/menuCursor'
-import { createInitialCardInsertionState, activityFromChar, getNextActivity, getActivityCode, utcMsToSegment } from './CardLogic'
+import { createInitialCardInsertionState, activityFromChar, getNextActivity, getActivityCode, utcMsToSegment, trainingValidityBeginUtc } from './CardLogic'
 import { EDITOR_FIELD_ORDER } from './CardLogic'
 import { getVirtualLocationForDistance } from './VirtualRoute'
 import { FaceplateFrame } from './FaceplateFrame'
@@ -311,6 +311,11 @@ export default function App() {
   /** Po zapnutí OUT jsme alespoň jednou jeli – pak po zastavení ukážeme 10 s kladívka, pak OUT. */
   const [hasDrivenSinceOutActivation, setHasDrivenSinceOutActivation] = useState(false)
   const [remoteDataDownloadActive, setRemoteDataDownloadActive] = useState(false)
+  /** Běh simulace na pozadí (dohánění času při minimalizaci tabu). Výchozí vypnuto. */
+  const [backgroundRunEnabled, setBackgroundRunEnabled] = useState(false)
+  const backgroundRunRef = useRef(false)
+  backgroundRunRef.current = backgroundRunEnabled
+  const onBackgroundCatchUpRef = useRef<(fromUtc: number, deltaMs: number) => void>(() => {})
   const [activityDurationsMs, setActivityDurationsMs] = useState<ActivityDurationsMs>(() => ({ ...INITIAL_ACTIVITY_DURATIONS }))
   /** Pro VDO counter: doba řízení od poslední přestávky, doba odpočinku – per řidič (1=levý slot, 2=pravý) */
   const [, setDrivingSinceLastBreakMsByDriver] = useState<Record<1 | 2, number>>({ 1: 0, 2: 0 })
@@ -874,6 +879,8 @@ export default function App() {
     setCardActivityHistoryByTemplateId,
     setRecordedGpsLocations,
     recordDddMinuteRef,
+    backgroundRunRef,
+    onBackgroundCatchUpRef,
   })
   /** Země zjištěná při průjezdu hranic – použije se jako výchozí v nabídce zadání výchozí země */
   const detectedBorderCountryCodeRef = useRef<string | null>(null)
@@ -1172,6 +1179,53 @@ export default function App() {
       }])
     }
   }, [])
+
+  // Dohánění odometru / přestávek po běhu na pozadí (čas a minuty zapisuje useSimulationSecondClock)
+  onBackgroundCatchUpRef.current = (fromUtc, deltaMs) => {
+    if (deltaMs <= 0) return
+    const toUtc = fromUtc + deltaMs
+    const speedNow = currentSpeedRef.current
+    const isDrivingNow = speedNow > 0
+    const leftCharNow = isDrivingNow ? DRIVING_SYMBOL : getActivityCode(leftActivityIdRef.current)
+    const rightCharNow = isDrivingNow ? getActivityCode('AVAILABILITY') : getActivityCode(rightActivityIdRef.current)
+    const driverForJump = leftCharNow === DRIVING_SYMBOL ? 1 : rightCharNow === DRIVING_SYMBOL ? 2 : null
+    const restDriver = leftCharNow === getActivityCode('REST') ? 1 : rightCharNow === getActivityCode('REST') ? 2 : null
+    const deltaMinutes = Math.ceil(deltaMs / 60000)
+    trackOverspeed(ignitionOnRef.current ? speedNow : 0, fromUtc, deltaMs)
+    if (isDrivingNow && driverForJump) {
+      const distanceDeltaKm = (speedNow * deltaMinutes) / 60
+      applyForwardDistance(dayOdometersRef.current, fromUtc, toUtc, distanceDeltaKm, odometerKmRef.current)
+      odometerKmRef.current += distanceDeltaKm
+      setOdometerKm((prev) => prev + distanceDeltaKm)
+      virtualLocationRef.current = getVirtualLocationForDistance(Math.max(0, odometerKmRef.current - ODOMETER_KM))
+      drivingSinceLastBreakMsByDriverRef.current[driverForJump] += deltaMs
+      if (driverForJump === 1) {
+        const d = drivingSinceLastBreakMsByDriverRef.current[1]
+        if (d >= DRIVING_LIMIT_430_MS && !breakWarning430DismissedRef.current) setBreakWarningActive('430')
+        else if (d >= DRIVING_LIMIT_415_MS && !breakWarning415DismissedRef.current) setBreakWarningActive('415')
+      }
+    } else {
+      applyForwardDistance(dayOdometersRef.current, fromUtc, toUtc, 0, odometerKmRef.current)
+      if (restDriver) {
+        restSinceLastBreakMsByDriverRef.current[restDriver] += deltaMs
+        const rest = restSinceLastBreakMsByDriverRef.current[restDriver]
+        const splitRef = splitFirstPartTakenByDriverRef.current[restDriver]
+        if (rest >= REST_RESET_MS || (splitRef && rest >= SPLIT_REST_SECOND_MS)) {
+          drivingSinceLastBreakMsByDriverRef.current[restDriver] = 0
+          restSinceLastBreakMsByDriverRef.current[restDriver] = 0
+          splitFirstPartTakenByDriverRef.current[restDriver] = false
+          setSplitFirstPartTakenByDriver((p) => ({ ...p, [restDriver]: false }))
+          if (restDriver === 1) {
+            breakWarning415DismissedRef.current = false
+            breakWarning430DismissedRef.current = false
+            setBreakWarningActive(null)
+          }
+        }
+      }
+    }
+    setDrivingSinceLastBreakMsByDriver({ ...drivingSinceLastBreakMsByDriverRef.current })
+    setRestSinceLastBreakMsByDriver({ ...restSinceLastBreakMsByDriverRef.current })
+  }
 
   useDrivingInterval({
     outModeActiveRef,
@@ -1921,7 +1975,12 @@ export default function App() {
     }
     if (cardId !== 'zmizik' && cardId !== 'novak') return
     const templateId = cardId
-    const template = { ...virtualCardTemplate(templateId, virtualCardNames), trainingExpiryUtc: expiryByCard[templateId] }
+    const trainingExpiryUtc = expiryByCard[templateId]
+    const template = {
+      ...virtualCardTemplate(templateId, virtualCardNames),
+      trainingExpiryUtc,
+      trainingValidityBeginUtc: trainingExpiryUtc == null ? undefined : trainingValidityBeginUtc(trainingExpiryUtc),
+    }
     if ((slot === 1 ? card2Data : card1Data)?.templateId === templateId) return
     addEntry(`${t.actions.vlozeniKarty} ${template.surname ?? template.name} do slotu ${slot}`)
     const cardData = buildDroppedCardData({
@@ -3192,6 +3251,7 @@ export default function App() {
                   <div data-prep-holder={virtualCardTemplate(templateId, virtualCardNames).surname} data-inserted-slot={insertedSlot ?? ''}>
                     <DriverCardVisual
                       cardId={templateId}
+                      validityFrom={expiryByCard[templateId] == null ? undefined : printDateUtc(trainingValidityBeginUtc(expiryByCard[templateId]!))}
                       validityTo={expiryByCard[templateId] == null ? undefined : printDateUtc(expiryByCard[templateId]!)}
                       data={card1Data?.templateId === templateId ? card1Data : card2Data?.templateId === templateId ? card2Data : virtualCardTemplate(templateId, virtualCardNames)}
                       insertedSlot={insertedSlot}
@@ -3515,6 +3575,8 @@ export default function App() {
           onApplyTime={handleApplyTime}
           remoteDataDownloadActive={remoteDataDownloadActive}
           onRemoteDataDownloadActiveChange={setRemoteDataDownloadActive}
+          backgroundRunEnabled={backgroundRunEnabled}
+          onBackgroundRunEnabledChange={setBackgroundRunEnabled}
           isDriving={isDriving}
           onStopIgnition={handleStopIgnition}
           onStopDisabledClick={handleStopDisabledClick}
@@ -3602,7 +3664,12 @@ export default function App() {
           ].filter((holder) => holder != null),
           dayOdometers: dayOdometersRef.current,
           resolveCard: (id) => id === 'zmizik' || id === 'novak'
-            ? printCardHolder({ ...virtualCardTemplate(id, virtualCardNames), templateId: id, trainingExpiryUtc: expiryByCard[id] })
+            ? printCardHolder({
+              ...virtualCardTemplate(id, virtualCardNames),
+              templateId: id,
+              trainingExpiryUtc: expiryByCard[id],
+              trainingValidityBeginUtc: expiryByCard[id] == null ? undefined : trainingValidityBeginUtc(expiryByCard[id]!),
+            })
             : dddCards[id]?.original,
         })}
         vehicleProfile={printVehicleProfile}

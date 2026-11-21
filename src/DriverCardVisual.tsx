@@ -69,7 +69,8 @@ export function DriverCardVisual({
 }: DriverCardVisualProps) {
   const displayName = data?.name ?? DEFAULT_NAME
   const isInserted = insertedSlot !== null
-  const usesTemplateDefaults = cardId != null && birthDateProp == null && validityFrom == null && cardNumber == null
+  // validityFrom/To smí přepsat jen data platnosti (tréninková expirace); šablona zůstane
+  const usesTemplateDefaults = cardId != null && birthDateProp == null && cardNumber == null
 
   const birthDate = useMemo(() => {
     if (!usesTemplateDefaults) return shown(birthDateProp, '—')
@@ -78,7 +79,10 @@ export function DriverCardVisual({
   const validity = useMemo(() => {
     if (!usesTemplateDefaults) return { from: shown(validityFrom, '—'), to: shown(validityTo, '—') }
     const defaults = cardId ? getValidityDatesForCard(cardId) : { from: '—', to: '—' }
-    return { ...defaults, to: validityTo ?? defaults.to }
+    return {
+      from: validityFrom ?? defaults.from,
+      to: validityTo ?? defaults.to,
+    }
   }, [usesTemplateDefaults, validityFrom, validityTo, cardId])
   const country = shown(countryCode, 'CZ')
   const authorityText = usesTemplateDefaults ? 'Ministerstvo dopravy' : shown(authority, '—')

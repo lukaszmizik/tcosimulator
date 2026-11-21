@@ -79,6 +79,7 @@ export function printCardHolder(card: CardData | null, imported?: DddParsedCard 
       firstName: name.slice(0, surnameStart).trimEnd(),
       surname: card.surname || name.slice(surnameStart),
       dateOfExpiry: card.trainingExpiryUtc == null ? stored.dateOfExpiry : printDateUtc(card.trainingExpiryUtc),
+      dateOfIssue: card.trainingValidityBeginUtc == null ? stored.dateOfIssue : printDateUtc(card.trainingValidityBeginUtc),
     }
   }
   return { firstName: card?.name, surname: card?.surname, cardNumber: card?.cardNumber, issuingCountry: '', dateOfExpiry: undefined }

@@ -3,7 +3,7 @@ import { TEST_CARDS } from './TachoTypes'
 import type { SupportedLanguage } from './translations/types'
 
 type CardId = keyof typeof TEST_CARDS
-export type TrainingProfile = 'empty' | 'week' | 'expiring'
+export type TrainingProfile = 'empty' | 'week' | 'expiring' | 'expired'
 type CardNames = Record<CardId, string>
 
 const STORAGE_KEY = 'tcosimulator.virtualCardNames'
@@ -16,9 +16,39 @@ const labels = {
 }
 
 const preparationLabels = {
-  cs: { empty: 'Nepoužitá karta', expiring: 'Karta s končící platností', select: 'Připravit kartu…', expiryConfirm: 'Nastavit konec platnosti za 7 simulovaných dní? Historie vybrané karty se nahradí modelovým týdnem.', week: 'Karta s modelovým týdnem', confirm: 'Připravit kartu? Přepíše historii vybrané karty.', done: 'Karta připravena.' },
-  en: { empty: 'Unused card', expiring: 'Card nearing expiry', select: 'Prepare card…', expiryConfirm: 'Set expiry to 7 simulated days from now? A sample week will replace the selected card’s history.', week: 'Card with a sample week', confirm: 'Prepare the card? This replaces the selected card’s history.', done: 'Card prepared.' },
-  ru: { empty: 'Неиспользованная карта', expiring: 'Карта с истекающим сроком', select: 'Подготовить карту…', expiryConfirm: 'Установить срок действия ещё на 7 дней симуляции? История выбранной карты будет заменена примером рабочей недели.', week: 'Карта с примером недели', confirm: 'Подготовить карту? История выбранной карты будет заменена.', done: 'Карта подготовлена.' },
+  cs: {
+    empty: 'Nepoužitá karta',
+    week: 'Karta s modelovým týdnem',
+    expiring: 'Karta s končící platností',
+    expired: 'Prošlá karta',
+    select: 'Připravit kartu…',
+    confirm: 'Připravit kartu? Přepíše historii vybrané karty.',
+    expiryConfirm: 'Nastavit konec platnosti za 7 simulovaných dní? Historie vybrané karty se nahradí modelovým týdnem.',
+    expiredConfirm: 'Nastavit konec platnosti na včerejšek (simulovaný den)? Historie vybrané karty se nahradí modelovým týdnem. Při vložení se karta odmítne.',
+    done: 'Karta připravena.',
+  },
+  en: {
+    empty: 'Unused card',
+    week: 'Card with a sample week',
+    expiring: 'Card nearing expiry',
+    expired: 'Expired card',
+    select: 'Prepare card…',
+    confirm: 'Prepare the card? This replaces the selected card’s history.',
+    expiryConfirm: 'Set expiry to 7 simulated days from now? A sample week will replace the selected card’s history.',
+    expiredConfirm: 'Set expiry to yesterday (simulated day)? A sample week will replace the selected card’s history. Inserting the card will be rejected.',
+    done: 'Card prepared.',
+  },
+  ru: {
+    empty: 'Неиспользованная карта',
+    week: 'Карта с примером недели',
+    expiring: 'Карта с истекающим сроком',
+    expired: 'Просроченная карта',
+    select: 'Подготовить карту…',
+    confirm: 'Подготовить карту? История выбранной карты будет заменена.',
+    expiryConfirm: 'Установить срок действия ещё на 7 дней симуляции? История выбранной карты будет заменена примером рабочей недели.',
+    expiredConfirm: 'Установить срок действия на вчерашний (симулированный) день? История выбранной карты будет заменена примером недели. При вставке карта будет отклонена.',
+    done: 'Карта подготовлена.',
+  },
 }
 
 function normalizeName(value: unknown, cardId: CardId): string {
@@ -53,7 +83,11 @@ export function VirtualCardNameSettings({ names, onSave, language, onPrepare, in
 
   const preparation = preparationLabels[language]
   const prepare = (id: CardId, profile: TrainingProfile) => {
-    if (!window.confirm(profile === 'expiring' ? preparation.expiryConfirm : preparation.confirm)) return
+    const confirmText =
+      profile === 'expiring' ? preparation.expiryConfirm
+        : profile === 'expired' ? preparation.expiredConfirm
+          : preparation.confirm
+    if (!window.confirm(confirmText)) return
     onPrepare(id, profile)
     setStatus(preparation.done)
   }
@@ -94,12 +128,13 @@ export function VirtualCardNameSettings({ names, onSave, language, onPrepare, in
             disabled={insertedIds.includes(cardId)}
             onChange={(event) => {
               const value = event.target.value
-              if (value === 'empty' || value === 'week' || value === 'expiring') prepare(cardId, value)
+              if (value === 'empty' || value === 'week' || value === 'expiring' || value === 'expired') prepare(cardId, value)
             }}>
             <option value="" disabled>{preparation.select}</option>
             <option value="empty">{preparation.empty}</option>
             <option value="week">{preparation.week}</option>
             <option value="expiring">{preparation.expiring}</option>
+            <option value="expired">{preparation.expired}</option>
           </select>
           </div>
         ))}

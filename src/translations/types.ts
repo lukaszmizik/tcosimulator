@@ -140,6 +140,8 @@ export type Translations = {
     confirm: string
     readyToDrive: string
     publishReady: string
+    invalidCardL1: string
+    invalidCardL2: string
   }
   tachoDisplay: {
     input: string

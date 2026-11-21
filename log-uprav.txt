@@ -1,20 +1,18 @@
 === BLOK 1 – Dokončená úprava ===
 Datum: 2026-11-21
-Téma: VDO Counter (hlavní + VDO24h / týden / VDOi)
+Téma: Prošlá virtuální karta – profil + odmítnutí při vložení
 
-- Fáze odpočinku: L2 vpravo ukazuje budoucí řízení po přestávce (afterMs); ? při nedoloženém úseku.
-- Adaptér intervalů → cardviewer Activity[]; outlook přes dailyRestChain / weeklyRest / compensation.
-- L2 při řízení přepíná přestávka / denní / týdenní odpočinek podle urgency.
-- VDO24h, VDO week a VDOi doplněny z outlook + stávajících daily/calendar zbytků.
-- Soubory: vdoCounterActivityAdapter.ts, vdoCounterOutlook.ts, TachoDisplay.tsx, App.tsx.
+- Profil „Prošlá karta“ v přípravě virtuální karty (expiry = včerejší simulovaný den + modelový týden).
+- Po načtení karty: pokud trainingExpiryUtc vypršela → fáze invalidCard, LCD `!(14){slot} neplatná` / `karta`.
+- Po OK (nebo při jízdě / idle) karta se neakceptuje a vysune bez zápisu do VU (událost se neukládá).
+- Soubory: VirtualCardNameSettings.tsx, CardLogic.ts, CardWizard2.tsx, CardInsertionDisplay2.tsx, App.tsx, translations.
 
-(Předchozí: časy šachet bez karty + per-slot data řidiče 2.)
+(Předchozí: VDO Counter; časy šachet bez karty.)
 
 === BLOK 2 – Nedokončeno / na příště ===
 - Trajekt při stání: zda přeskočit časy karet jako teď, nebo je ukázat i s aktivním trajektem.
 - Week-graph: chybějící výstrahy v grafu pracovního týdne.
 - Blikající h u aktivní části Counteru (odloženo za funkční pole).
 - Jednotný graf i pro virtuální kartu (teď jde do starého WorkWeekGraphView; chybí most historie → SimulatorSlotGraphInput + přepínač v handleShowCardData; odloženo).
-- Prošlá virtuální karta: profil expired + hlášení „! neplatná karta“ při vložení (návod str. 113); auto-výhoz po změně dne u už vložené karty; událost se do VU neukládá (pozn. 3 str. 149).
+- Auto-výhoz už vložené karty po změně dne, když mezitím vypršela (návod str. 113/149).
 - Tlačítko „Generovat pracovní týden“ odstraněno z UI; handleGenerateWorkWeek v App ponecháno.
-

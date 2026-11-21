@@ -23,6 +23,13 @@ export const DRIVING_SYMBOL = '\u0053'
 
 export const EDITOR_FIELD_ORDER: CardInsertionState['editorBlinkField'][] = ['activity', 'day', 'month', 'year', 'hour', 'minute']
 
+/** Platnost končí dnem `expiryUtc` (začátek dne UTC). Další kalendářní den je karta neplatná. */
+export function isTrainingCardExpired(expiryUtc: number | undefined | null, nowMs: number): boolean {
+  if (expiryUtc == null) return false
+  const dayMs = 86_400_000
+  return Math.floor(nowMs / dayMs) > Math.floor(expiryUtc / dayMs)
+}
+
 export function nowToSegment(d: Date): ManualEntrySegment & { day: number; month: number; year: number; hour: number; minute: number } {
   return {
     activityId: 'REST',
@@ -117,6 +124,7 @@ export function createInitialCardInsertionState(
     selectingCountryForStamp: false,
     stampActivityId: null,
     skipReadyToDriveScreen: options?.skipReadyToDriveScreen ?? false,
+    cardExpired: isTrainingCardExpired(cardData.trainingExpiryUtc, simulatedUtcTime),
   }
 }
 

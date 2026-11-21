@@ -144,6 +144,7 @@ export type EditorActivityId = 'REST' | 'WORK' | 'AVAILABILITY' | 'UNKNOWN' | 'S
 export type CardInsertionPhase =
   | 'welcome'
   | 'loading'
+  | 'invalidCard'
   | 'lastRemoval'
   | 'decision1M'
   | 'manualEditor'
@@ -214,6 +215,8 @@ export type CardInsertionState = {
   idleWarningReturnPhase?: CardInsertionPhase
   /** Přeskočit hlášku "připraven k jízdě" (vložení započato při probuzení ze Standby). */
   skipReadyToDriveScreen?: boolean
+  /** Karta je při vložení už neplatná (vypršela / ještě neplatí) – po načtení hlášení a odmítnutí. */
+  cardExpired?: boolean
   /** Uživatel odpověděl "ne" na doplnit data – po načtení karty zobrazit "připraven k jízdě". */
   supplementDeclined?: boolean
   /** Čas skočen na max, kurzor na aktivitě – další OK dokončí blok. */

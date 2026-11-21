@@ -136,6 +136,8 @@ export const cs: Translations = {
     confirm: 'potvrdit?', // 26
     readyToDrive: 'k jízdě', // 27
     publishReady: 'připraven', // 28
+    invalidCardL1: 'neplatná',
+    invalidCardL2: 'karta',
   },
   tachoDisplay: {
     input: 'zadání', // 29

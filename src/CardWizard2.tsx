@@ -15,7 +15,7 @@ import type { CardInsertionState, CardData, CardInsertionPhase, ManualEntrySegme
 import type { CountryEntry } from './data/countriesLoader'
 import { createInitialCardInsertionState } from './CardLogic'
 
-const INPUT_WAITING_PHASES: CardInsertionState['phase'][] = ['decision1M', 'manualEditor', 'country', 'finalConfirm', 'itsQuestion', 'vdoQuestion']
+const INPUT_WAITING_PHASES: CardInsertionState['phase'][] = ['invalidCard', 'decision1M', 'manualEditor', 'country', 'finalConfirm', 'itsQuestion', 'vdoQuestion']
 
 const MANUAL_ENTRY_PHASES_FOR_SPEED: CardInsertionState['phase'][] = ['welcome', 'loading', 'lastRemoval', 'decision1M', 'manualEditor', 'country', 'finalConfirm', 'itsQuestion', 'vdoQuestion', 'idleWarning']
 
@@ -186,6 +186,7 @@ export function useCardWizard2(params: UseCardWizard2Params) {
         if (prev.phase === 'loading') {
           const progress = Math.min(1, elapsed / LOADING_MS)
           if (progress >= 1) {
+            if (prev.cardExpired) return { ...prev, phase: 'invalidCard', phaseStartTime: Date.now(), loadingProgress: 1 }
             if (prev.supplementDeclined) return { ...prev, phase: 'readyToDrive', phaseStartTime: Date.now(), loadingProgress: 1, supplementDeclined: false }
             if (prev.firstInsertion && !prev.showFirstManualEntryBoundary) return { ...prev, phase: 'decision1M', phaseStartTime: Date.now(), loadingProgress: 1 }
             return { ...prev, phase: 'lastRemoval', phaseStartTime: Date.now(), loadingProgress: 1 }
@@ -211,6 +212,15 @@ export function useCardWizard2(params: UseCardWizard2Params) {
       pleaseWaitTimeoutRef.current = null
     }
   }, [cardInsertionState])
+
+  // Neplatná karta: při jízdě ihned odmítnout (bez manuálního zadání)
+  useEffect(() => {
+    if (!cardInsertionState || currentSpeed <= 0) return
+    if (cardInsertionState.phase !== 'invalidCard') return
+    idleTimeoutEjectionRef.current = true
+    onEjectRequested?.(cardInsertionState.slot, { idleTimeout: true })
+    setCardInsertionState(null)
+  }, [cardInsertionState, currentSpeed, onEjectRequested])
 
   // Detekce pohybu vozidla během manuálního zadávání – ukončit průvodce, doplnit UNKNOWN
   useEffect(() => {
@@ -276,7 +286,7 @@ export function useCardWizard2(params: UseCardWizard2Params) {
         idleTimeoutEjectionRef.current = true
         onEjectRequested?.(cs.slot, { idleTimeout: true })
         setCardInsertionState(null)
-      } else if (elapsed >= IDLE_WARNING_MS && cs.phase !== 'idleWarning') {
+      } else if (elapsed >= IDLE_WARNING_MS && cs.phase !== 'idleWarning' && cs.phase !== 'invalidCard') {
         setCardInsertionState((p) => (p?.phase === cs.phase ? { ...p!, phase: 'idleWarning', phaseStartTime: Date.now(), idleWarningReturnPhase: p.phase } : p))
       }
     }
@@ -293,6 +303,14 @@ export function useCardWizard2(params: UseCardWizard2Params) {
       if (prev.phase === 'idleWarning') {
         if (action === 'ok' && prev.idleWarningReturnPhase) {
           return { ...prev, phase: prev.idleWarningReturnPhase, phaseStartTime: Date.now(), idleWarningReturnPhase: undefined }
+        }
+        return prev
+      }
+      if (prev.phase === 'invalidCard') {
+        if (action === 'ok') {
+          idleTimeoutEjectionRef.current = true
+          onEjectRequested?.(prev.slot, { idleTimeout: true })
+          return null
         }
         return prev
       }
@@ -590,7 +608,7 @@ export function useCardWizard2(params: UseCardWizard2Params) {
       if (prev.phase === 'readyToDrive' || prev.phase === 'finalizeStep1' || prev.phase === 'finalizeStep2' || prev.phase === 'finalizeStep3' || prev.phase === 'finalizeStep4') return prev
       return prev
     })
-  }, [])
+  }, [onEjectRequested])
 
   return {
     cardInsertionState,

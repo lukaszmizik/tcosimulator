@@ -213,6 +213,17 @@ export function CardInsertionDisplay2(props: CardInsertionDisplay2Props) {
     )
   }
 
+  if (cs.phase === 'invalidCard') {
+    // Návod str. 113: !(14){slot} neplatná / karta (událost se do VU neukládá)
+    const l1 = parseSymbols(`!(14)${cs.slot}\u00A0${t.cardWizard.invalidCardL1}`, symbolMap)
+    return (
+      <div className="lcd-two-rows lcd-card-warning-blink lcd-card-insertion">
+        <div className="lcd-row lcd-row-warning-inline">{l1}</div>
+        <div className="lcd-row lcd-row-warning-inline">{t.cardWizard.invalidCardL2}</div>
+      </div>
+    )
+  }
+
   if (cs.phase === 'idleWarning') {
     const l1 = parseSymbols(`(35) (19)\u00A0${t.cardWizard.idlePlease}`, symbolMap)
     return (

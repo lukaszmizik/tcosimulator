@@ -670,7 +670,7 @@ export default function App() {
   }, [commitSlotManual])
 
   const onEjectRequestedForWizard = useCallback((slot: 1 | 2, options?: { idleTimeout?: boolean }) => {
-    if (!ignitionOnRef.current) return
+    // Odmítnutí / idle timeout: kartu neuložit a vysunout i bez zapalování (vložení ze standby).
     if (options?.idleTimeout) {
       setCardWithdrawalState((prev) => (prev?.slot === slot ? null : prev))
       if (slot === 1) {
@@ -683,6 +683,7 @@ export default function App() {
       }
       return
     }
+    if (!ignitionOnRef.current) return
     const withdrawalTime = Math.floor(simulatedUtcTimeRef.current / 60000) * 60000
     const cardData = slot === 1 ? card1DataRef.current : card2DataRef.current
     const tid = cardData?.templateId
@@ -2300,7 +2301,11 @@ export default function App() {
     const first = id === CARD1_TEMPLATE_ID
     const now = simulatedUtcTimeRef.current
     const unused = profile === 'empty'
-    const expiryUtc = profile === 'expiring' ? (Math.floor(now / 86400000) + 7) * 86400000 : undefined
+    const dayFloor = Math.floor(now / 86400000) * 86400000
+    const expiryUtc =
+      profile === 'expiring' ? dayFloor + 7 * 86400000
+        : profile === 'expired' ? dayFloor - 86400000
+          : undefined
     const generated = unused ? null : generateRandomWorkWeek(first ? 1 : 2, now, id, now, false)
     setExpiryByCard(prev => ({ ...prev, [id]: expiryUtc }))
     setDriverCardStateByTemplateId(prev => ({ ...prev, [id]: { isFirstInsertion: unused } }))

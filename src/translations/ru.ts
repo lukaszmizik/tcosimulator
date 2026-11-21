@@ -137,6 +137,8 @@ export const ru: Translations = {
     confirm: 'ручной ввод?', // 26
     readyToDrive: 'движению', // 27
     publishReady: 'Готов к', // 28
+    invalidCardL1: 'недействит.',
+    invalidCardL2: 'карта',
   },
   tachoDisplay: {
     input: 'ввод', // 29

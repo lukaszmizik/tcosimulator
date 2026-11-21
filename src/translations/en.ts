@@ -136,6 +136,8 @@ export const en: Translations = {
     confirm: 'entry?', // 26
     readyToDrive: 'to drive', // 27
     publishReady: 'ready', // 28
+    invalidCardL1: 'card not',
+    invalidCardL2: 'valid',
   },
   tachoDisplay: {
     input: 'input', // 29

@@ -65,6 +65,8 @@ export type Translations = {
     drivingWithoutCard: string
     break415: string
     break430: string
+    work545: string
+    work600: string
     supplementActivities: string
     lastWithdrawal: string
     endCountryFound: string

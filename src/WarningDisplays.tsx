@@ -5,7 +5,7 @@
 
 import { useLanguage } from './translations'
 import type { SymbolMap } from './TachoTypes'
-import { getWarning, type WarningDef } from './data/warnings'
+import { formatWorkWarning, getWarning, type WarningDef } from './data/warnings'
 import { parseSymbols } from './Symbols'
 
 export function OverrideWarningDisplay({ symbolMap, warningDef }: { symbolMap: SymbolMap | null; warningDef: WarningDef }) {
@@ -46,6 +46,29 @@ export function BreakWarningDisplay({ symbolMap, breakWarningActive }: { symbolM
       </div>
       <div className="lcd-row lcd-row-warning-inline">
         {parseSymbols(def.line2!, symbolMap)}
+      </div>
+    </div>
+  )
+}
+
+export function WorkTimeWarningDisplay({
+  symbolMap,
+  slot,
+  continuousMs,
+}: {
+  symbolMap: SymbolMap | null
+  slot: 1 | 2
+  continuousMs: number
+}) {
+  const { language } = useLanguage()
+  const text = formatWorkWarning(language, slot, continuousMs)
+  return (
+    <div className="lcd-two-rows lcd-card-warning-blink" data-work-warning={text.line2}>
+      <div className="lcd-row lcd-row-warning-inline">
+        {parseSymbols(text.line1, symbolMap)}
+      </div>
+      <div className="lcd-row lcd-row-warning-inline">
+        {parseSymbols(text.line2, symbolMap)}
       </div>
     </div>
   )

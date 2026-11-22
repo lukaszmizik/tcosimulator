@@ -32,6 +32,7 @@ import {
   ExpiredInsertedCardWarningDisplay,
   InsertionWhileDrivingWarningDisplay,
   OverrideWarningDisplay,
+  WorkTimeWarningDisplay,
 } from './WarningDisplays'
 import type { DrivingBreakDisplay } from './drivingBreakDisplay'
 import type { VdoNamedScreen } from './slot1DddCounter'
@@ -46,6 +47,10 @@ export type TachoDisplayProps = {
   drivingWithoutCardWarningActive: boolean
   drivingWithoutValidCardWarningActive: boolean
   breakWarningActive: '415' | '430' | null
+  /** Nepřerušená práce: 5:45 předběžně, 6:00 dosažení. null = nezobrazovat. */
+  workWarningActive?: '545' | '600' | null
+  workWarningSlot?: 1 | 2
+  workWarningMs?: number | null
   excessSpeedWarningActive?: boolean
   /** Výstraha: při jízdě nelze vysunout kartu – L1 (35)(14) výhoz není, L2 možný */
   ejectionBlockedWarningActive?: boolean
@@ -198,7 +203,7 @@ function LoadUnloadConfirmDisplay() {
 
 export function TachoDisplay(props: TachoDisplayProps) {
   const { language } = useLanguage()
-  const { symbolMap, cardInsertionState, cardWithdrawalState, drivingWithoutCardWarningActive, drivingWithoutValidCardWarningActive, breakWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, expiredInsertedCardWarningSlot, insertionWhileDrivingWarningSlot, overrideWarningCode, menuCountryInputState, menuLoadUnloadConfirmState, printWizardState, displayBrowseState, printStartedToastUntil, displayMode, showOutOnL2 = false } = props
+  const { symbolMap, cardInsertionState, cardWithdrawalState, drivingWithoutCardWarningActive, drivingWithoutValidCardWarningActive, breakWarningActive, workWarningActive, workWarningSlot = 1, workWarningMs, excessSpeedWarningActive, ejectionBlockedWarningActive, expiredInsertedCardWarningSlot, insertionWhileDrivingWarningSlot, overrideWarningCode, menuCountryInputState, menuLoadUnloadConfirmState, printWizardState, displayBrowseState, printStartedToastUntil, displayMode, showOutOnL2 = false } = props
 
   if (typeof window !== 'undefined' && window.location.search.includes('debug=1')) {
     // Diagnostika: která větev se vykresluje (otevři konzoli F12)
@@ -213,6 +218,7 @@ export function TachoDisplay(props: TachoDisplayProps) {
       drivingWithoutCardWarningActive && !showOutOnL2 ? 'drivingWithoutCardWarning' :
       drivingWithoutValidCardWarningActive ? 'drivingWithoutValidCard' :
       breakWarningActive ? 'breakWarning' :
+      workWarningActive ? 'workWarning' :
       displayMode === 'operating' ? 'OperatingDisplay' :
       'MenuDisplay'
     console.log('[TachoDisplay]', { showOutOnL2, displayMode: props.displayMode, drivingWithoutCardWarningActive, branch })
@@ -277,6 +283,9 @@ export function TachoDisplay(props: TachoDisplayProps) {
   }
   if (breakWarningActive) {
     return <BreakWarningDisplay symbolMap={symbolMap} breakWarningActive={breakWarningActive} />
+  }
+  if (workWarningActive && typeof workWarningMs === 'number') {
+    return <WorkTimeWarningDisplay symbolMap={symbolMap} slot={workWarningSlot} continuousMs={workWarningMs} />
   }
   if (menuCountryInputState) {
     return <MenuCountryInputDisplay {...props} />

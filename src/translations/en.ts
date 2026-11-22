@@ -63,6 +63,8 @@ export const en: Translations = {
     drivingWithoutCard: 'Driving without card – insert driver card into slot 1. This warning is recorded in the tachograph memory.', // 2
     break415: 'Warning 4:15 – take a 15 or 30 minute break (if you already had 15m). That the warning was shown is visible in VDO data on remote download (it is not a legal VU event).', // 3
     break430: 'Warning 4:30 – You have exceeded the driving time! Take a 45 minute break immediately. That the warning was shown is visible in VDO data on remote download (it is not a legal “security breach” event).', // 4
+    work545: 'Warning 5:45 – continuous working time is nearing six hours. Driving and other work count; availability does not. Under Directive 2002/15/EC, work without a break must not exceed 6 hours. Confirm with OK and plan a break of at least 15 minutes. A shorter rest does not interrupt the work.',
+    work600: 'Warning 6:00 – six hours of continuous work have been reached. Interrupt it with a rest of at least 15 minutes. From over 6 hours up to 9 hours, 30 minutes of such breaks are required in total; over 9 hours, 45 minutes. Confirm with OK.',
     supplementActivities: 'You must now supplement activities on your card.', // 5
     lastWithdrawal: 'Last card withdrawal was', // 6
     endCountryFound: 'I found a shift end record at', // 7

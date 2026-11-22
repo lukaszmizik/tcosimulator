@@ -188,6 +188,8 @@ function retranslateStickyInfoItem(item: InfoItem, t: Translations): InfoItem {
   if (id.startsWith('insertion-while-driving-')) return { ...item, message: ip.insertionWhileDrivingWarning }
   if (id === 'break-415') return { ...item, message: ip.break415 }
   if (id === 'break-430') return { ...item, message: ip.break430 }
+  if (id === 'work-545') return { ...item, message: ip.work545 }
+  if (id === 'work-600') return { ...item, message: ip.work600 }
   if (id === 'generate-work-week-blocked') return { ...item, message: ip.generateWorkWeekBlocked }
   if (id === 'out-mode-active') return { ...item, message: ip.outModeActiveInfo }
   if (id === 'crew-mode-info') return { ...item, message: ip.crewModeInfo }
@@ -414,6 +416,7 @@ export function useInfoPanelItems(props: {
   /** Šachta výstrahy „vložena při jízdě“ */
   insertionWhileDrivingWarningSlot?: 1 | 2 | null
   breakWarningActive: string | null
+  workWarningActive?: '545' | '600' | null
   cardInsertionState: CardInsertionState | null
   lastEjectionTimeBySlot: { 1: number | null; 2: number | null }
   generateWorkWeekBlocked?: boolean
@@ -437,6 +440,7 @@ export function useInfoPanelItems(props: {
     ejectionBlockedBubbleId = 0,
     insertionWhileDrivingWarningSlot = null,
     breakWarningActive,
+    workWarningActive = null,
     cardInsertionState,
     lastEjectionTimeBySlot,
     generateWorkWeekBlocked,
@@ -516,6 +520,22 @@ export function useInfoPanelItems(props: {
       id: 'break-430',
       type: 'warning',
       message: t.infoPanel.break430,
+    })
+  }
+
+  if (workWarningActive === '545') {
+    items.push({
+      id: 'work-545',
+      type: 'warning',
+      message: t.infoPanel.work545,
+    })
+  }
+
+  if (workWarningActive === '600') {
+    items.push({
+      id: 'work-600',
+      type: 'warning',
+      message: t.infoPanel.work600,
     })
   }
 

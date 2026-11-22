@@ -113,7 +113,7 @@ import { ferryDailyRestRemaining, intervalsWithRecognizedFerryRest } from './fer
 import { buildSlot1VirtualCardDrivingBreak, buildSlot1VirtualCounterIntervals } from './slot1DrivingBreak'
 import { buildSlot1DddDrivingBreakIntervals, buildSlot1DddOutSources, describeSlot1WeekCoverage } from './slot1DddDrivingBreak'
 import { slot1DddCalendarRemaining, slot1DddDailyRemaining, weekStartUtc } from './slot1DddDailyRemaining'
-import { workingTimeDisplay } from './workingTimeDisplay'
+import { confirmWorkWarning, nextWorkWarning, workingTimeDisplay, type WorkWarningDismissed } from './workingTimeDisplay'
 import { cardTimesSlot, counterCardSlot, counterIndexAfterCardRemoval, slot1CounterLcdProps, vdo24hEntryAvailable, vdoCounterClosesWithoutCard, buildTimesSequence, timesLocationFrom, stepTimesLocation, type VdoNamedScreen } from './slot1DddCounter'
 import { buildVdoCounterOutlook } from './vdoCounterOutlook'
 import { parseSymbols } from './Symbols'
@@ -350,6 +350,8 @@ export default function App() {
   const [drivingWithoutValidCardWarningActive, setDrivingWithoutValidCardWarningActive] = useState(false)
   /** Varování pracovní doby – 4:15 nebo 4:30. null = nezobrazovat. */
   const [breakWarningActive, setBreakWarningActive] = useState<'415' | '430' | null>(null)
+  /** Nepřerušená práce: 5:45 nebo 6:00. null = nezobrazovat. */
+  const [workWarningActive, setWorkWarningActive] = useState<'545' | '600' | null>(null)
   // Zobrazení 4:15/4:30 → záznam do faultsAndEvents (tabulka pod grafem / VDO přehled). Nejde o zákonnou událost VU.
   /** Varování: 10h prodloužená směna nedostupná (2× v týdnu již vyčerpáno) */
   /** Varování: překročení rychlosti >90 km/h déle než 1 min – L1 (39)(39) vys. rychlost, L2 vpravo "30" */
@@ -475,6 +477,11 @@ export default function App() {
   const splitFirstPartTakenByDriverRef = useRef<Record<1 | 2, boolean>>({ 1: false, 2: false })
   const breakWarning415DismissedRef = useRef(false)
   const breakWarning430DismissedRef = useRef(false)
+  const workWarningDismissedRef = useRef<Record<1 | 2, WorkWarningDismissed>>({
+    1: { prewarning: false, limit: false },
+    2: { prewarning: false, limit: false },
+  })
+  const workWarningSlotRef = useRef<1 | 2>(1)
   const prevLeftCharRef = useRef<string | null>(null)
   const prevRightCharRef = useRef<string | null>(null)
   const card1DataRef = useRef<CardData | null>(null)
@@ -1703,6 +1710,13 @@ export default function App() {
       setBreakWarningActive(null)
       return
     }
+    if (workWarningActive) {
+      const slot = workWarningSlotRef.current
+      addEntry(t.actions.stiskOk, `${t.actions.potvrzeniVarovaniPrestavky} práce ${workWarningActive}`)
+      workWarningDismissedRef.current[slot] = confirmWorkWarning(workWarningActive, workWarningDismissedRef.current[slot])
+      setWorkWarningActive(null)
+      return
+    }
     if (cardInsertionState) {
       const detail = getCardInsertionOkDetail(cardInsertionState, countries, spanishRegions)
       addEntry('Stisk OK', detail)
@@ -1907,7 +1921,7 @@ export default function App() {
     }
     setMenuComingSoonInfo({ id: `menu-coming-soon-${Date.now()}` })
     addEntry(t.actions.stiskOk, t.infoPanel.menuComingSoon)
-  }, [card1Data, card2Data, driverCardStateByTemplateId, currentMenuId, languagePage, languageDraft, languageCard, language, setLanguage, t, ignitionOn, wakeDisplayFromStandby, displayMode, currentSpeed, selectedItem, menusById, currentMenuPath, countries, spanishRegions, secondHistory, activityHistory, simulatedUtcTime, overrideWarningCode, drivingWithoutCardWarningActive, ignitionWarningActive, breakWarningActive, excessSpeedWarningActive, ejectionBlockedReason, expiredInsertedCardWarningSlot, insertionWhileDrivingWarningSlot, cardInsertionState, cardWithdrawalState, printWizardState, displayBrowseState, menuCountryInputState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, openMenuCountryInput, confirmMenuLoadUnload, isPrintoutActive, printState, addEntry, getCardInsertionOkDetail])
+  }, [card1Data, card2Data, driverCardStateByTemplateId, currentMenuId, languagePage, languageDraft, languageCard, language, setLanguage, t, ignitionOn, wakeDisplayFromStandby, displayMode, currentSpeed, selectedItem, menusById, currentMenuPath, countries, spanishRegions, secondHistory, activityHistory, simulatedUtcTime, overrideWarningCode, drivingWithoutCardWarningActive, ignitionWarningActive, breakWarningActive, workWarningActive, excessSpeedWarningActive, ejectionBlockedReason, expiredInsertedCardWarningSlot, insertionWhileDrivingWarningSlot, cardInsertionState, cardWithdrawalState, printWizardState, displayBrowseState, menuCountryInputState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, openMenuCountryInput, confirmMenuLoadUnload, isPrintoutActive, printState, addEntry, getCardInsertionOkDetail])
 
   const handleBack = useCallback(() => {
     if (!ignitionOn) {
@@ -2765,10 +2779,15 @@ export default function App() {
     splitFirstPartTakenByDriverRef.current = { 1: false, 2: false }
     breakWarning415DismissedRef.current = false
     breakWarning430DismissedRef.current = false
+    workWarningDismissedRef.current = {
+      1: { prewarning: false, limit: false },
+      2: { prewarning: false, limit: false },
+    }
     setDrivingSinceLastBreakMsByDriver({ 1: 0, 2: 0 })
     setRestSinceLastBreakMsByDriver({ 1: 0, 2: 0 })
     setSplitFirstPartTakenByDriver({ 1: false, 2: false })
     setBreakWarningActive(null)
+    setWorkWarningActive(null)
     setExcessSpeedWarningActive(false)
     setEjectionBlockedReason(null)
     setExpiredInsertedCardWarningSlot(null)
@@ -3058,6 +3077,7 @@ export default function App() {
     ejectionBlockedBubbleId,
     insertionWhileDrivingWarningSlot,
     breakWarningActive,
+    workWarningActive,
     cardInsertionState,
     lastEjectionTimeBySlot,
     generateWorkWeekBlocked: generateWorkWeekBlockedWarning,
@@ -3101,8 +3121,9 @@ export default function App() {
     if (slot == null) return null
     const data = slotInserted(slot) ? (slot === 1 ? card1Data : card2Data) : null
     const manual = slot === 1 ? driver1ManualEntryBuffer : driver2ManualEntryBuffer
+    const withSlot = (evaluated: { intervals: ReturnType<typeof evaluateRecordedOut>['intervals']; undetermined: ReturnType<typeof evaluateRecordedOut>['undetermined'] }) => ({ ...evaluated, slot })
     if (data?.cardNumber && !data.templateId) {
-      return evaluateRecordedOut({
+      return withSlot(evaluateRecordedOut({
         ...buildSlot1DddOutSources({
           cards: dddCards,
           cardNumber: data.cardNumber,
@@ -3113,10 +3134,10 @@ export default function App() {
         cardConditions: dddCards[data.cardNumber]?.original.specificConditions,
         vehicleEvents: outModeEvents,
         nowMs: simulatedUtcTime,
-      })
+      }))
     }
     if (data?.templateId) {
-      return evaluateRecordedOut({
+      return withSlot(evaluateRecordedOut({
         imported: [],
         vehicle: buildSlot1VirtualCounterIntervals({
           cardHistory: cardActivityHistoryByTemplateId[data.templateId] ?? [],
@@ -3128,10 +3149,10 @@ export default function App() {
         }),
         vehicleEvents: outModeEvents,
         nowMs: simulatedUtcTime,
-      })
+      }))
     }
     // Bez karty: poslední stav šachty z paměti vozidla (součet dvojitého týdne se na LCD skryje).
-    return evaluateRecordedOut({
+    return withSlot(evaluateRecordedOut({
       imported: [],
       vehicle: buildSlot1VirtualCounterIntervals({
         cardHistory: activityHistory,
@@ -3143,7 +3164,7 @@ export default function App() {
       }),
       vehicleEvents: outModeEvents,
       nowMs: simulatedUtcTime,
-    })
+    }))
   }, [card1Inserted, card2Inserted, operatingScreenIndex, vdoNamedScreen, outModeEvents, card1Data, card2Data, dddCards, secondHistory, simulatedUtcTime, cardActivityHistoryByTemplateId, driver1ManualEntryBuffer, driver2ManualEntryBuffer, activityHistory])
   const slot1FerryRest = useMemo(() => {
     const slot = card1Inserted && card2Inserted
@@ -3212,6 +3233,17 @@ export default function App() {
       extraDailyRestEndsMs: (slot1FerryRest?.completed ?? []).map((item) => item.endMs),
     })
   }, [slot1CounterIntervals, slot1FerryRest, simulatedUtcTime])
+  useEffect(() => {
+    const slot = slot1CounterIntervals?.slot
+    if (slot == null) {
+      setWorkWarningActive(null)
+      return
+    }
+    workWarningSlotRef.current = slot
+    const step = nextWorkWarning(slotWorkingTime?.currentWithoutRestMs ?? null, workWarningDismissedRef.current[slot])
+    workWarningDismissedRef.current[slot] = step.dismissed
+    setWorkWarningActive(ignitionOn ? step.level : null)
+  }, [slot1CounterIntervals, slotWorkingTime, ignitionOn])
   if (activitySinceRef.current == null) {
     activitySinceRef.current = {
       1: { activity: leftActivityId, at: simulatedUtcTime },
@@ -3366,6 +3398,7 @@ export default function App() {
     || (drivingWithoutCardWarningActive && !(outModeActive && currentSpeed === 0 && (!hasDrivenSinceOutActivation || (outStoppedAtUtc != null && simulatedUtcTime - outStoppedAtUtc >= 10000))))
     || drivingWithoutValidCardWarningActive
     || breakWarningActive
+    || workWarningActive
     || menuCountryInputState
     || menuLoadUnloadConfirmState
     || printWizardState
@@ -3786,6 +3819,9 @@ export default function App() {
                   recognizedBreakMs={recognizedBreakMs}
                   activityDurationMsByDriver={activityDurationMsByDriver}
                   workTime={slotWorkingTime}
+                  workWarningActive={workWarningActive}
+                  workWarningSlot={slot1CounterIntervals?.slot ?? 1}
+                  workWarningMs={slotWorkingTime?.currentWithoutRestMs}
                 />
                 {lcdDebugEnabled && <LcdDebugGrid />}
               </div>

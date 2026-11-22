@@ -12,6 +12,7 @@ export type WarningId =
   | '430'  // doba řízení 4h30m - pauza!
   | '30'   // karta! (zapalování, karta nevložena)
   | '31'   // 10h prodloužená směna nedostupná
+  | 'work' // nepřerušená pracovní doba, čas na L2 je dynamický
 
 export interface WarningDef {
   id: WarningId
@@ -58,6 +59,10 @@ export const WARNINGS: Record<WarningId, WarningDef> = {
     line1: '10h prodloužená směna',
     line2: 'nedostupná 31',
   },
+  'work': {
+    id: 'work',
+    line1: '(35)(9){slot} doba práce',
+  },
 }
 
 /** Kódy výstrah podobné „doba řízení 4h15m“ – varování pracovní doby (pauza) */
@@ -76,6 +81,7 @@ const warningTranslations: Record<Exclude<SupportedLanguage, 'cs'>, Record<Warni
     '430': { line1: '(35)(2)(12)\u00A0break!', line2: '(12)(2)04h30\u00A0(10)00h15' },
     '30': { line1: '(14) card!' },
     '31': { line1: '10h extension', line2: 'unavailable 31' },
+    'work': { line1: '(35)(9){slot} work time' },
   },
   ru: {
     '28': { line1: '(27)(2)(14)\u00A0Движение без', line2: 'карты 28' },
@@ -84,7 +90,28 @@ const warningTranslations: Record<Exclude<SupportedLanguage, 'cs'>, Record<Warni
     '430': { line1: '(35)(2)(12)\u00A0Перерыв!', line2: '(12)(2)04h30\u00A0(10)00h15' },
     '30': { line1: '(14) карта!' },
     '31': { line1: 'Продление до 10h', line2: 'недоступно 31' },
+    'work': { line1: '(35)(9){slot} раб. время' },
   },
+}
+
+function formatHm(ms: number): string {
+  const totalMin = Math.floor(Math.max(0, ms) / 60_000)
+  const hours = Math.floor(totalMin / 60)
+  const minutes = totalMin % 60
+  return `${String(hours).padStart(2, '0')}h${String(minutes).padStart(2, '0')}`
+}
+
+/** Hlášení nepřerušené práce. Druhý řádek je skutečný souvislý čas, ne pevných 04h15 z manuálu. */
+export function formatWorkWarning(
+  language: SupportedLanguage,
+  slot: 1 | 2,
+  continuousMs: number,
+): { line1: string; line2: string } {
+  const warning = getWarning('work', language)!
+  return {
+    line1: warning.line1.replace('{slot}', String(slot)),
+    line2: `(9) ${formatHm(continuousMs)}`,
+  }
 }
 
 export function getWarning(code: string, language: SupportedLanguage = 'cs'): WarningDef | null {

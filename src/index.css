@@ -679,6 +679,8 @@ body {
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
+  /* Casio sahá verzálkami na horní hranu em čtverce. line-height: 1 je uřízne. */
+  line-height: 1.2;
 }
 
 

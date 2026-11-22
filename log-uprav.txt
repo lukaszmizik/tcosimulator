@@ -157,6 +157,21 @@ Téma: Graf – bez pinche, klikací den + vodorovný scroll
 - Denní pohled: vodorovný scroll + tlačítko „Zpět na týden“.
 - Soubory: src/WorkWeekGraphView.tsx, src/index.css, src/translations/{cs,en,ru,types}.ts, vendor/cardviewer-overrides/src/index.css.
 
+=== BLOK 1s – Dokončená úprava ===
+Datum: 2026-11-22
+Téma: STOP – zákaz vložení karty
+
+- Ve STOP (`!ignitionOn`) nelze vložit kartu (drag, tlačítka, šachty, picker).
+- Probuzení LCD ze standby už nevkládání neumožní; short-press 1/2 dál přepíná symboly.
+- Soubor: App.tsx.
+
+=== BLOK 1t – Dokončená úprava ===
+Datum: 2026-11-22
+Téma: Výchozí firma na výtiscích
+
+- Default: Transdev Morava s.r.o., IČO 06738346, adresa Ostrava (volitelně změna v „Firma a vozidlo“).
+- Soubor: src/data/printVehicleProfile.ts.
+
 === BLOK 2 – Nedokončeno / na příště ===
 - Week-graph: chybějící výstrahy v grafu pracovního týdne.
 - Jednotný graf i pro virtuální kartu (teď jde do starého WorkWeekGraphView; chybí most historie → SimulatorSlotGraphInput + přepínač v handleShowCardData; odloženo).

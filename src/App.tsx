@@ -2085,12 +2085,12 @@ export default function App() {
 
   const handleSlotDragOver = useCallback((e: React.DragEvent, slot: 1 | 2) => {
     e.preventDefault()
-    if (!ignitionOn && !displayAwakeFromStandby) return
+    if (!ignitionOn) return
     if (slot === 1 && card1Data) return
     if (slot === 2 && card2Data) return
     e.dataTransfer.dropEffect = 'move'
     setDragOverSlot(slot)
-  }, [ignitionOn, displayAwakeFromStandby, card1Data, card2Data])
+  }, [ignitionOn, card1Data, card2Data])
 
   const handleSlotDragLeave = useCallback(() => {
     setDragOverSlot(null)
@@ -2119,7 +2119,7 @@ export default function App() {
   }, [])
 
   const insertCardIntoSlot = useCallback((cardId: string, slot: 1 | 2) => {
-    if (!ignitionOn && !displayAwakeFromStandby) return
+    if (!ignitionOn) return
     if (slot === 1 && card1Data) return
     if (slot === 2 && card2Data) return
     if (cardId.startsWith('ddd:')) {
@@ -2140,9 +2140,8 @@ export default function App() {
       setDddInsertMessage(null)
       addEntry(`${t.actions.vlozeniKarty} ${record.surname || record.firstName} do slotu ${slot}`)
       const cardData = decision.cardData
-      const skipReadyToDrive = !ignitionOn && displayAwakeFromStandby
       const gpsCountry = virtualLocation?.country ?? undefined
-      const wizardOptions = { skipReadyToDriveScreen: skipReadyToDrive, initialCountryCode: gpsCountry, existingManualEntryBuffer: decision.manualBuffer }
+      const wizardOptions = { initialCountryCode: gpsCountry, existingManualEntryBuffer: decision.manualBuffer }
       if (slot === 1) {
         setCard1Data(cardData)
         setCard1Inserted(true)
@@ -2180,7 +2179,6 @@ export default function App() {
       card2StoredLastWithdrawal: loadCard2LastWithdrawal(),
       driverState: (templateId && driverCardStateByTemplateId[templateId]) ?? undefined,
     })
-    const skipReadyToDrive = !ignitionOn && displayAwakeFromStandby
     const gpsCountry = virtualLocation?.country ?? undefined
     if (slot === 1) {
       setCard1Data(cardData)
@@ -2188,19 +2186,19 @@ export default function App() {
       setDriverCardInsertedAtUtc(simulatedUtcTimeRef.current)
       setDrivingWithoutCardWarningActive(false)
       recordInsertionWhileDriving(1)
-      startOrQueueInsertion(createInitialCardInsertionState(1, cardData, simulatedUtcTime, countries, { skipReadyToDriveScreen: skipReadyToDrive, initialCountryCode: gpsCountry, timeOffsetMs, existingManualEntryBuffer: templateId === CARD1_TEMPLATE_ID ? card1Manual : card2Manual }))
+      startOrQueueInsertion(createInitialCardInsertionState(1, cardData, simulatedUtcTime, countries, { initialCountryCode: gpsCountry, timeOffsetMs, existingManualEntryBuffer: templateId === CARD1_TEMPLATE_ID ? card1Manual : card2Manual }))
     }
     if (slot === 2) {
       setCard2Data(cardData)
       setCard2Inserted(true)
       setCard2InsertedAt(Date.now())
       recordInsertionWhileDriving(2)
-      startOrQueueInsertion(createInitialCardInsertionState(2, cardData, simulatedUtcTime, countries, { skipReadyToDriveScreen: skipReadyToDrive, initialCountryCode: gpsCountry, timeOffsetMs, existingManualEntryBuffer: templateId === CARD1_TEMPLATE_ID ? card1Manual : card2Manual }))
+      startOrQueueInsertion(createInitialCardInsertionState(2, cardData, simulatedUtcTime, countries, { initialCountryCode: gpsCountry, timeOffsetMs, existingManualEntryBuffer: templateId === CARD1_TEMPLATE_ID ? card1Manual : card2Manual }))
     }
     setDragOverSlot(null)
     setCardsOpen(false)
     setCardPickerSlot(null)
-  }, [ignitionOn, displayAwakeFromStandby, simulatedUtcTime, timeOffsetMs, countries, card1Data, card2Data, driverCardStateByTemplateId, card1Manual, card2Manual, addEntry, startOrQueueInsertion, virtualLocation, virtualCardNames, expiryByCard, recordInsertionWhileDriving])
+  }, [ignitionOn, simulatedUtcTime, timeOffsetMs, countries, card1Data, card2Data, driverCardStateByTemplateId, card1Manual, card2Manual, addEntry, startOrQueueInsertion, virtualLocation, virtualCardNames, expiryByCard, recordInsertionWhileDriving])
 
   const handleSlotDrop = (e: React.DragEvent, slot: 1 | 2) => {
     e.preventDefault()
@@ -2208,6 +2206,7 @@ export default function App() {
     insertCardIntoSlot(e.dataTransfer.getData('card') || e.dataTransfer.getData('text/plain'), slot)
   }
   const openCardPicker = (slot: 1 | 2) => {
+    if (!ignitionOn) return
     if (slot === 1 ? card1Data : card2Data) return
     setCardPickerSlot(slot)
     setCardsOpen(true)
@@ -2396,6 +2395,7 @@ export default function App() {
     cancelMenuLoadUnload()
     setTargetSpeed(0)
     setIgnitionOn(false)
+    setDisplayAwakeFromStandby(false)
     // Globální reset zobrazení: okamžité ukončení všech aktivních stavů
     pendingInsertionRef.current = null
     setCardInsertionState(null)
@@ -3538,7 +3538,7 @@ export default function App() {
         <div className="card-edge-tabs" onPointerEnter={e => {if(e.pointerType === 'mouse') setCardsOpen(true)}}>{([1,2] as const).map(n => <button key={n} aria-label={withSlot(t.cardPanel.openCard, n)} aria-expanded={cardsOpen} onClick={() => {setCardsOpen(true);setCardPickerSlot(null)}}><span>▥</span><b>{n}</b><small>{t.cardPanel.tab}</small></button>)}</div>
         <div className="cards-drawer-content" hidden={!cardsOpen}>
         <div className="cards-drawer-heading"><strong>{cardPickerSlot ? withSlot(t.cardPanel.insertIntoSlot, cardPickerSlot) : t.cardPanel.title}</strong><button onClick={() => {setCardsOpen(false);setCardPickerSlot(null)}} aria-label={t.cardPanel.close}>×</button></div>
-        {!(ignitionOn || displayAwakeFromStandby) && <p className="cards-hint">{t.cardPanel.startIgnition}</p>}
+        {!ignitionOn && <p className="cards-hint">{t.cardPanel.startIgnition}</p>}
         <div className="driver-cards-column" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {([0, 1] as const).map((index) => {
             const prepared = cardPrep[index]
@@ -3598,7 +3598,7 @@ export default function App() {
                     <DriverCardVisual
                       data={{ name: holder, surname: dddRecord.surname, lastWithdrawal: null }}
                       insertedSlot={insertedSlot}
-                      draggable={insertedSlot == null && (ignitionOn || displayAwakeFromStandby)}
+                      draggable={insertedSlot == null && ignitionOn}
                       dragValue={`ddd:${dddRecord.cardNumber}`}
                       birthDate={dddRecord.original.dateOfBirth}
                       validityFrom={dddRecord.original.validityBegin}
@@ -3611,7 +3611,7 @@ export default function App() {
                   </div>
                 )}
                 {prepared && <div className="card-insert-actions">
-                  {insertedSlot ? <span>{withSlot(t.cardPanel.insertedInSlot, insertedSlot)}</span> : (cardPickerSlot ? [cardPickerSlot] : [1,2] as const).map(slot => <button key={slot} disabled={!(ignitionOn || displayAwakeFromStandby) || !!(slot === 1 ? card1Data : card2Data)} onClick={() => insertCardIntoSlot(prepared.kind === 'virtual' ? prepared.templateId : `ddd:${prepared.cardNumber}`, slot as 1 | 2)}>{withSlot(t.cardPanel.insertIntoSlot, slot)}</button>)}
+                  {insertedSlot ? <span>{withSlot(t.cardPanel.insertedInSlot, insertedSlot)}</span> : (cardPickerSlot ? [cardPickerSlot] : [1,2] as const).map(slot => <button key={slot} disabled={!ignitionOn || !!(slot === 1 ? card1Data : card2Data)} onClick={() => insertCardIntoSlot(prepared.kind === 'virtual' ? prepared.templateId : `ddd:${prepared.cardNumber}`, slot as 1 | 2)}>{withSlot(t.cardPanel.insertIntoSlot, slot)}</button>)}
                 </div>}
               </CardPrepMenu>
             )
@@ -3829,11 +3829,11 @@ export default function App() {
                 role="button" tabIndex={0} aria-label={withSlot(t.cardPanel.chooseForSlot, 1)}
                 onClick={() => openCardPicker(1)}
                 onKeyDown={e => {if(e.key === 'Enter' || e.key === ' '){e.preventDefault();openCardPicker(1)}}}
-                className={`slot-shaft-line slot-drop-zone ${!ignitionOn && !displayAwakeFromStandby ? 'slot-shaft-line-ignition-off' : ''} ${card1Data ? 'slot-drop-zone-occupied' : ''} ${dragOverSlot === 1 ? 'slot-drop-zone-highlight' : ''}`}
+                className={`slot-shaft-line slot-drop-zone ${!ignitionOn ? 'slot-shaft-line-ignition-off' : ''} ${card1Data ? 'slot-drop-zone-occupied' : ''} ${dragOverSlot === 1 ? 'slot-drop-zone-highlight' : ''}`}
                 onDragOver={(e) => handleSlotDragOver(e, 1)}
                 onDragLeave={handleSlotDragLeave}
                 onDrop={(e) => handleSlotDrop(e, 1)}
-                title={card1Data ? t.ui.slotOccupied : ignitionOn || displayAwakeFromStandby ? t.ui.slot1DragHint : t.ui.ignitionOffNoCard}
+                title={card1Data ? t.ui.slotOccupied : ignitionOn ? t.ui.slot1DragHint : t.ui.ignitionOffNoCard}
               />
               <div className="eject-buttons">
                 <button
@@ -3864,17 +3864,17 @@ export default function App() {
                 role="button" tabIndex={0} aria-label={withSlot(t.cardPanel.chooseForSlot, 2)}
                 onClick={() => openCardPicker(2)}
                 onKeyDown={e => {if(e.key === 'Enter' || e.key === ' '){e.preventDefault();openCardPicker(2)}}}
-                className={`slot-shaft-line slot-drop-zone ${!ignitionOn && !displayAwakeFromStandby ? 'slot-shaft-line-ignition-off' : ''} ${card2Data ? 'slot-drop-zone-occupied' : ''} ${dragOverSlot === 2 ? 'slot-drop-zone-highlight' : ''}`}
+                className={`slot-shaft-line slot-drop-zone ${!ignitionOn ? 'slot-shaft-line-ignition-off' : ''} ${card2Data ? 'slot-drop-zone-occupied' : ''} ${dragOverSlot === 2 ? 'slot-drop-zone-highlight' : ''}`}
                 onDragOver={(e) => handleSlotDragOver(e, 2)}
                 onDragLeave={handleSlotDragLeave}
                 onDrop={(e) => handleSlotDrop(e, 2)}
-                title={card2Data ? t.ui.slotOccupied : ignitionOn || displayAwakeFromStandby ? t.ui.slot2DragHint : t.ui.ignitionOffNoCard}
+                title={card2Data ? t.ui.slotOccupied : ignitionOn ? t.ui.slot2DragHint : t.ui.ignitionOffNoCard}
               />
             </div>
           </div>
         </div>
         </FaceplateFrame>
-        <div className="slot-tap-controls">{([1,2] as const).map(slot => {const card=slot === 1 ? card1Data : card2Data;return <button key={slot} disabled={!!card} onClick={() => openCardPicker(slot)}>{withSlot(t.cardPanel.slot, slot)} · {card ? card.surname || card.name : t.cardPanel.insertCard}</button>})}</div>
+        <div className="slot-tap-controls">{([1,2] as const).map(slot => {const card=slot === 1 ? card1Data : card2Data;return <button key={slot} disabled={!!card || !ignitionOn} onClick={() => openCardPicker(slot)}>{withSlot(t.cardPanel.slot, slot)} · {card ? card.surname || card.name : t.cardPanel.insertCard}</button>})}</div>
 
 
         <ControlPanel

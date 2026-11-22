@@ -253,7 +253,11 @@ function bubbleText(level: '545' | '600' | null): string {
       cardInsertionState: null,
       lastEjectionTimeBySlot: { 1: null, 2: null },
     })
-    return createElement('pre', null, items.map((item) => `${item.id}\n${item.message}`).join('\n'))
+    return createElement('div', null, items.map((item) => createElement(
+      'section',
+      { key: item.id, 'data-id': item.id },
+      item.content ?? item.message,
+    )))
   }
   return renderToStaticMarkup(createElement(LanguageProvider, null, createElement(Probe)))
 }
@@ -267,17 +271,22 @@ assert.doesNotMatch(prewarning, /work-600/)
 
 const limit = bubbleText('600')
 assert.match(limit, /work-600/)
+assert.match(limit, /<table/)
+assert.match(limit, /6 hodin v kuse/)
 assert.match(limit, /30 minut/)
 assert.match(limit, /45 minut/)
+assert.doesNotMatch(limit, /takových přestávek/)
 assert.doesNotMatch(limit, /work-545/)
 assert.doesNotMatch(bubbleText(null), /work-54/)
 
 for (const language of ['en', 'ru'] as const) {
   const copy = getTranslations(language).infoPanel
+  const work600 = [copy.work600.intro, copy.work600.note, ...copy.work600.rows.flat()].join('\n')
   assert.match(copy.work545, /2002\/15/)
   assert.match(copy.work545, /15/)
-  assert.match(copy.work600, /30/)
-  assert.match(copy.work600, /45/)
+  assert.match(work600, /30/)
+  assert.match(work600, /45/)
+  assert.equal(copy.work600.rows.length, 3)
 }
 
 console.log('working time ok')

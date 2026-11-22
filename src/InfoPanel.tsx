@@ -172,6 +172,50 @@ export function InfoPanel({ items, resetTrigger, symbolMap, collapsed = false, m
   )
 }
 
+function work600Plain(copy: Translations['infoPanel']['work600']): string {
+  return [
+    copy.intro,
+    copy.caption,
+    ...copy.rows.map((row) => `${row[0]}: ${row[1]}`),
+    copy.note,
+  ].join('\n')
+}
+
+function Work600Bubble({ copy }: { copy: Translations['infoPanel']['work600'] }) {
+  return (
+    <div className="info-panel-work600">
+      <p className="info-panel-text">{copy.intro}</p>
+      <p className="info-panel-work600-caption">{copy.caption}</p>
+      <table className="info-panel-work600-table">
+        <thead>
+          <tr>
+            <th scope="col">{copy.columns[0]}</th>
+            <th scope="col">{copy.columns[1]}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {copy.rows.map((row) => (
+            <tr key={row[0]}>
+              <th scope="row">{row[0]}</th>
+              <td>{row[1]}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="info-panel-text">{copy.note}</p>
+    </div>
+  )
+}
+
+function work600Item(copy: Translations['infoPanel']['work600']): InfoItem {
+  return {
+    id: 'work-600',
+    type: 'warning',
+    message: work600Plain(copy),
+    content: <Work600Bubble copy={copy} />,
+  }
+}
+
 const SUPPLEMENT_ACTIVITIES_PHASES: CardInsertionState['phase'][] = ['decision1M', 'manualEditor', 'country', 'finalConfirm']
 const MANUAL_ENTRY_PHASES: CardInsertionState['phase'][] = [...SUPPLEMENT_ACTIVITIES_PHASES, 'itsQuestion', 'vdoQuestion']
 
@@ -189,7 +233,7 @@ function retranslateStickyInfoItem(item: InfoItem, t: Translations): InfoItem {
   if (id === 'break-415') return { ...item, message: ip.break415 }
   if (id === 'break-430') return { ...item, message: ip.break430 }
   if (id === 'work-545') return { ...item, message: ip.work545 }
-  if (id === 'work-600') return { ...item, message: ip.work600 }
+  if (id === 'work-600') return work600Item(ip.work600)
   if (id === 'generate-work-week-blocked') return { ...item, message: ip.generateWorkWeekBlocked }
   if (id === 'out-mode-active') return { ...item, message: ip.outModeActiveInfo }
   if (id === 'crew-mode-info') return { ...item, message: ip.crewModeInfo }
@@ -532,11 +576,7 @@ export function useInfoPanelItems(props: {
   }
 
   if (workWarningActive === '600') {
-    items.push({
-      id: 'work-600',
-      type: 'warning',
-      message: t.infoPanel.work600,
-    })
+    items.push(work600Item(t.infoPanel.work600))
   }
 
   if (generateWorkWeekBlocked) {

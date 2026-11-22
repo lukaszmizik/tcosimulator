@@ -64,7 +64,17 @@ export const cs: Translations = {
     break415: 'Výstraha 4:15 – proveď pauzu 15 minut nebo 30 minut (pokud jsi už měl 15m). Zobrazení výstrahy je viditelné ve VDO datech při dálkovém stažení (není to zákonná událost VU).', // 3
     break430: 'Výstraha 4:30 – Překročil jsi dobu řízení! Neprodleně udělej přestávku 45 minut. Zobrazení výstrahy je viditelné ve VDO datech při dálkovém stažení (není to zákonná událost typu porušení bezpečnosti).', // 4
     work545: 'Výstraha 5:45 – souvislá pracovní doba se blíží šesti hodinám. Počítá se řízení a jiná práce, pohotovost ne. Podle směrnice 2002/15/ES smí být bez přestávky nejvýše 6 hodin. Potvrď OK a naplánuj přestávku alespoň 15 minut. Kratší odpočinek práci nepřeruší.',
-    work600: 'Výstraha 6:00 – šest hodin souvislé práce je dosaženo. Přeruš ji odpočinkem alespoň 15 minut. Při práci přes 6 až 9 hodin je potřeba celkem 30 minut takových přestávek, přes 9 hodin 45 minut. Potvrď OK.',
+    work600: {
+      intro: 'Pracuješ 6 hodin bez přestávky. Potvrď hlášku tlačítkem OK.',
+      caption: 'Jakou přestávku udělat',
+      columns: ['Kdy', 'Přestávka'],
+      rows: [
+        ['6 hodin v kuse', 'aspoň 15 minut'],
+        ['práce nad 6 až 9 hodin', 'dohromady 30 minut'],
+        ['práce nad 9 hodin', 'dohromady 45 minut'],
+      ],
+      note: 'Do součtu patří jen přestávka od 15 minut. Kratší odpočinek práci v kuse nepřeruší. Sčítá se řízení a jiná práce, pohotovost zůstává mimo.',
+    },
     supplementActivities: 'Nyní jsi povinen doplnit aktivity na svou kartu.', // 5
     lastWithdrawal: 'Poslední vytažení karty bylo', // 6
     endCountryFound: 'Našel jsem záznam o ukončení směny v', // 7

@@ -26,8 +26,8 @@ assert.equal(stepTimeOffset(TIME_OFFSET_LIMIT_MS, -1), TIME_OFFSET_LIMIT_MS - st
 
 const utcClock = formatTachographClock(utc)
 const afterMidnight = formatTachographClock(shownInstant(utc, step))
-assert.equal(`${utcClock.date} ${utcClock.time}`, '22.11.26 23:50')
-assert.equal(`${afterMidnight.date} ${afterMidnight.time}`, '23.11.26 00:20')
+assert.equal(`${utcClock.date} ${utcClock.time}`, '22.11.2026 23:50')
+assert.equal(`${afterMidnight.date} ${afterMidnight.time}`, '23.11.2026 00:20')
 assert.equal(formatTachographClock(utc).time, '23:50')
 
 const localDraft = { kind: 'local' as const, draftOffsetMs: base.localOffsetMs + step }

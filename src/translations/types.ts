@@ -138,6 +138,12 @@ export type Translations = {
     notCalculated: string
     cannotDetermine: string
   }
+  /** Výukové bubliny editoru místního času a času majitele. */
+  clockTeach: {
+    important: string
+    local: { title: string; body: string; note: string }
+    owner: { title: string; body: string; note: string }
+  }
   cardWizard: {
     pleaseWait: string
     pleaseWaitLine2?: string

@@ -40,7 +40,7 @@ export function formatTachographClock(utcMs: number): { date: string; time: stri
   const value = new Date(utcMs)
   const pad = (part: number) => String(part).padStart(2, '0')
   return {
-    date: `${pad(value.getUTCDate())}.${pad(value.getUTCMonth() + 1)}.${String(value.getUTCFullYear()).slice(-2)}`,
+    date: `${pad(value.getUTCDate())}.${pad(value.getUTCMonth() + 1)}.${value.getUTCFullYear()}`,
     time: `${pad(value.getUTCHours())}:${pad(value.getUTCMinutes())}`,
   }
 }

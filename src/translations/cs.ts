@@ -133,6 +133,19 @@ export const cs: Translations = {
     notCalculated: 'Tento údaj simulátor zatím nepočítá.',
     cannotDetermine: 'Tento údaj teď nelze určit.',
   },
+  clockTeach: {
+    important: 'Důležité:',
+    local: {
+      title: 'Místní čas',
+      body: 'Místní čas je čas, který tachograf ukazuje řidiči. Vůči UTC se nastavuje po 30 minutách. Použij ho při změně časového pásma a při přechodu mezi letním a zimním časem.',
+      note: 'UTC a už uložené záznamy činností se tím nemění.',
+    },
+    owner: {
+      title: 'Čas majitele',
+      body: 'Čas majitele je místní čas sídla dopravce. Používá ho podnikové počítadlo pracovní doby. Může se lišit od místního času, který řidič vidí na tachografu.',
+      note: 'Jeho změna nemění UTC ani místní čas tachografu.',
+    },
+  },
   cardWizard: {
     pleaseWait: 'prosím čekejte!', // 9
     lastRemoval: 'Posled. vyjmutí', // 10

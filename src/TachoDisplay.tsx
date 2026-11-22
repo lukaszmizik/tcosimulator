@@ -482,10 +482,15 @@ function TimeOffsetEditorDisplay(props: TachoDisplayProps) {
   return (
     <div className="lcd-two-rows lcd-card-insertion">
       <div className="lcd-row lcd-row-left">
-        <span>{utc.date} {utc.time} {t.tachoDisplay.utcMark}</span>
+        <span className="lcd-inline-symbols">
+          {t.tachoDisplay.utcMark}
+          {parseSymbols('(17)', symbolMap)}
+          {` ${utc.date}`}
+        </span>
       </div>
-      <div className="lcd-row lcd-row-left">
-        <span className="lcd-field-blink">{mark} {local.date} {local.time}</span>
+      <div className="lcd-row">
+        <span>{utc.time}</span>
+        <span className="lcd-field-blink lcd-inline-symbols">{local.time}{mark}</span>
       </div>
     </div>
   )

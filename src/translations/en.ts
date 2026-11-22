@@ -133,6 +133,19 @@ export const en: Translations = {
     notCalculated: 'The simulator does not calculate this value yet.',
     cannotDetermine: 'This value cannot be determined right now.',
   },
+  clockTeach: {
+    important: 'Important:',
+    local: {
+      title: 'Local time',
+      body: 'Local time is the time the tachograph shows to the driver. Set it against UTC in steps of 30 minutes. Use it when the time zone changes and when switching between summer and winter time.',
+      note: 'UTC and the activity records already stored stay unchanged.',
+    },
+    owner: {
+      title: 'Company time',
+      body: 'Company time is the local time at the carrier’s place of business. The company working-time counter uses it. It may differ from the local time the driver sees on the tachograph.',
+      note: 'Changing it does not change UTC or the tachograph’s local time.',
+    },
+  },
   cardWizard: {
     pleaseWait: 'please wait!', // 9
     lastRemoval: 'last withdrawal', // 10

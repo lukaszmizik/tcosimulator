@@ -26,6 +26,9 @@ export type InfoItem = {
   message: string
   /** Nadpis karty. Stávající hlášení ho nemají. */
   title?: string
+  /** Zvýrazněný řádek pod textem, například „Důležité“. */
+  emphasisLabel?: string
+  emphasis?: string
   /** Automaticky zavřít, jakmile přestane platit podmínka hlášení. */
   activeOnly?: boolean
   /**
@@ -102,7 +105,7 @@ export function InfoPanel({ items, resetTrigger, symbolMap, collapsed = false, m
         languageChanged ||
         kept.some((item, index) => {
           const next = updated[index]!
-          return next.message !== item.message || next.title !== item.title || next.content !== item.content
+          return next.message !== item.message || next.title !== item.title || next.emphasis !== item.emphasis || next.emphasisLabel !== item.emphasisLabel || next.content !== item.content
         })
       if (!hasChanges && kept.length === prev.length) return prev
       return [...toAdd, ...resurfaced, ...updated.filter((item) => !resurfaced.includes(item))]
@@ -159,6 +162,12 @@ export function InfoPanel({ items, resetTrigger, symbolMap, collapsed = false, m
               <div className="info-panel-content">
                 {item.title ? <div className="info-panel-manual-label">{item.title}</div> : null}
                 <p className="info-panel-text">{parseSymbols(item.message, symbolMap, { symbolBg: true })}</p>
+                {item.emphasis ? (
+                  <p className="info-panel-emphasis">
+                    {item.emphasisLabel ? <span className="info-panel-emphasis-label">{item.emphasisLabel} </span> : null}
+                    {item.emphasis}
+                  </p>
+                ) : null}
               </div>
             )}
             <button

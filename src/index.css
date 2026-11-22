@@ -1745,6 +1745,18 @@ body {
   margin-bottom: 6px;
 }
 
+.info-panel-emphasis {
+  margin: 8px 0 0;
+  padding: 6px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.55);
+  font-weight: 600;
+}
+
+.info-panel-emphasis-label {
+  font-weight: 700;
+}
+
 .info-panel-manual-list {
   display: flex;
   flex-direction: column;

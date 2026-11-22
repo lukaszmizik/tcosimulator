@@ -3505,6 +3505,16 @@ export default function App() {
     || printWizardState
     || displayBrowseState
   )
+  const clockTeachItem: InfoItem | null = timeOffsetEditor ? {
+    id: `clock-teach-${timeOffsetEditor.kind}`,
+    type: 'info',
+    title: t.clockTeach[timeOffsetEditor.kind].title,
+    message: t.clockTeach[timeOffsetEditor.kind].body,
+    emphasisLabel: t.clockTeach.important,
+    emphasis: t.clockTeach[timeOffsetEditor.kind].note,
+    activeOnly: true,
+    hidden: lcdTeachCovered,
+  } : null
   const lcdTeachItem = lcdTeachInfoItem({
     t,
     screen: visibleLcdTeachScreen({
@@ -3525,6 +3535,7 @@ export default function App() {
   const panelItems: InfoItem[] = [
     ...infoPanelItems,
     ...(lcdTeachItem ? [lcdTeachItem] : []),
+    ...(clockTeachItem ? [clockTeachItem] : []),
     ...(mobileInfoPanels && nr165Visible ? [{
       id: 'nr165-warning',
       type: 'warning' as const,

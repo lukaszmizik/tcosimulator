@@ -79,9 +79,10 @@ export function VirtualCardNameSettings({ names, onSave, language, onPrepare, in
 }) {
   const [draft, setDraft] = useState(names)
   const [status, setStatus] = useState('')
-  const copy = labels[language]
+  const uiLanguage = language === 'mn' ? 'en' : language
+  const copy = labels[uiLanguage]
 
-  const preparation = preparationLabels[language]
+  const preparation = preparationLabels[uiLanguage]
   const prepare = (id: CardId, profile: TrainingProfile) => {
     const confirmText =
       profile === 'expiring' ? preparation.expiryConfirm

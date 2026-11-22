@@ -36,7 +36,7 @@ export function KnowledgeBase({ language }: {
   language: SupportedLanguage
   symbolMap: SymbolMap | null
 }) {
-  const copy = labels[language]
+  const copy = labels[language === 'mn' ? 'en' : language]
   const dialog = useRef<HTMLDialogElement>(null)
   const results = useRef<HTMLDivElement>(null)
   const title = useId()

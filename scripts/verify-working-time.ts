@@ -215,6 +215,13 @@ assert.equal(formatWorkWarning('cs', 1, WORK_PREWARNING_MS).line2, '(9) 05h45')
 assert.equal(formatWorkWarning('en', 2, WORK_LIMIT_MS).line1, '(35)(9)2 work time')
 assert.equal(formatWorkWarning('ru', 1, 3 * H + 20 * M).line1, '(35)(9)1 раб. время')
 assert.equal(formatWorkWarning('ru', 1, 3 * H + 20 * M).line2, '(9) 03h20')
+assert.equal(formatWorkWarning('mn', 2, WORK_LIMIT_MS).line1, '(35)(9)2 work time')
+assert.equal(formatWorkWarning('mn', 2, WORK_LIMIT_MS).line2, '(9) 06h00')
+const mn = getTranslations('mn')
+assert.match(mn.ui.remoteDataDownloadActive, /Ө/)
+assert.match(mn.ui.slotOccupied, /[үҮ]/)
+assert.equal(mn.tachoDisplay, getTranslations('en').tachoDisplay)
+assert.equal(mn.menu, getTranslations('en').menu)
 
 function bubbleText(level: '545' | '600' | null): string {
   function Probe() {

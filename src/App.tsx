@@ -119,7 +119,8 @@ import { buildVdoCounterOutlook } from './vdoCounterOutlook'
 import { parseSymbols } from './Symbols'
 import { isWarningCode } from './data/warnings'
 import { LANGUAGE_PAGE, languages, recalledLanguage, rememberLanguage } from './firstLevelDisplay'
-import { useLanguage } from './translations'
+import { useDeviceLanguage, useLanguage } from './translations'
+import type { DeviceLanguage } from './translations/types'
 import { ControlPanel } from './ControlPanel'
 import type { TrainingProfile } from './VirtualCardNameSettings'
 import { buildDriverCardPrintRows, printCardHolder, printDateUtc } from './print/driverCardPrintRows'
@@ -173,13 +174,15 @@ const languageTabs = [
   { language: 'cs', code: 'CZ', name: 'Čeština' },
   { language: 'en', code: 'EN', name: 'English' },
   { language: 'ru', code: 'RU', name: 'Русский' },
+  { language: 'mn', code: 'MN', name: 'Монгол' },
 ] as const
 
 export default function App() {
   const { addEntry } = useActionLog()
-  const { t, language, setLanguage } = useLanguage()
+  const { t, language, setLanguage, setDeviceLanguage } = useLanguage()
+  const { t: deviceT, language: lcdLanguage } = useDeviceLanguage()
   const [virtualCardNames, setVirtualCardNames] = useState(loadVirtualCardNames)
-  const menusById = useMemo(() => applyMenuTranslations(buildMenusById(), t), [t])
+  const menusById = useMemo(() => applyMenuTranslations(buildMenusById(), deviceT), [deviceT])
   const [symbolMap, setSymbolMap] = useState<SymbolMap | null>(null)
   const [displayMode, setDisplayMode] = useState<'operating' | 'menu'>('operating')
   /** VDO counter aktivní až po stisku šipky nahoru/dolů – jinak základní obrazovka */
@@ -188,7 +191,7 @@ export default function App() {
   const [operatingScreenIndex, setOperatingScreenIndex] = useState(0)
   /** Prozatímní pojmenovaná obrazovka. Šipka dolů z hlavního Counteru, šipka nahoru zpět. */
   const [vdoNamedScreen, setVdoNamedScreen] = useState<VdoNamedScreen | null>(null)
-  const [languageDraft, setLanguageDraft] = useState<typeof language | null>(null)
+  const [languageDraft, setLanguageDraft] = useState<DeviceLanguage | null>(null)
   const [languageSaved, setLanguageSaved] = useState(false)
   const [currentMenuPath, setCurrentMenuPath] = useState<string[]>([ENTRY_MENU_ID])
   const [selectedIndex, setSelectedIndex] = useState(0)
@@ -380,10 +383,14 @@ export default function App() {
   const [card1Data, setCard1Data] = useState<CardData | null>(null)
   const [card2Data, setCard2Data] = useState<CardData | null>(null)
   const languageCard = card1Data?.cardNumber || card1Data?.templateId || card2Data?.cardNumber || card2Data?.templateId
+  const uiLanguageRef = useRef(language)
+  uiLanguageRef.current = language
   useEffect(() => {
     const saved = languageCard && recalledLanguage(languageCard)
-    if (saved) setLanguage(saved)
-  }, [languageCard, setLanguage])
+    if (!saved) return
+    if (uiLanguageRef.current === 'mn') setDeviceLanguage(saved)
+    else setLanguage(saved)
+  }, [languageCard, setLanguage, setDeviceLanguage])
 
   /** Sekvence vložení karty (1M) – řízena useCardWizard */
   /** Průvodce vyjmutím karty (Withdrawal Wizard). Trigger: krátký stisk tlačítka slotu s vloženou kartou. */
@@ -1762,13 +1769,14 @@ export default function App() {
       if (currentSpeed > 0) return /* při jízdě menu tlačítkem OK nevyvolat */
       if (languagePage) {
         if (languageDraft) {
-          setLanguage(languageDraft)
+          if (language === 'mn') setDeviceLanguage(languageDraft)
+          else setLanguage(languageDraft)
           if (languageCard) rememberLanguage(languageCard, languageDraft)
           setLanguageDraft(null)
           setLanguageSaved(true)
         } else {
           setLanguageSaved(false)
-          setLanguageDraft(language)
+          setLanguageDraft(lcdLanguage)
         }
         return
       }
@@ -1921,7 +1929,7 @@ export default function App() {
     }
     setMenuComingSoonInfo({ id: `menu-coming-soon-${Date.now()}` })
     addEntry(t.actions.stiskOk, t.infoPanel.menuComingSoon)
-  }, [card1Data, card2Data, driverCardStateByTemplateId, currentMenuId, languagePage, languageDraft, languageCard, language, setLanguage, t, ignitionOn, wakeDisplayFromStandby, displayMode, currentSpeed, selectedItem, menusById, currentMenuPath, countries, spanishRegions, secondHistory, activityHistory, simulatedUtcTime, overrideWarningCode, drivingWithoutCardWarningActive, ignitionWarningActive, breakWarningActive, workWarningActive, excessSpeedWarningActive, ejectionBlockedReason, expiredInsertedCardWarningSlot, insertionWhileDrivingWarningSlot, cardInsertionState, cardWithdrawalState, printWizardState, displayBrowseState, menuCountryInputState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, openMenuCountryInput, confirmMenuLoadUnload, isPrintoutActive, printState, addEntry, getCardInsertionOkDetail])
+  }, [card1Data, card2Data, driverCardStateByTemplateId, currentMenuId, languagePage, languageDraft, languageCard, language, lcdLanguage, setLanguage, setDeviceLanguage, t, ignitionOn, wakeDisplayFromStandby, displayMode, currentSpeed, selectedItem, menusById, currentMenuPath, countries, spanishRegions, secondHistory, activityHistory, simulatedUtcTime, overrideWarningCode, drivingWithoutCardWarningActive, ignitionWarningActive, breakWarningActive, workWarningActive, excessSpeedWarningActive, ejectionBlockedReason, expiredInsertedCardWarningSlot, insertionWhileDrivingWarningSlot, cardInsertionState, cardWithdrawalState, printWizardState, displayBrowseState, menuCountryInputState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, openMenuCountryInput, confirmMenuLoadUnload, isPrintoutActive, printState, addEntry, getCardInsertionOkDetail])
 
   const handleBack = useCallback(() => {
     if (!ignitionOn) {
@@ -2996,7 +3004,7 @@ export default function App() {
 
   // Případný název kategorie z JSONu lze odvodit pomocí deriveMenuTitle,
   // aktuálně však pro displej používáme pouze section_title na úrovni menu uzlu.
-  const locale = language === 'cs' ? 'cs-CZ' : language === 'ru' ? 'ru-RU' : 'en-GB'
+  const locale = lcdLanguage === 'cs' ? 'cs-CZ' : lcdLanguage === 'ru' ? 'ru-RU' : 'en-GB'
   const timeStr = localTime.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
 
   const isBargrafRunning = cardInsertionState?.phase === 'loading'

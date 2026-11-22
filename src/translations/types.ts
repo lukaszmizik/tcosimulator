@@ -1,6 +1,8 @@
 /** Typ definice překladů pro i18n */
 
-export type SupportedLanguage = 'cs' | 'en' | 'ru'
+export type SupportedLanguage = 'cs' | 'en' | 'ru' | 'mn'
+/** Jazyk displeje a menu přístroje. Mongolština je jen vnější rozhraní. */
+export type DeviceLanguage = Exclude<SupportedLanguage, 'mn'>
 
 export type Translations = {
   ui: {

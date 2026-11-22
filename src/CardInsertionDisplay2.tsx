@@ -3,7 +3,7 @@
  * Vyčleněno z CardWizard2.tsx bez změny obrazovek, textů a pořadí fází.
  */
 
-import { useLanguage } from './translations'
+import { useDeviceLanguage } from './translations'
 import type { CardInsertionState } from './TachoTypes'
 import type { CountryEntry } from './data/countriesLoader'
 import type { SymbolMap, TachoState } from './TachoTypes'
@@ -33,7 +33,7 @@ export type CardInsertionDisplay2Props = {
 /** Zobrazení – shodné s CardWizard (L1, L2, symboly, kurzor) */
 export function CardInsertionDisplay2(props: CardInsertionDisplay2Props) {
   const { symbolMap, cardInsertionState: cs, isMultiManning, countries, spanishRegions, lastEjectionTimeBySlot, localTime, timeOffsetMs = 0, timeStr, currentSpeed, odometerKm, card1Inserted, card2Inserted, leftActivityId, rightActivityId } = props
-  const { t, language } = useLanguage()
+  const { t, language } = useDeviceLanguage()
   const countryQuestion = language === 'en' ? '' : '?'
   /** Ve fázích načítání (welcome, loading) se zobrazuje pouze příjmení. */
   const displayName = cs.phase === 'welcome' || cs.phase === 'loading' ? (cs.cardSurname ?? cs.cardName) : cs.cardName

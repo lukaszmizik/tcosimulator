@@ -3,7 +3,7 @@ import type { SupportedLanguage } from '../translations/types'
 type Message = readonly [display: string, meaning: string, action: string]
 type Group = { title: string, messages: readonly Message[] }
 
-const catalog: Record<SupportedLanguage, readonly Group[]> = {
+const catalog: Record<Exclude<SupportedLanguage, 'mn'>, readonly Group[]> = {
   cs: [
     { title: "Události", messages: [
       ["!\ue015 porušená\nbezpečnost xx", "Chyba v datové paměti, bezpečnost dat v tachografu DTCO 4.1x již není zaručena. Data snímače již nejsou spolehlivá. Skříň tachografu DTCO 4.1x byla neoprávněně otevřena.", "Potvrďte hlášení."],
@@ -238,7 +238,8 @@ const catalog: Record<SupportedLanguage, readonly Group[]> = {
 }
 
 export function getMessageGroups(language: SupportedLanguage) {
-  return catalog[language].map(({ title, messages }, groupIndex) => ({
+  const groups = catalog[language === 'mn' ? 'en' : language]
+  return groups.map(({ title, messages }, groupIndex) => ({
     id: String(groupIndex),
     title,
     entries: messages.map(([display, meaning, action], index) => ({

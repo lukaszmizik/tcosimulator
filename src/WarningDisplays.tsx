@@ -3,7 +3,7 @@
  * Vyčleněno z TachoDisplay.tsx bez změny vzhledu a vstupů.
  */
 
-import { useLanguage } from './translations'
+import { useDeviceLanguage } from './translations'
 import type { SymbolMap } from './TachoTypes'
 import { formatWorkWarning, getWarning, type WarningDef } from './data/warnings'
 import { parseSymbols } from './Symbols'
@@ -22,7 +22,7 @@ export function OverrideWarningDisplay({ symbolMap, warningDef }: { symbolMap: S
 }
 
 export function DrivingWithoutCardWarningDisplay({ symbolMap }: { symbolMap: SymbolMap | null }) {
-  const { language } = useLanguage()
+  const { language } = useDeviceLanguage()
   const def = getWarning('28', language)!
   return (
     <div className="lcd-two-rows lcd-card-warning-blink">
@@ -37,7 +37,7 @@ export function DrivingWithoutCardWarningDisplay({ symbolMap }: { symbolMap: Sym
 }
 
 export function BreakWarningDisplay({ symbolMap, breakWarningActive }: { symbolMap: SymbolMap | null; breakWarningActive: '415' | '430' }) {
-  const { language } = useLanguage()
+  const { language } = useDeviceLanguage()
   const def = getWarning(breakWarningActive, language)!
   return (
     <div className="lcd-two-rows lcd-card-warning-blink">
@@ -60,7 +60,7 @@ export function WorkTimeWarningDisplay({
   slot: 1 | 2
   continuousMs: number
 }) {
-  const { language } = useLanguage()
+  const { language } = useDeviceLanguage()
   const text = formatWorkWarning(language, slot, continuousMs)
   return (
     <div className="lcd-two-rows lcd-card-warning-blink" data-work-warning={text.line2}>
@@ -75,7 +75,7 @@ export function WorkTimeWarningDisplay({
 }
 
 export function ExcessSpeedWarningDisplay({ symbolMap }: { symbolMap: SymbolMap | null }) {
-  const { t } = useLanguage()
+  const { t } = useDeviceLanguage()
   return (
     <div className="lcd-two-rows lcd-card-warning-blink">
       <div className="lcd-row lcd-row-warning-inline">
@@ -90,7 +90,7 @@ export function ExcessSpeedWarningDisplay({ symbolMap }: { symbolMap: SymbolMap 
 }
 
 export function EjectionBlockedWarningDisplay({ symbolMap }: { symbolMap: SymbolMap | null }) {
-  const { t } = useLanguage()
+  const { t } = useDeviceLanguage()
   const l1 = parseSymbols(`(35)(14)\u00A0${t.tachoDisplay.ejectionBlockedL1}`, symbolMap)
   return (
     <div className="lcd-two-rows lcd-card-warning-blink">
@@ -112,7 +112,7 @@ export function ExpiredInsertedCardWarningDisplay({
   symbolMap: SymbolMap | null
   slot: 1 | 2
 }) {
-  const { t } = useLanguage()
+  const { t } = useDeviceLanguage()
   const l1 = parseSymbols(`!(14)${slot}\u00A0${t.cardWizard.invalidCardL1}`, symbolMap)
   return (
     <div className="lcd-two-rows lcd-card-warning-blink">
@@ -130,7 +130,7 @@ export function InsertionWhileDrivingWarningDisplay({
   symbolMap: SymbolMap | null
   slot: 1 | 2
 }) {
-  const { t } = useLanguage()
+  const { t } = useDeviceLanguage()
   const l1 = parseSymbols(`!(14)(2)${slot}\u00A0${t.tachoDisplay.insertionWhileDrivingL1}`, symbolMap)
   return (
     <div className="lcd-two-rows lcd-card-warning-blink">

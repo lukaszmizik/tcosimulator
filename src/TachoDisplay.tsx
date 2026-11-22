@@ -1,11 +1,11 @@
 import { LANGUAGE_PAGE, MAIN_MENU_PAGE, UTC_PAGE, languageLabels, utcRows } from './firstLevelDisplay'
-import type { SupportedLanguage } from './translations/types'
+import type { DeviceLanguage } from './translations/types'
 /**
  * Vizuál displeje tachografu - L1, L2, ikonky, všechny obrazovky
  */
 
 import { useState, useEffect } from 'react'
-import { useLanguage } from './translations'
+import { useDeviceLanguage } from './translations'
 import type { SymbolMap } from './TachoTypes'
 import type { CardInsertionState, CardWithdrawalState, MenuCountryInputState, MenuLoadUnloadConfirmState, PrintWizardState, ActivityHistoryEntry } from './TachoTypes'
 import type { DisplayBrowseState } from './print/printDisplayBrowse'
@@ -94,7 +94,7 @@ export type TachoDisplayProps = {
   /** Index obrazovky VDO counter (0–6) na základní obrazovce */
   operatingScreenIndex?: number
   /** Pojmenovaná obrazovka. Hlavní Counter je výchozí obrazovka bez názvu. */
-  languageDraft?: SupportedLanguage | null
+  languageDraft?: DeviceLanguage | null
   languageSaved?: boolean
   vdoNamedScreen?: VdoNamedScreen | null
   /** Odjetý čas od platného odpočinku. null je neznámý a na přehledu se ukáže jako pomlčky. */
@@ -192,7 +192,7 @@ function DurationWithActiveH({ text, active }: { text: string; active: boolean }
 }
 
 function LoadUnloadConfirmDisplay() {
-  const { t } = useLanguage()
+  const { t } = useDeviceLanguage()
   return (
     <div className="lcd-two-rows lcd-card-insertion">
       <div className="lcd-row lcd-row-left">{t.tachoDisplay.input}</div>
@@ -202,7 +202,7 @@ function LoadUnloadConfirmDisplay() {
 }
 
 export function TachoDisplay(props: TachoDisplayProps) {
-  const { language } = useLanguage()
+  const { language } = useDeviceLanguage()
   const { symbolMap, cardInsertionState, cardWithdrawalState, drivingWithoutCardWarningActive, drivingWithoutValidCardWarningActive, breakWarningActive, workWarningActive, workWarningSlot = 1, workWarningMs, excessSpeedWarningActive, ejectionBlockedWarningActive, expiredInsertedCardWarningSlot, insertionWhileDrivingWarningSlot, overrideWarningCode, menuCountryInputState, menuLoadUnloadConfirmState, printWizardState, displayBrowseState, printStartedToastUntil, displayMode, showOutOnL2 = false } = props
 
   if (typeof window !== 'undefined' && window.location.search.includes('debug=1')) {
@@ -318,7 +318,7 @@ export function TachoDisplay(props: TachoDisplayProps) {
 
 function CardWithdrawalDisplay(props: TachoDisplayProps) {
   const { symbolMap, cardWithdrawalState, countries, simulatedUtcTime = Date.now() } = props
-  const { t } = useLanguage()
+  const { t } = useDeviceLanguage()
   const ws = cardWithdrawalState!
 
   if (ws.phase === 'bargraf') {
@@ -389,7 +389,7 @@ function CardWithdrawalDisplay(props: TachoDisplayProps) {
 }
 
 function DrivingWithoutValidCardWarningDisplay({ symbolMap }: { symbolMap: SymbolMap | null }) {
-  const { language } = useLanguage()
+  const { language } = useDeviceLanguage()
   const def = getWarning('29', language)!
   return (
     <div className="lcd-two-rows lcd-card-warning-blink">
@@ -405,7 +405,7 @@ function DrivingWithoutValidCardWarningDisplay({ symbolMap }: { symbolMap: Symbo
 
 function PrintWizardDisplay(props: TachoDisplayProps) {
   const { symbolMap, printWizardState } = props
-  const { t } = useLanguage()
+  const { t } = useDeviceLanguage()
   const pw = printWizardState!
 
   if (pw.step === 'utc') {
@@ -464,7 +464,7 @@ function DisplayBrowseDisplay(props: { symbolMap: SymbolMap | null; state: Displ
 
 function PrintStartedDisplay(props: { symbolMap: SymbolMap | null }) {
   const { symbolMap } = props
-  const { t } = useLanguage()
+  const { t } = useDeviceLanguage()
   const l1 = parseSymbols('výtisk', symbolMap)
   return (
     <div className="lcd-two-rows lcd-card-insertion">
@@ -476,7 +476,7 @@ function PrintStartedDisplay(props: { symbolMap: SymbolMap | null }) {
 
 function MenuCountryInputDisplay(props: TachoDisplayProps) {
   const { symbolMap, menuCountryInputState, countries } = props
-  const { t, language } = useLanguage()
+  const { t, language } = useDeviceLanguage()
   const countryQuestion = language === 'en' ? '' : '?'
   const mc = menuCountryInputState!
   if (mc.phase === 'confirmSaved') {
@@ -505,7 +505,7 @@ function Vdo24hDisplay(props: {
   nextDailyRestMs?: number | null
   latestDailyRestStartMs?: number | null
 }) {
-  const { t } = useLanguage()
+  const { t } = useDeviceLanguage()
   const missing = t.workWeek.shiftSumRestPlaceholder
   const dailyText = typeof props.dailyRemainingMs === 'number'
     ? formatDurationHhMm(props.dailyRemainingMs, true)
@@ -545,7 +545,7 @@ function VdoWeekDisplay(props: {
   nextWeeklyRestMs?: number | null
   latestWeeklyRestStartMs?: number | null
 }) {
-  const { t } = useLanguage()
+  const { t } = useDeviceLanguage()
   const missing = t.workWeek.shiftSumRestPlaceholder
   const weeklyText = typeof props.weeklyRemainingMs === 'number'
     ? formatDurationHhMm(props.weeklyRemainingMs, true)
@@ -588,7 +588,7 @@ function VdoiDisplay(props: {
   reducedDailyRemaining?: number | null
   compensationMs?: number | null
 }) {
-  const { t } = useLanguage()
+  const { t } = useDeviceLanguage()
   const missing = t.workWeek.shiftSumRestPlaceholder
   const extensionsText = typeof props.extensionsRemaining === 'number' ? String(props.extensionsRemaining) : missing
   const reducedText = typeof props.reducedDailyRemaining === 'number' ? String(props.reducedDailyRemaining) : missing
@@ -620,7 +620,7 @@ function VdoiDisplay(props: {
 }
 
 function OperatingDisplay(props: TachoDisplayProps) {
-  const { language, t } = useLanguage()
+  const { language, t } = useDeviceLanguage()
   const {
     symbolMap,
     timeStr,

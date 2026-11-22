@@ -177,7 +177,7 @@
 .dash .apply-key { width: 100%; color: #11212c; background: var(--blue); border-color: var(--blue); }
 .dash .apply-key:hover:not(:disabled):not([aria-disabled="true"]) { background: #bbebff; }
 .dash-tools { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 10px; margin-top: 10px; }
-.dash-check { display: flex; gap: 8px; align-items: center; color: #ccd7e1; font-size: .83rem; margin-top: 12px; }
+.dash-check { display: flex; gap: 8px; align-items: flex-start; color: #ccd7e1; font-size: .83rem; margin-top: 12px; min-width: 0; overflow-wrap: anywhere; }
 .dash-check input { flex: 0 0 auto; margin: 0; width: 17px; height: 17px; accent-color: var(--blue); }
 .dash-stop-message {
   margin: 0;

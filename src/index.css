@@ -1696,6 +1696,7 @@ body {
   font-size: 14px;
   line-height: 1.45;
   white-space: pre-line;
+  overflow-wrap: anywhere;
 }
 
 .info-panel-content {
@@ -1704,6 +1705,7 @@ body {
   line-height: 1.45;
   flex: 1;
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .info-panel-manual-label {

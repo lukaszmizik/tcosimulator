@@ -73,7 +73,9 @@ export function isWarningCode(code: string): code is WarningId {
   return Object.prototype.hasOwnProperty.call(WARNINGS, code)
 }
 
-const warningTranslations: Record<Exclude<SupportedLanguage, 'cs'>, Record<WarningId, Pick<WarningDef, 'line1' | 'line2'>>> = {
+type WarningLanguage = Exclude<SupportedLanguage, 'mn'>
+
+const warningTranslations: Record<Exclude<WarningLanguage, 'cs'>, Record<WarningId, Pick<WarningDef, 'line1' | 'line2'>>> = {
   en: {
     '28': { line1: '(27)(2)(14)\u00A0driving', line2: 'without card 28' },
     '29': { line1: '(27)(2)(14)\u00A0driving', line2: 'without card 29' },
@@ -114,8 +116,13 @@ export function formatWorkWarning(
   }
 }
 
+function warningLanguage(language: SupportedLanguage): WarningLanguage {
+  return language === 'mn' ? 'en' : language
+}
+
 export function getWarning(code: string, language: SupportedLanguage = 'cs'): WarningDef | null {
   if (!isWarningCode(code)) return null
   const warning = WARNINGS[code]
-  return language === 'cs' ? warning : { ...warning, ...warningTranslations[language][code] }
+  const lcd = warningLanguage(language)
+  return lcd === 'cs' ? warning : { ...warning, ...warningTranslations[lcd][code] }
 }

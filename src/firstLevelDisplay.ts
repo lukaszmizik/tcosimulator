@@ -1,9 +1,9 @@
-import type { SupportedLanguage } from './translations/types'
+import type { DeviceLanguage } from './translations/types'
 
 export const UTC_PAGE = 2
 export const LANGUAGE_PAGE = 3
 export const MAIN_MENU_PAGE = 4
-export const languages: SupportedLanguage[] = ['cs', 'en', 'ru']
+export const languages: DeviceLanguage[] = ['cs', 'en', 'ru']
 export const languageLabels = {
   cs: { prompt: ['výběr', 'jazyka?'], title: 'jazyk', name: 'česky', menu: ['vyvolat hlavní', 'menu?'] },
   en: { prompt: ['select', 'language?'], title: 'language', name: 'english', menu: ['call main menu?', ''] },
@@ -20,7 +20,7 @@ export function utcRows(utcMs: number, local: Date) {
 }
 
 const storageKey = 'dtco.cardLanguages'
-type Preference = { card: string; language: SupportedLanguage }
+type Preference = { card: string; language: DeviceLanguage }
 function preferences(): Preference[] {
   try {
     const data = JSON.parse(localStorage.getItem(storageKey) ?? '[]')
@@ -30,7 +30,7 @@ function preferences(): Preference[] {
 export function recalledLanguage(card: string) {
   return preferences().find(p => p.card === card)?.language
 }
-export function rememberLanguage(card: string, language: SupportedLanguage) {
+export function rememberLanguage(card: string, language: DeviceLanguage) {
   const entries = preferences().filter(p => p.card !== card)
   try { localStorage.setItem(storageKey, JSON.stringify([...entries, { card, language }].slice(-5))) } catch { /* Storage unavailable. */ }
 }

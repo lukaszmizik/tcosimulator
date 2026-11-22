@@ -5,7 +5,7 @@ import type { SupportedLanguage } from '../translations/types'
 type LocalizedText = readonly [cs: string, en: string, ru: string]
 type ReferenceRow = readonly [code: string, ...labels: LocalizedText]
 
-const languageIndex = { cs: 0, en: 1, ru: 2 } satisfies Record<SupportedLanguage, number>
+const languageIndex = { cs: 0, en: 1, ru: 2, mn: 1 } satisfies Record<SupportedLanguage, number>
 
 const titles = {
   operatingModes: ["Provozní režimy", "Operating modes", "Режимы эксплуатации"],

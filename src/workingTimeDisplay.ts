@@ -118,10 +118,13 @@ function currentWithoutRest(spans: readonly Span[], nowMs: number, intervals: re
   if (qualifyingRest(active)) {
     return covered(intervals, active.startMs, nowMs, undetermined) ? 0 : null
   }
+  const openMinute = Math.floor(nowMs / MINUTE_MS) * MINUTE_MS
   let chainStart = merged[0]?.startMs ?? active.startMs
   for (let earlier = index; earlier >= 0; earlier -= 1) {
     const span = merged[earlier]!
-    if (earlier < index && span.endMs < merged[earlier + 1]!.startMs) return null
+    // Uzavřené minuty končí na hraně minuty a sekundový zápis začíná až později.
+    // Tahle díra není neznámý čas, stejně jako ji přeskakuje kontrola pokrytí.
+    if (earlier < index && span.endMs < merged[earlier + 1]!.startMs && span.endMs < openMinute) return null
     if (qualifyingRest(span)) {
       chainStart = span.endMs
       break

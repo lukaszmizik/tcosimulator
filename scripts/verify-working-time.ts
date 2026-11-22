@@ -111,6 +111,25 @@ const gap = workingTimeDisplay([
   { kind: 'driving', startMs: NOW - 2 * H, endMs: NOW },
 ], NOW)
 assert.equal(gap.currentWithoutRestMs, null)
+
+const openMinute = Math.floor(NOW / M) * M
+const second = 1000
+const afterJump = openMinute + 17 * second
+const openMinuteHole = workingTimeDisplay([
+  { kind: 'rest', startMs: openMinute - 18 * H, endMs: openMinute - 7 * H },
+  { kind: 'work', startMs: openMinute - 7 * H, endMs: openMinute },
+  { kind: 'work', startMs: openMinute + 16 * second, endMs: afterJump },
+], afterJump)
+assert.equal(openMinuteHole.currentWithoutRestMs, 7 * H + second)
+assert.equal(nextWorkWarning(openMinuteHole.currentWithoutRestMs, fresh).level, '600')
+const keptAfterSample = nextWorkWarning(openMinuteHole.currentWithoutRestMs, fresh)
+assert.equal(nextWorkWarning(openMinuteHole.currentWithoutRestMs + second, keptAfterSample.dismissed).level, '600')
+
+const gapBeforeOpenMinute = workingTimeDisplay([
+  { kind: 'work', startMs: openMinute - 7 * H, endMs: openMinute - 2 * M },
+  { kind: 'work', startMs: openMinute + 16 * second, endMs: afterJump },
+], afterJump)
+assert.equal(gapBeforeOpenMinute.currentWithoutRestMs, null)
 assert.equal(gap.sinceDailyOrWeeklyRestMs, null)
 assert.equal(gap.breaksInPeriodMs, null)
 assert.equal(gap.availabilityMs, null)

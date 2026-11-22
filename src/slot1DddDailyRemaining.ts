@@ -196,7 +196,8 @@ export type UncoveredInterval = {
 
 /**
  * První díra v [fromMs, toMs). Díra jen v nedokončené aktuální minutě,
- * do které záznam už sahá, se nepočítá: minutový zápis tu vteřinu ještě nemá.
+ * do které záznam už sahá, se nepočítá: minutový zápis tu vteřinu ještě nemá
+ * a sekundový vzorek může začít až později v téže minutě.
  */
 export function firstUncoveredInterval(
   intervals: readonly DrivingBreakInterval[],
@@ -216,14 +217,18 @@ function coverageWalk(
     .map((item) => ({ startMs: Math.max(item.startMs, fromMs), endMs: Math.min(item.endMs, toMs) }))
     .filter((item) => item.endMs > item.startMs)
     .sort((left, right) => left.startMs - right.startMs || left.endMs - right.endMs)
+  const openMinute = Math.floor(toMs / MINUTE_MS) * MINUTE_MS
   let cursor = fromMs
   for (const span of spans) {
-    if (span.startMs > cursor) return { covered: false, hole: { startMs: cursor, endMs: span.startMs } }
+    if (span.startMs > cursor) {
+      // Sekundový vzorek začíná až v průběhu minuty. Díra před ním není neznámý čas.
+      const holeInOpenMinute = cursor >= openMinute && toMs > openMinute
+      if (!holeInOpenMinute) return { covered: false, hole: { startMs: cursor, endMs: span.startMs } }
+    }
     if (span.endMs > cursor) cursor = span.endMs
     if (cursor >= toMs) return { covered: true, hole: null }
   }
   if (cursor >= toMs) return { covered: true, hole: null }
-  const openMinute = Math.floor(toMs / MINUTE_MS) * MINUTE_MS
   if (cursor >= openMinute && toMs > openMinute) return { covered: true, hole: null }
   return { covered: false, hole: { startMs: cursor, endMs: toMs } }
 }

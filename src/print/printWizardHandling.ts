@@ -35,6 +35,7 @@ export type PrintWizardKeyEffects = {
   openDisplayDriverEvents?: (slot: 1 | 2, isUtc: boolean) => void
   openDisplayVehicleEvents?: (isUtc: boolean) => void
   openDisplayVehicle24h?: (dayUtc: number, isUtc: boolean) => void
+  openInsertedCardsPrint?: (isUtc: boolean) => void
 }
 
 export function applyPrintWizardKey(
@@ -47,7 +48,7 @@ export function applyPrintWizardKey(
   const openDriver = prev.action.startsWith('PRINT_ACT_')
     ? effects.openPrintDriverActivities : effects.openPrintDriverCard
   if (action === 'back') {
-    if (isEventOnlyAction(prev.action)) return null
+    if (isEventOnlyAction(prev.action) || prev.action === 'PRINT_CARDS_V') return null
     if (prev.step === 'utc') return { ...prev, step: 'date' }
     return null
   }
@@ -66,6 +67,11 @@ export function applyPrintWizardKey(
     return { ...prev, utcYes: false }
   }
   if (action === 'ok') {
+    if (prev.action === 'PRINT_CARDS_V') {
+      effects.setCurrentMenuPath(prev.returnMenuPath)
+      effects.openInsertedCardsPrint?.(prev.utcYes)
+      return null
+    }
     if (prev.action === 'PRINT_EVENT_V') {
       effects.setCurrentMenuPath(prev.returnMenuPath)
       effects.openPrintVehicleEvents?.(prev.utcYes)
@@ -152,6 +158,7 @@ export type PrintMenuActionResult =
   | { type: 'openSpeed' }
   | { type: 'openTechnical' }
   | { type: 'openTechnicalDisplay' }
+  | { type: 'openInsertedCardsPrint'; state: PrintWizardState }
 
 /** Vrátí obsluhu známé tiskové/displejové akce. Neznámá akce vrací null. */
 export function resolvePrintMenuAction(input: PrintMenuActionInput): PrintMenuActionResult | null {
@@ -221,6 +228,16 @@ export function resolvePrintMenuAction(input: PrintMenuActionInput): PrintMenuAc
   }
   if (action === 'DISP_TECH_V') {
     return { type: 'openTechnicalDisplay' }
+  }
+  if (action === 'PRINT_CARDS_V') {
+    return {
+      type: 'openInsertedCardsPrint',
+      state: {
+        action, step: 'utc', menuItemLine2: line2, utcYes: true,
+        availableDatesUtc: [], dateIndex: 0, returnMenuPath: [...currentMenuPath],
+        requiresUtcConfirm: true,
+      },
+    }
   }
   return null
 }

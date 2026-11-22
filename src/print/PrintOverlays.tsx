@@ -24,6 +24,8 @@ import { PrintVehicle24hOverlay } from '../components/overlays/PrintVehicle24hOv
 import { PrintVDiagramOverlay } from '../components/overlays/PrintVDiagramOverlay'
 import { PrintSpeedVehicleOverlay } from '../components/overlays/PrintSpeedVehicleOverlay'
 import { buildTechnicalDataPrintRows } from './technicalDataPrintRows'
+import { buildInsertedCardsPrintRows } from './insertedCardsPrintRows'
+import type { VehicleCardInsertion } from './vehicleCardInsertions'
 import type { Driver1PrintCardActivity } from './prepareDriver1Print24h'
 
 export type PrintOverlaysProps = {
@@ -41,6 +43,8 @@ export type PrintOverlaysProps = {
   vehicleDay: () => VehicleDayPrintData
   vehicleProfile: PrintVehicleProfile
   dailyDriverCard: (slot: 1 | 2) => Omit<DailyCardPrintInput, 'selectedDayUtc' | 'isUtc'>
+  insertedCardsNow: readonly VehicleCardInsertion[]
+  vehicleCardInsertions: readonly VehicleCardInsertion[]
 }
 
 export function PrintOverlays({
@@ -58,6 +62,8 @@ export function PrintOverlays({
   vehicleDay,
   vehicleProfile,
   dailyDriverCard,
+  insertedCardsNow,
+  vehicleCardInsertions,
 }: PrintOverlaysProps) {
   const {
     printDriver1Open,
@@ -184,6 +190,22 @@ export function PrintOverlays({
         />
       )}
 
+      {printState.printInsertedCardsUtc !== null && showPreview && (
+        <InsertedCardsPreview
+          input={() => ({
+            printedAtUtc: simulatedUtcTime,
+            isUtc: printState.printInsertedCardsUtc ?? true,
+            localOffsetMs: vehicleDay().localOffsetMs,
+            insertedNow: insertedCardsNow,
+            insertionHistory: vehicleCardInsertions,
+          })}
+          symbols={symbolMap}
+          title={t.menu.items.PV_CARDS?.line2 ?? ''}
+          closeLabel={t.printOverlay.close}
+          onClose={printState.onCloseInsertedCards}
+        />
+      )}
+
       {printTechnicalOpen && showPreview && (
         <TechnicalPreview
           input={() => ({
@@ -209,6 +231,21 @@ export function PrintOverlays({
         card={card1Inserted ? card1Data : null}
       />}
     </>
+  )
+}
+
+function InsertedCardsPreview({ input, symbols, title, closeLabel, onClose }: {
+  input: () => Parameters<typeof buildInsertedCardsPrintRows>[0]
+  symbols: SymbolMap | null
+  title: string
+  closeLabel: string
+  onClose: () => void
+}) {
+  const [rows] = useState(() => buildInsertedCardsPrintRows(input()))
+  return (
+    <PrintPreview title={title} closeLabel={closeLabel} onClose={onClose} ready={!!symbols?.[18]}>
+      <PrintRows rows={rows} symbols={symbols} />
+    </PrintPreview>
   )
 }
 

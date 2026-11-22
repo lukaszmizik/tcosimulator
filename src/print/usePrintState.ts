@@ -29,6 +29,9 @@ export type UsePrintStateReturn = {
   onCloseDriverEvents: () => void
   printSpeedVehicleOpen: boolean
   printTechnicalOpen: boolean
+  printInsertedCardsUtc: boolean | null
+  openPrintInsertedCards: (isUtc: boolean) => void
+  onCloseInsertedCards: () => void
   printStartedToastUntil: number | null
 
   // Odvozené
@@ -67,6 +70,7 @@ export function usePrintState(): UsePrintStateReturn {
   const [printDriverEvents, setPrintDriverEvents] = useState<{ slot: 1 | 2; isUtc: boolean } | null>(null)
   const [printSpeedVehicleOpen, setPrintSpeedVehicleOpen] = useState(false)
   const [printTechnicalOpen, setPrintTechnicalOpen] = useState(false)
+  const [printInsertedCardsUtc, setPrintInsertedCardsUtc] = useState<boolean | null>(null)
   const [printStartedToastUntil, setPrintStartedToastUntil] = useState<number | null>(null)
   const printStartedToastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pendingPrintRef = useRef<(() => void) | null>(null)
@@ -137,6 +141,10 @@ export function usePrintState(): UsePrintStateReturn {
   const openPrintTechnical = useCallback(() => {
     armPrint(() => setPrintTechnicalOpen(true))
   }, [armPrint])
+  const openPrintInsertedCards = useCallback((isUtc: boolean) => {
+    armPrint(() => setPrintInsertedCardsUtc(isUtc))
+  }, [armPrint])
+  const onCloseInsertedCards = useCallback(() => setPrintInsertedCardsUtc(null), [])
 
   const openPrintVehicleEvents = useCallback((isUtc: boolean) => {
     armPrint(() => setPrintVehicleEventsUtc(isUtc))
@@ -179,6 +187,7 @@ export function usePrintState(): UsePrintStateReturn {
     setPrintVehicle24hSelectedDate(null)
     setPrintSpeedVehicleOpen(false)
     setPrintTechnicalOpen(false)
+    setPrintInsertedCardsUtc(null)
     setPrintVehicleEventsUtc(null)
     setPrintDriverEvents(null)
   }, [cancelPendingPrint])
@@ -192,6 +201,7 @@ export function usePrintState(): UsePrintStateReturn {
     || printVehicle24hOpen
     || printSpeedVehicleOpen
     || printTechnicalOpen
+    || printInsertedCardsUtc !== null
     || printStartedToastUntil !== null
 
   return {
@@ -215,6 +225,9 @@ export function usePrintState(): UsePrintStateReturn {
     printVehicle24hIsUtc,
     printSpeedVehicleOpen,
     printTechnicalOpen,
+    printInsertedCardsUtc,
+    openPrintInsertedCards,
+    onCloseInsertedCards,
     printStartedToastUntil,
     isPrintoutActive,
     openPrintDriverCard,

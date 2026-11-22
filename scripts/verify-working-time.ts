@@ -272,7 +272,10 @@ assert.doesNotMatch(prewarning, /work-600/)
 const limit = bubbleText('600')
 assert.match(limit, /work-600/)
 assert.match(limit, /<table/)
+assert.match(limit, /Délka práce/)
 assert.match(limit, /6 hodin v kuse/)
+assert.match(limit, /\(2\)/)
+assert.match(limit, /\(9\)/)
 assert.match(limit, /30 minut/)
 assert.match(limit, /45 minut/)
 assert.doesNotMatch(limit, /takových přestávek/)
@@ -281,12 +284,19 @@ assert.doesNotMatch(bubbleText(null), /work-54/)
 
 for (const language of ['en', 'ru'] as const) {
   const copy = getTranslations(language).infoPanel
-  const work600 = [copy.work600.intro, copy.work600.note, ...copy.work600.rows.flat()].join('\n')
+  const work600 = [copy.work600.intro, copy.work600.sum, copy.work600.note, ...copy.work600.rows.flat()].join('\n')
   assert.match(copy.work545, /2002\/15/)
   assert.match(copy.work545, /15/)
   assert.match(work600, /30/)
   assert.match(work600, /45/)
+  assert.match(work600, /\(2\)/)
+  assert.match(work600, /\(9\)/)
   assert.equal(copy.work600.rows.length, 3)
 }
+const mnWork = getTranslations('mn').infoPanel.work600
+assert.match(mnWork.sum, /\(2\)/)
+assert.match(mnWork.sum, /\(9\)/)
+assert.match(mnWork.columns[0], /Ажлын/)
+assert.equal(mnWork.rows.length, 3)
 
 console.log('working time ok')

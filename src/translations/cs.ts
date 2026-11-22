@@ -67,13 +67,14 @@ export const cs: Translations = {
     work600: {
       intro: 'Pracuješ 6 hodin bez přestávky. Potvrď hlášku tlačítkem OK.',
       caption: 'Jakou přestávku udělat',
-      columns: ['Kdy', 'Přestávka'],
+      columns: ['Délka práce', 'Přestávka'],
       rows: [
         ['6 hodin v kuse', 'aspoň 15 minut'],
         ['práce nad 6 až 9 hodin', 'dohromady 30 minut'],
         ['práce nad 9 hodin', 'dohromady 45 minut'],
       ],
-      note: 'Do součtu patří jen přestávka od 15 minut. Kratší odpočinek práci v kuse nepřeruší. Sčítá se řízení a jiná práce, pohotovost zůstává mimo.',
+      sum: 'Práce je součet doby řízení (2) a jiné práce (9).',
+      note: 'Do součtu patří jen přestávka od 15 minut. Kratší odpočinek práci v kuse nepřeruší. Pohotovost se nepočítá.',
     },
     supplementActivities: 'Nyní jsi povinen doplnit aktivity na svou kartu.', // 5
     lastWithdrawal: 'Poslední vytažení karty bylo', // 6

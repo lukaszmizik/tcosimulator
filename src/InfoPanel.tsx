@@ -149,7 +149,11 @@ export function InfoPanel({ items, resetTrigger, symbolMap, collapsed = false, m
           <div key={`${item.id}-${language}`} className={`info-panel-item info-panel-item--${item.type}`}
             data-current={(mobile && item.id === newestItemId) || undefined}>
             <InfoIcon type={item.type} />
-            {item.content != null ? (
+            {item.id === 'work-600' ? (
+              <div className="info-panel-content">
+                <Work600Bubble copy={t.infoPanel.work600} symbolMap={symbolMap} />
+              </div>
+            ) : item.content != null ? (
               <div className="info-panel-content">{item.content}</div>
             ) : (
               <div className="info-panel-content">
@@ -177,11 +181,18 @@ function work600Plain(copy: Translations['infoPanel']['work600']): string {
     copy.intro,
     copy.caption,
     ...copy.rows.map((row) => `${row[0]}: ${row[1]}`),
+    copy.sum,
     copy.note,
   ].join('\n')
 }
 
-function Work600Bubble({ copy }: { copy: Translations['infoPanel']['work600'] }) {
+function Work600Bubble({
+  copy,
+  symbolMap,
+}: {
+  copy: Translations['infoPanel']['work600']
+  symbolMap?: SymbolMap | null
+}) {
   return (
     <div className="info-panel-work600">
       <p className="info-panel-text">{copy.intro}</p>
@@ -202,6 +213,7 @@ function Work600Bubble({ copy }: { copy: Translations['infoPanel']['work600'] })
           ))}
         </tbody>
       </table>
+      <p className="info-panel-text">{parseSymbols(copy.sum, symbolMap, { symbolBg: true })}</p>
       <p className="info-panel-text">{copy.note}</p>
     </div>
   )

@@ -68,12 +68,14 @@ export type Translations = {
     break415: string
     break430: string
     work545: string
-    /** Výstraha 6:00. Úvod, popisek a tři řádky tabulky přestávek. */
+    /** Výstraha 6:00. Úvod, tabulka přestávek a věta se symboly (2) a (9). */
     work600: {
       intro: string
       caption: string
       columns: readonly [string, string]
       rows: readonly (readonly [string, string])[]
+      /** Práce je součet doby řízení (2) a jiné práce (9). */
+      sum: string
       note: string
     }
     supplementActivities: string

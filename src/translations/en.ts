@@ -67,13 +67,14 @@ export const en: Translations = {
     work600: {
       intro: 'You have worked 6 hours without a break. Confirm the message with OK.',
       caption: 'Which break to take',
-      columns: ['When', 'Break'],
+      columns: ['Working time', 'Break'],
       rows: [
         ['6 hours without a break', 'at least 15 minutes'],
         ['work over 6 and up to 9 hours', '30 minutes in total'],
         ['work over 9 hours', '45 minutes in total'],
       ],
-      note: 'Only a break of at least 15 minutes is included. A shorter rest leaves the stretch of work running. Driving and other work are added together. Availability is left out.',
+      sum: 'Work is the sum of driving time (2) and other work (9).',
+      note: 'Only a break of at least 15 minutes is included. A shorter rest leaves the stretch of work running. Availability is left out.',
     },
     supplementActivities: 'You must now supplement activities on your card.', // 5
     lastWithdrawal: 'Last card withdrawal was', // 6

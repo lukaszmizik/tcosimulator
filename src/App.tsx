@@ -142,6 +142,15 @@ import { CardPrepMenu, type CardPrep } from './CardPrepMenu'
 import { usePrintState } from './print/usePrintState'
 import { PrintOverlays } from './print/PrintOverlays'
 import { driverPrintSlot, applyPrintWizardKey, resolvePrintMenuAction } from './print/printWizardHandling'
+import {
+  appendVehicleCardInsertion,
+  browserCardInsertionStorage,
+  currentVehicleCardInsertion,
+  loadVehicleCardInsertions,
+  snapshotDriverInsertion,
+  writeVehicleCardInsertions,
+  type VehicleCardInsertion,
+} from './print/vehicleCardInsertions'
 import { driver1PrintCardActivities, simulatedPrintCardActivities, ongoingPrintCardActivity } from './print/prepareDriver1Print24h'
 import { useMenuCountryInput } from './useMenuCountryInput'
 import { useMenuLoadUnload } from './useMenuLoadUnload'
@@ -273,6 +282,9 @@ export default function App() {
   const [card1Inserted, setCard1Inserted] = useState(false)
   const [driverCardInsertedAtUtc, setDriverCardInsertedAtUtc] = useState(0)
   const [card2Inserted, setCard2Inserted] = useState(false)
+  const [vehicleCardInsertions, setVehicleCardInsertions] = useState<VehicleCardInsertion[]>(
+    () => loadVehicleCardInsertions(browserCardInsertionStorage()),
+  )
   useEffect(() => {
     const next = counterIndexAfterCardRemoval({
       index: operatingScreenIndex,
@@ -1452,6 +1464,7 @@ export default function App() {
       openDisplayDriverEvents: (slot, isUtc) => displayBrowseBuildersRef.current.driverEvents(slot, isUtc),
       openDisplayVehicleEvents: (isUtc) => displayBrowseBuildersRef.current.vehicleEvents(isUtc),
       openDisplayVehicle24h: (dayUtc, isUtc) => displayBrowseBuildersRef.current.vehicle24h(dayUtc, isUtc),
+      openInsertedCardsPrint: printState.openPrintInsertedCards,
     }))
   }, [printState])
 
@@ -1868,6 +1881,11 @@ export default function App() {
         printState.openPrintTechnical()
         return
       }
+      if (printAction?.type === 'openInsertedCardsPrint') {
+        addEntry(t.actions.stiskOk, `${t.actions.tiskVozidlo} ${selectedItem.line2 ?? ''}`)
+        setPrintWizardState(printAction.state)
+        return
+      }
       if (printAction?.type === 'openTechnicalDisplay') {
         addEntry(t.actions.stiskOk, `${t.actions.tiskVozidlo} ${selectedItem.line2 ?? ''}`)
         displayBrowseBuildersRef.current.technical()
@@ -2155,6 +2173,19 @@ export default function App() {
   }, [])
 
   const insertCardIntoSlot = useCallback((cardId: string, slot: 1 | 2) => {
+    const rememberInsertion = (target: 1 | 2, card: CardData, imported?: Parameters<typeof snapshotDriverInsertion>[0]['imported']) => {
+      setVehicleCardInsertions((current) => {
+        const next = appendVehicleCardInsertion(current, snapshotDriverInsertion({
+          insertedAtUtc: simulatedUtcTimeRef.current,
+          slot: target,
+          sequence: current.length,
+          card,
+          imported,
+        }))
+        writeVehicleCardInsertions(browserCardInsertionStorage(), next)
+        return next
+      })
+    }
     if (!ignitionOn) return
     if (slot === 1 && card1Data) return
     if (slot === 2 && card2Data) return
@@ -2184,6 +2215,7 @@ export default function App() {
         setDriverCardInsertedAtUtc(simulatedUtcTimeRef.current)
         setDrivingWithoutCardWarningActive(false)
         recordInsertionWhileDriving(1)
+        rememberInsertion(1, cardData, record.original)
         startOrQueueInsertion(createInitialCardInsertionState(1, cardData, simulatedUtcTimeRef.current, countries, wizardOptions))
       }
       if (slot === 2) {
@@ -2191,6 +2223,7 @@ export default function App() {
         setCard2Inserted(true)
         setCard2InsertedAt(Date.now())
         recordInsertionWhileDriving(2)
+        rememberInsertion(2, cardData, record.original)
         startOrQueueInsertion(createInitialCardInsertionState(2, cardData, simulatedUtcTimeRef.current, countries, wizardOptions))
       }
       setDragOverSlot(null)
@@ -2222,6 +2255,7 @@ export default function App() {
       setDriverCardInsertedAtUtc(simulatedUtcTimeRef.current)
       setDrivingWithoutCardWarningActive(false)
       recordInsertionWhileDriving(1)
+      rememberInsertion(1, cardData)
       startOrQueueInsertion(createInitialCardInsertionState(1, cardData, simulatedUtcTime, countries, { initialCountryCode: gpsCountry, timeOffsetMs, existingManualEntryBuffer: templateId === CARD1_TEMPLATE_ID ? card1Manual : card2Manual }))
     }
     if (slot === 2) {
@@ -2229,6 +2263,7 @@ export default function App() {
       setCard2Inserted(true)
       setCard2InsertedAt(Date.now())
       recordInsertionWhileDriving(2)
+      rememberInsertion(2, cardData)
       startOrQueueInsertion(createInitialCardInsertionState(2, cardData, simulatedUtcTime, countries, { initialCountryCode: gpsCountry, timeOffsetMs, existingManualEntryBuffer: templateId === CARD1_TEMPLATE_ID ? card1Manual : card2Manual }))
     }
     setDragOverSlot(null)
@@ -2849,6 +2884,8 @@ export default function App() {
     clearCard2LastWithdrawal()
     setFaultsAndEvents([])
     setEventLog([])
+    writeVehicleCardInsertions(browserCardInsertionStorage(), [])
+    setVehicleCardInsertions([])
   }, [printState])
 
   /** Vrátí doplňkové aktivity pro danou šachtu (1 = řidič 1, 2 = řidič 2). Pro pozdější zobrazení / výtisk. */
@@ -3451,6 +3488,15 @@ export default function App() {
   }
   const printCard1Data = cardForPrint(card1Data)
   const printCard2Data = cardForPrint(card2Data)
+  const currentInserted = (slot: 1 | 2, inserted: boolean, card: CardData | null) => {
+    if (!inserted || !card) return []
+    const current = currentVehicleCardInsertion(vehicleCardInsertions, slot, printCardHolder(card, null).cardNumber)
+    return current ? [current] : []
+  }
+  const insertedCardsNow = [
+    ...currentInserted(1, card1Inserted, printCard1Data),
+    ...currentInserted(2, card2Inserted, printCard2Data),
+  ]
 
   const dailyDriverCardInput = (slot: 1 | 2) => {
     const card = slot === 1 ? printCard1Data : printCard2Data
@@ -4039,6 +4085,8 @@ export default function App() {
         vehicleDay={vehicleDayInput}
         vehicleProfile={printVehicleProfile}
         dailyDriverCard={dailyDriverCardInput}
+        insertedCardsNow={insertedCardsNow}
+        vehicleCardInsertions={vehicleCardInsertions}
       />
 
       {workWeekGraphData !== null &&

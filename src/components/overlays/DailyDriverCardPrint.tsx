@@ -13,7 +13,7 @@ export function DailyDriverCardPrint({ input, symbols, onClose, closeLabel, titl
   const [rows] = useState(() => buildDriverCardPrintRows(input()))
 
   return (
-    <PrintPreview title={title} closeLabel={closeLabel} onClose={onClose} ready={!!symbols?.[18]}>
+    <PrintPreview title={title} closeLabel={closeLabel} onClose={onClose} ready={!!symbols?.[18]} symbols={symbols}>
       <PrintRows rows={rows} symbols={symbols} />
     </PrintPreview>
   )

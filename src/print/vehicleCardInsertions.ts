@@ -3,6 +3,7 @@
  * Záznam vzniká jen při přijetí karty, výběr a tisk z něj nic nepřidávají.
  */
 
+import { knownCardGeneration } from '../data/card_stored_data'
 import type { CardData } from '../TachoTypes'
 import type { DddParsedCard } from '../types/tachoViewerDddMapper'
 import { printCardHolder, printDateUtc } from './driverCardPrintRows'
@@ -32,6 +33,11 @@ export type VehicleCardInsertion = {
 
 const cardTypes = new Set<VehicleCardType>(['driver', 'company', 'control', 'workshop'])
 const generations = new Set<VehicleCardGeneration>(['GEN1', 'GEN2', 'GEN2 v2'])
+
+function generationOf(holder: object): string | undefined {
+  if (!('generation' in holder)) return undefined
+  return typeof holder.generation === 'string' ? holder.generation : undefined
+}
 
 function knownGeneration(value: string | undefined): VehicleCardGeneration | undefined {
   return value != null && generations.has(value as VehicleCardGeneration) ? value as VehicleCardGeneration : undefined
@@ -65,7 +71,7 @@ export function snapshotDriverInsertion(input: {
     surnameOrOrganisation: text(imported?.surname) ?? text(holder.surname),
     firstName: text(imported?.firstName) ?? text(holder.firstName),
     expiresLabel: expiry,
-    cardGeneration: knownGeneration(imported?.generation),
+    cardGeneration: knownGeneration(imported?.generation) ?? knownGeneration(generationOf(holder)) ?? knownCardGeneration(identification),
   }
 }
 

@@ -2,6 +2,7 @@
  * Výtisk vložených karet PRT_014. Časy přebírá ze vstupu, historii sám nevytváří.
  */
 
+import { knownCardGeneration } from '../data/card_stored_data'
 import { createPrintRows, duration, printDateUtc, printTimeUtc, type PrintCell, type PrintRow } from './driverCardPrintRows'
 import {
   selectInsertedCardsForPrint,
@@ -63,7 +64,7 @@ export function buildInsertedCardsPrintRows(input: InsertedCardsPrintInput): Pri
     if (firstName) add('  ', firstName)
     addIdentification(entry)
     const expiry = expiryText(entry)
-    const generation = filled(entry.cardGeneration)
+    const generation = cardGeneration(entry)
     if (expiry && generation) {
       const combined = `  ${expiry} - ${generation}`
       if ([...combined.normalize('NFC')].length <= 24) add(combined)
@@ -77,20 +78,27 @@ export function buildInsertedCardsPrintRows(input: InsertedCardsPrintInput): Pri
 
   function addHistory(entry: VehicleCardInsertion) {
     separator()
-    const extra = [entry.cardGeneration, entry.cardVersion, entry.manufacturerCode].map(filled).filter(Boolean).join(' ')
-    if (extra) add(holderSymbols[entry.cardType], ' ', extra)
-    else add(holderSymbols[entry.cardType])
-    addIdentification(entry)
+    const identification = filled(entry.cardIdentification)
+    if (identification) addIdentification(entry)
+    const extra = [cardGeneration(entry), entry.cardVersion, entry.manufacturerCode].map(filled).filter(Boolean).join(' ')
+    if (!identification) {
+      if (extra) add(holderSymbols[entry.cardType], ' ', extra)
+      else add(holderSymbols[entry.cardType])
+    } else if (extra) add('  ', extra)
     const serial = filled(entry.cardSerialNumber)
     if (serial) add('  ', serial)
     add(stamp(entry.insertedAtUtc))
+  }
+
+  function cardGeneration(entry: VehicleCardInsertion): string | undefined {
+    return filled(entry.cardGeneration) ?? knownCardGeneration(entry.cardIdentification)
   }
 
   function addIdentification(entry: VehicleCardInsertion) {
     const identification = filled(entry.cardIdentification)
     if (!identification) return
     const country = filled(entry.issuingCountry)
-    const parts: PrintCell[] = [14, ' ']
+    const parts: PrintCell[] = [holderSymbols[entry.cardType], 14, ' ']
     if (country) parts.push(`${country} /`)
     parts.push(identification)
     add(...parts)

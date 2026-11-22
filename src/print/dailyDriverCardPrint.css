@@ -159,6 +159,12 @@
   font-weight: 600;
 }
 
+.daily-card-print-toolbar h2 .tacho-icon {
+  font-size: 1.15em;
+  line-height: 1;
+  vertical-align: -0.12em;
+}
+
 .vdiagram-print-band,
 .daily-card-print-paper .print-paper-strip {
   display: block;

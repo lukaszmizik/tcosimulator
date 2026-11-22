@@ -243,7 +243,7 @@ function InsertedCardsPreview({ input, symbols, title, closeLabel, onClose }: {
 }) {
   const [rows] = useState(() => buildInsertedCardsPrintRows(input()))
   return (
-    <PrintPreview title={title} closeLabel={closeLabel} onClose={onClose} ready={!!symbols?.[18]}>
+    <PrintPreview title={title} closeLabel={closeLabel} onClose={onClose} ready={!!symbols?.[18]} symbols={symbols}>
       <PrintRows rows={rows} symbols={symbols} />
     </PrintPreview>
   )
@@ -258,7 +258,7 @@ function TechnicalPreview({ input, symbols, title, closeLabel, onClose }: {
 }) {
   const [rows] = useState(() => buildTechnicalDataPrintRows(input()))
   return (
-    <PrintPreview title={title} closeLabel={closeLabel} onClose={onClose} ready={!!symbols?.[18]}>
+    <PrintPreview title={title} closeLabel={closeLabel} onClose={onClose} ready={!!symbols?.[18]} symbols={symbols}>
       <PrintRows rows={rows} symbols={symbols} />
     </PrintPreview>
   )
@@ -273,7 +273,7 @@ function VehicleEventsPreview({ input, symbols, title, closeLabel, onClose }: {
 }) {
   const [rows] = useState(() => buildVehicleEventPrintRows(input()))
   return (
-    <PrintPreview title={title} closeLabel={closeLabel} onClose={onClose} ready={!!symbols?.[18]}>
+    <PrintPreview title={title} closeLabel={closeLabel} onClose={onClose} ready={!!symbols?.[18]} symbols={symbols}>
       <PrintRows rows={rows} symbols={symbols} />
     </PrintPreview>
   )
@@ -288,7 +288,7 @@ function DriverEventsPreview({ input, symbols, title, closeLabel, onClose }: {
 }) {
   const [rows] = useState(() => buildDriverEventPrintRows(input()))
   return (
-    <PrintPreview title={title} closeLabel={closeLabel} onClose={onClose} ready={!!symbols?.[18]}>
+    <PrintPreview title={title} closeLabel={closeLabel} onClose={onClose} ready={!!symbols?.[18]} symbols={symbols}>
       <PrintRows rows={rows} symbols={symbols} />
     </PrintPreview>
   )

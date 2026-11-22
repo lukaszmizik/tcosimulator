@@ -83,7 +83,7 @@ export function PrintDriverActivities({ input, symbols, onClose, closeLabel, tit
 }) {
   const [printout] = useState(() => buildDriverActivitiesPrint(input()))
   return (
-    <PrintPreview title={title} onClose={onClose} closeLabel={closeLabel} ready={!!symbols?.[18]}>
+    <PrintPreview title={title} onClose={onClose} closeLabel={closeLabel} ready={!!symbols?.[18]} symbols={symbols}>
       <PrintRows rows={printout.rows} symbols={symbols} />
       {BAND_HOURS.slice(1).map((end, index) => (
         <ActivityBand key={end} start={BAND_HOURS[index]} end={end} days={printout.days}

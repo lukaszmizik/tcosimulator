@@ -12,7 +12,7 @@ export function PrintVehicle24hOverlay({ onClose, t, input, symbols }: {
 }) {
   const [rows] = useState(() => buildVehicleDayPrintRows(input()))
   return (
-    <PrintPreview title={t.ui.printVehicle24hTitle} closeLabel={t.printOverlay.close} onClose={onClose} ready={!!symbols?.[18]}>
+    <PrintPreview title={t.ui.printVehicle24hTitle} closeLabel={t.printOverlay.close} onClose={onClose} ready={!!symbols?.[18]} symbols={symbols}>
       <PrintRows rows={rows} symbols={symbols} />
     </PrintPreview>
   )

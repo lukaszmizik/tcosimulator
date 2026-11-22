@@ -1,14 +1,16 @@
 import { useLanguage } from '../../translations'
 import type { ReactNode } from 'react'
 import { createPortal } from 'react-dom'
+import { parseSymbols } from '../../Symbols'
 import type { SymbolMap } from '../../TachoTypes'
 import type { PrintRow } from '../../print/driverCardPrintRows'
 
-export function PrintPreview({ title, closeLabel, onClose, ready = true, children }: {
+export function PrintPreview({ title, closeLabel, onClose, ready = true, symbols = null, children }: {
   title: string
   closeLabel: string
   onClose: () => void
   ready?: boolean
+  symbols?: SymbolMap | null
   children: ReactNode
 }) {
   const { t } = useLanguage()
@@ -23,7 +25,7 @@ export function PrintPreview({ title, closeLabel, onClose, ready = true, childre
       <button type="button" className="print-overlay-close" onClick={onClose} aria-label={closeLabel}>×</button>
       <div className="daily-card-print-panel" onClick={(event) => event.stopPropagation()}>
         <div className="daily-card-print-toolbar">
-          <h2>{title}</h2>
+          <h2>{parseSymbols(title, symbols)}</h2>
           <button type="button" disabled={!ready} onClick={() => void print()}>{t.printOverlay.printPdf}</button>
         </div>
         <div className="daily-card-print-scroll">

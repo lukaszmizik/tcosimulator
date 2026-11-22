@@ -82,7 +82,7 @@ export function PrintVDiagramOverlay(props: {
   })
 
   return (
-    <PrintPreview title={t.ui.printVDiagramTitle} closeLabel={t.printOverlay.close} onClose={onClose} ready={!!symbolMap?.[18]}>
+    <PrintPreview title={t.ui.printVDiagramTitle} closeLabel={t.printOverlay.close} onClose={onClose} ready={!!symbolMap?.[18]} symbols={symbolMap}>
       <PrintRows rows={printout.rows} symbols={symbolMap} />
       {printout.paths.map((path, band) => (
         <SpeedBand key={band} path={path} band={band} title={t.ui.vDiagramTitle} />

@@ -5,9 +5,13 @@
 
 import type { CardData } from '../TachoTypes'
 
+export type CardGeneration = 'GEN1' | 'GEN2' | 'GEN2 v2'
+
 export type CardStoredData = {
   /** Číslo karty (16 znaků: CZ + 14 hex) */
   cardNumber: string
+  /** Generace karty. GEN2 v2 je generace vozidlové jednotky, ne karty. */
+  generation: CardGeneration
   /** Příjmení */
   surname: string
   /** Jméno (jména) */
@@ -31,6 +35,7 @@ export type CardStoredData = {
 /** Karta 1 – Lukas Zmizik */
 export const CARD1_STORED_DATA: CardStoredData = {
   cardNumber: 'CZ1234567890AB12',
+  generation: 'GEN2',
   surname: 'Zmizik',
   firstName: 'Lukas',
   dateOfBirth: '15.06.1985',
@@ -45,6 +50,7 @@ export const CARD1_STORED_DATA: CardStoredData = {
 /** Karta 2 – Roman Milewski */
 export const CARD2_STORED_DATA: CardStoredData = {
   cardNumber: 'CZ9876543210CD34',
+  generation: 'GEN2',
   surname: 'Milewski',
   firstName: 'Roman',
   dateOfBirth: '22.11.1990',
@@ -64,6 +70,14 @@ export function getCard1StoredData(): CardStoredData {
 /** Vrátí uložená data pro kartu 2 */
 export function getCard2StoredData(): CardStoredData {
   return CARD2_STORED_DATA
+}
+
+/** Generace našich karet podle čísla. Cizí a neznámá čísla nemají odvozenou generaci. */
+export function knownCardGeneration(cardNumber: string | undefined): CardGeneration | undefined {
+  const id = cardNumber?.trim()
+  if (id === CARD1_STORED_DATA.cardNumber) return CARD1_STORED_DATA.generation
+  if (id === CARD2_STORED_DATA.cardNumber) return CARD2_STORED_DATA.generation
+  return undefined
 }
 
 /** Převede CardStoredData na CardData (jméno = jméno + příjmení, příjmení pro zobrazení ve fázích načítání). */

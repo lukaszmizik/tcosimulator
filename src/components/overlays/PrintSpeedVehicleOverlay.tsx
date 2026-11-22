@@ -18,7 +18,7 @@ export function PrintSpeedVehicleOverlay({
 }) {
   const [rows] = useState(() => buildOverspeedPrintRows(simulatedUtcTime, profile, card, records))
   return (
-    <PrintPreview title={t.ui.printSpeedVehicleTitle} closeLabel={t.printOverlay.close} onClose={onClose} ready={!!symbolMap?.[18]}>
+    <PrintPreview title={t.ui.printSpeedVehicleTitle} closeLabel={t.printOverlay.close} onClose={onClose} ready={!!symbolMap?.[18]} symbols={symbolMap}>
       <PrintRows rows={rows} symbols={symbolMap} />
     </PrintPreview>
   )

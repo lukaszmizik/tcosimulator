@@ -184,8 +184,8 @@ body:has(.kb-dialog[open]) {
   width: calc(16ch + .9rem);
   min-width: calc(16ch + .9rem);
   max-width: calc(16ch + .9rem);
-  height: calc(2 * 1.35em + .5rem);
-  min-height: calc(2 * 1.35em + .5rem);
+  height: calc(2 * 1.5em + .5rem);
+  min-height: calc(2 * 1.5em + .5rem);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -195,7 +195,7 @@ body:has(.kb-dialog[open]) {
   border-radius: 5px;
   background: #0c1721;
   color: #edf2f5;
-  font: 1rem/1.35 "CasioFX9860", "Doto", "Courier New", "Lucida Console", monospace;
+  font: 1rem/1.5 "CasioFX9860", "Doto", "Courier New", "Lucida Console", monospace;
   font-variant-numeric: tabular-nums;
 }
 
@@ -203,8 +203,8 @@ body:has(.kb-dialog[open]) {
   box-sizing: border-box;
   width: 16ch;
   max-width: 16ch;
-  height: 1.35em;
-  line-height: 1.35;
+  height: 1.5em;
+  line-height: 1.5;
   overflow: hidden;
   white-space: pre;
   text-overflow: clip;
@@ -250,4 +250,10 @@ body:has(.kb-dialog[open]) {
   height: 1em;
   vertical-align: -.12em;
   fill: currentColor;
+}
+
+/* Em piktogramu je nižší než znak Casio; zvětšení srovná výšku symbolu s textem, šířka buňky zůstává 1ch. */
+.kb-display .kb-message-icon {
+  transform: scale(1.43);
+  transform-origin: 50% 85%;
 }

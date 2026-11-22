@@ -36,7 +36,7 @@ const catalog: Record<Exclude<SupportedLanguage, 'mn'>, readonly Group[]> = {
       ["x\ue011 závada\npřístroje xx", "Porucha na výstupu impulzů.", "Nechejte zkontrolovat autorizovaným odborným servisem spojovací vedení nebo funkčnost řídicí jednotky."],
       ["x\ue0111 závada\npřístroje xx", "Porucha mechaniky karet, například není uzavřen zámek karty.", "Vyjměte kartu tachografu a vložte ji ještě jednou."],
       ["x\ue011 vadné hodiny\nxx", "Čas UTC v tachografu DTCO 4.1x není věrohodný nebo neběží řádně. Aby se zabránilo vzniku nekonzistentních dat, nebudou nově vložené karty řidiče / majitele akceptovány.", "Potvrďte hlášení."],
-      ["x\ue00e Porucha tiskárny", "Vypadlo napájecí napětí tiskárny nebo je vadný teplotní senzor tiskové hlavy.", "Potvrďte hlášení. Opakujte postup, resp. předtím zapněte / vypněte zapalování."],
+      ["x\ue00e Porucha\ntiskárny", "Vypadlo napájecí napětí tiskárny nebo je vadný teplotní senzor tiskové hlavy.", "Potvrďte hlášení. Opakujte postup, resp. předtím zapněte / vypněte zapalování."],
       ["x\ue00c závada při\nstahování dat xx", "Porucha během stahování dat do externího zařízení.", "Potvrďte hlášení. Zopakujte stahování dat. Nechejte zkontrolovat autorizovaným odborným servisem spojovací vedení (např. uvolněný kontakt) nebo externí zařízení."],
       ["x\ue00f závada\nsnímače xx", "Snímač po vlastním testu nahlásil interní poruchu.", "Potvrďte hlášení."],
       ["x\ue0091 závada karty\nxx", "Během čtení/zapisování se na kartu tachografu vyskytla porucha v komunikaci, například v důsledku znečištěných kontaktů. Data nebude případně možné na kartu řidiče zaznamenat kompletně!", "Potvrďte hlášení. Očistěte kontakty karty tachografu a vložte ji ještě jednou."],

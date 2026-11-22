@@ -26,6 +26,7 @@ export type Translations = {
     printVehicle24hTitle: string
     printVDiagramTitle: string
     printSpeedVehicleTitle: string
+    printTechnicalTitle: string
     driver1: string
     driver2: string
     saved: string
@@ -372,5 +373,12 @@ export type Translations = {
     vysunutiKartyZeSachty: string
     stiskTlacitkaPrepnuti: string
     vlozeniKarty: string
+  }
+  branding: {
+    appName: string
+    subtitle: string
+    footerDisclaimer: string
+    legalLink: string
+    legalText: string
   }
 }

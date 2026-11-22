@@ -150,6 +150,8 @@ export type PrintMenuActionResult =
   | { type: 'openDriver1' }
   | { type: 'openVDiagram' }
   | { type: 'openSpeed' }
+  | { type: 'openTechnical' }
+  | { type: 'openTechnicalDisplay' }
 
 /** Vrátí obsluhu známé tiskové/displejové akce. Neznámá akce vrací null. */
 export function resolvePrintMenuAction(input: PrintMenuActionInput): PrintMenuActionResult | null {
@@ -213,6 +215,12 @@ export function resolvePrintMenuAction(input: PrintMenuActionInput): PrintMenuAc
   }
   if (action === 'PRINT_SPEED_V') {
     return { type: 'openSpeed' }
+  }
+  if (action === 'PRINT_TECH_V') {
+    return { type: 'openTechnical' }
+  }
+  if (action === 'DISP_TECH_V') {
+    return { type: 'openTechnicalDisplay' }
   }
   return null
 }

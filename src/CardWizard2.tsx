@@ -79,6 +79,7 @@ export function useCardWizard2(params: UseCardWizard2Params) {
 
   const [cardInsertionState, setCardInsertionState] = useState<CardInsertionState | null>(null)
   const cardInsertionStateRef = useRef<CardInsertionState | null>(null)
+  /** Poslední stisk v průvodci – jen pro idle timeout (výstraha / vysunutí), ne pro debounce OK. */
   const lastCardInsertionKeyPressRef = useRef<number>(Date.now())
   const pleaseWaitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const idleTimeoutEjectionRef = useRef(false)
@@ -295,9 +296,8 @@ export function useCardWizard2(params: UseCardWizard2Params) {
   }, [cardInsertionState?.phase, cardInsertionState?.slot, onEjectRequested])
 
   const handleCardInsertionKey = useCallback((action: 'ok' | 'up' | 'down' | 'back') => {
-    const now = Date.now()
-    if (action === 'ok' && now - lastCardInsertionKeyPressRef.current < 400) return
-    lastCardInsertionKeyPressRef.current = now
+    // Obnov idle časovač při každé aktivitě (OK/šipky/zpět). Neblokuj rychlé samostatné stisky OK.
+    lastCardInsertionKeyPressRef.current = Date.now()
     setCardInsertionState((prev) => {
       if (!prev) return null
       if (prev.phase === 'idleWarning') {

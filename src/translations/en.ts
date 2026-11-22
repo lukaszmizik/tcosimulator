@@ -24,6 +24,7 @@ export const en: Translations = {
     printVehicle24hTitle: 'Print vehicle 24h day',
     printVDiagramTitle: 'Print V-diagram',
     printSpeedVehicleTitle: 'Print vehicle – excess speed',
+    printTechnicalTitle: 'Print vehicle – technical data',
     driver1: 'Driver 1',
     driver2: 'Driver 2',
     saved: 'saved',
@@ -483,5 +484,14 @@ export const en: Translations = {
     vysunutiKartyZeSachty: 'card ejection from slot', // 133
     stiskTlacitkaPrepnuti: 'Button press - symbol toggle', // 134
     vlozeniKarty: 'Card insertion', // 135
+  },
+  branding: {
+    appName: 'Tacho Simulator',
+    subtitle: 'Unofficial training simulator for digital tachographs',
+    footerDisclaimer:
+      'Unofficial training simulator. Not a product of, nor software approved or supported by, AUMOVIO Germany GmbH (VDO).',
+    legalLink: 'Legal notice',
+    legalText:
+      'This application is an independent training aid for practicing operation of the DTCO 4.1/4.1b tachograph. It is not affiliated with or certified by the manufacturer. VDO and DTCO are designations of their respective owners, used to identify the simulated device. The simulator does not replace a real tachograph, the original manual, or legal regulations.',
   },
 }

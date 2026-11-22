@@ -15,12 +15,12 @@ import {
   SIM_DT_MS,
   SPEED_STOPPED_THRESHOLD_KMH,
 } from './Constants'
+import { accumulateFerryDriving } from './ferryTrainMode'
 import {
   MANUAL_ACTIVITIES,
   type ActivityDurationsMs,
   type EventLogEntry,
   type FaultOrEvent,
-  type FerryTrainEvent,
   type VirtualRoutePoint,
 } from './TachoTypes'
 import { getVirtualLocationForDistance } from './VirtualRoute'
@@ -40,7 +40,8 @@ type UseDrivingIntervalParams = {
   simulatedUtcTimeRef: MutableRefObject<number>
   ferryTrainModeActiveRef: MutableRefObject<boolean>
   ferryDrivingMsRef: MutableRefObject<number>
-  setFerryTrainModeActiveRef: MutableRefObject<(value: boolean) => void>
+  /** Jediné automatické ukončení: souvislá jízda delší než minutu. */
+  endFerryTrainRef: MutableRefObject<() => void>
   card1InsertedRef: MutableRefObject<boolean>
   leftActivityIdRef: MutableRefObject<Parameters<typeof getActivityCode>[0]>
   rightActivityIdRef: MutableRefObject<Parameters<typeof getActivityCode>[0]>
@@ -55,7 +56,6 @@ type UseDrivingIntervalParams = {
   setCurrentSpeed: Dispatch<SetStateAction<number>>
   setOdometerKm: Dispatch<SetStateAction<number>>
   setFaultsAndEvents: Dispatch<SetStateAction<FaultOrEvent[]>>
-  setFerryTrainEvents: Dispatch<SetStateAction<FerryTrainEvent[]>>
   setEventLog: Dispatch<SetStateAction<EventLogEntry[]>>
   setSplitFirstPartTakenByDriver: Dispatch<SetStateAction<Record<1 | 2, boolean>>>
   setBreakWarningActive: Dispatch<SetStateAction<'415' | '430' | null>>
@@ -78,7 +78,7 @@ export function useDrivingInterval(params: UseDrivingIntervalParams) {
     simulatedUtcTimeRef,
     ferryTrainModeActiveRef,
     ferryDrivingMsRef,
-    setFerryTrainModeActiveRef,
+    endFerryTrainRef,
     card1InsertedRef,
     leftActivityIdRef,
     rightActivityIdRef,
@@ -93,7 +93,6 @@ export function useDrivingInterval(params: UseDrivingIntervalParams) {
     setCurrentSpeed,
     setOdometerKm,
     setFaultsAndEvents,
-    setFerryTrainEvents,
     setEventLog,
     setSplitFirstPartTakenByDriver,
     setBreakWarningActive,
@@ -144,20 +143,10 @@ export function useDrivingInterval(params: UseDrivingIntervalParams) {
       /** Rychlost pod prahem = v klidu → manuální aktivita (po zastavení práce; přestávku volí řidič) */
       const isDriving = curr > SPEED_STOPPED_THRESHOLD_KMH
       trackOverspeed(ignition ? curr : 0, simulatedUtcTimeRef.current, SIM_DT_MS)
-      // Režim trajekt: konec při 1 min jízdy – ferryDrivingMsRef navázán na stejnou detekci jízdy jako aktivity
       if (ferryTrainModeActiveRef.current) {
-        if (isDriving) {
-          ferryDrivingMsRef.current += SIM_DT_MS
-          if (ferryDrivingMsRef.current >= 60000) {
-            ferryDrivingMsRef.current = 0
-            const minuteStartUtc = Math.floor(simulatedUtcTimeRef.current / 60000) * 60000
-            const gpsStr = virtualLocationRef.current?.name
-            setFerryTrainEvents((prev) => [...prev, { minuteStartUtc, gpsLocation: gpsStr, type: 'deactivation' }])
-            setFerryTrainModeActiveRef.current(false)
-          }
-        } else {
-          ferryDrivingMsRef.current = 0
-        }
+        const step = accumulateFerryDriving(ferryDrivingMsRef.current, isDriving, SIM_DT_MS)
+        ferryDrivingMsRef.current = step.drivingMs
+        if (step.ended) endFerryTrainRef.current()
       }
       const activeId = activeNoCardIdRef.current
       const hasDriverCard = card1InsertedRef.current

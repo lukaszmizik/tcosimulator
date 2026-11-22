@@ -46,8 +46,6 @@ type UseSimulationSecondClockParams = {
   card2DataRef: MutableRefObject<CardData | null>
   isMultiManningRef: MutableRefObject<boolean>
   virtualLocationRef: MutableRefObject<VirtualRoutePoint | null>
-  ferryTrainModeActiveRef: MutableRefObject<boolean>
-  setFerryTrainModeActiveRef: MutableRefObject<(value: boolean) => void>
   drivingMsSinceLastGpsRecordRef: MutableRefObject<number>
   drivingSinceLastGpsMsRef: MutableRefObject<number>
   setSecondHistory: Dispatch<SetStateAction<SecondActivitySnapshot[]>>
@@ -79,8 +77,6 @@ export function useSimulationSecondClock(params: UseSimulationSecondClockParams)
     card2DataRef,
     isMultiManningRef,
     virtualLocationRef,
-    ferryTrainModeActiveRef,
-    setFerryTrainModeActiveRef,
     drivingMsSinceLastGpsRecordRef,
     drivingSinceLastGpsMsRef,
     setSecondHistory,
@@ -166,9 +162,6 @@ export function useSimulationSecondClock(params: UseSimulationSecondClockParams)
       }
       if (c1Inserted && number1) recordDddMinuteRef.current(number1, entry)
       if (c2Inserted && number2) recordDddMinuteRef.current(number2, entry)
-      if (ferryTrainModeActiveRef.current && (driver1Winner === 'driving' || driver2Winner === 'driving')) {
-        setFerryTrainModeActiveRef.current(false)
-      }
       if (driver1Winner === 'driving' || driver2Winner === 'driving') {
         drivingMsSinceLastGpsRecordRef.current += 60000
         const GPS_RECORD_INTERVAL_MS = 3 * 60 * 60 * 1000
@@ -285,9 +278,6 @@ export function useSimulationSecondClock(params: UseSimulationSecondClockParams)
         }
         for (const cardNumber of plan.dddCardNumbers) {
           for (const entry of plan.entries) recordDddMinuteRef.current(cardNumber, entry)
-        }
-        if (ferryTrainModeActiveRef.current && (driver1 === 'driving' || driver2 === 'driving') && deltaMs >= 60000) {
-          setFerryTrainModeActiveRef.current(false)
         }
         if (driver1 === 'driving' || driver2 === 'driving') {
           drivingMsSinceLastGpsRecordRef.current += plan.entries.length * 60000

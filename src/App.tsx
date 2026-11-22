@@ -106,7 +106,7 @@ import { WorkWeekGraphView } from './WorkWeekGraphView'
 import { InsertedCardsHistory } from './InsertedCardsHistory'
 import { InfoPanel, useInfoPanelItems, useNr165Warning, Nr165WarningBox, lcdTeachInfoItem, visibleLcdTeachScreen, type InfoItem } from './InfoPanel'
 import { useVehiclePreDepartureCheck } from './useVehiclePreDepartureCheck'
-import { REDUCED_DAILY_REST_MIN_MS, SPLIT_REST_SECOND_MS, formatDurationHhMm } from './VDOCounter'
+import { SPLIT_REST_SECOND_MS, formatDurationHhMm } from './VDOCounter'
 import { drivingBreakDisplay, drivingRestTotals } from './drivingBreakDisplay'
 import { drivingRemainderUndocumented, evaluateRecordedOut, undeterminedOverlaps } from './outDrivingEvaluation'
 import { ferryDailyRestRemaining, intervalsWithRecognizedFerryRest } from './ferryRestEvaluation'
@@ -123,6 +123,7 @@ import { useLanguage } from './translations'
 import { ControlPanel } from './ControlPanel'
 import type { TrainingProfile } from './VirtualCardNameSettings'
 import { buildDriverCardPrintRows, printCardHolder, printDateUtc } from './print/driverCardPrintRows'
+import { buildTechnicalDataPrintRows } from './print/technicalDataPrintRows'
 import { buildVehicleDayPrintRows, vehiclePrintHolder } from './print/vehicleDayPrintRows'
 import { buildDriverEventPrintRows, driverEventsFromEventLog } from './print/driverEventPrintRows'
 import { buildVehicleEventPrintRows } from './print/vehicleEventPrintRows'
@@ -134,6 +135,7 @@ import {
 import { VirtualCardNameSettings, loadVirtualCardNames, virtualCardTemplate } from './VirtualCardNameSettings'
 import { PrintVehicleSettings } from './components/PrintVehicleSettings'
 import { loadPrintVehicleProfile } from './data/printVehicleProfile'
+import { appendFerryEvent, ferryCardWithdrawn } from './ferryTrainMode'
 import { DriverCardVisual } from './DriverCardVisual'
 import { CardPrepMenu, type CardPrep } from './CardPrepMenu'
 import { usePrintState } from './print/usePrintState'
@@ -401,6 +403,7 @@ export default function App() {
     driverEvents: (_slot: 1 | 2, _isUtc: boolean) => {},
     vehicleEvents: (_isUtc: boolean) => {},
     vehicle24h: (_dayUtc: number, _isUtc: boolean) => {},
+    technical: () => {},
   })
   /** Data z karty – VDO counter čerpá z karty; bez karty z paměti tachografu (activityHistory) */
   const [cardActivityHistoryByTemplateId, setCardActivityHistoryByTemplateId] = useState<Record<string, ActivityHistoryEntry[]>>({})
@@ -509,8 +512,20 @@ export default function App() {
   ferryTrainModeActiveRef.current = ferryTrainModeActive
   const outModeActiveRef = useRef(outModeActive)
   outModeActiveRef.current = outModeActive
-  const setFerryTrainModeActiveRef = useRef(setFerryTrainModeActive)
-  setFerryTrainModeActiveRef.current = setFerryTrainModeActive
+  const setFerryModeRef = useRef<(active: boolean) => void>(() => {})
+  setFerryModeRef.current = (active) => {
+    if (ferryTrainModeActiveRef.current === active) return
+    ferryTrainModeActiveRef.current = active
+    if (active) ferryDrivingMsRef.current = 0
+    setFerryTrainModeActive(active)
+    setFerryTrainEvents((prev) => appendFerryEvent(
+      prev,
+      active ? 'activation' : 'deactivation',
+      simulatedUtcTimeRef.current,
+      virtualLocationRef.current?.name,
+    ))
+  }
+  const endFerryTrainRef = useRef(() => setFerryModeRef.current(false))
 
   /**
    * Automatické aktivity podle jízdy (návod DTCO 4.1 str. 55 – Automatic setting):
@@ -963,8 +978,6 @@ export default function App() {
     card2DataRef,
     isMultiManningRef,
     virtualLocationRef,
-    ferryTrainModeActiveRef,
-    setFerryTrainModeActiveRef,
     drivingMsSinceLastGpsRecordRef,
     drivingSinceLastGpsMsRef,
     setSecondHistory,
@@ -1178,15 +1191,14 @@ export default function App() {
     setIgnitionWarningActive(true)
   }, [ignitionOn, card1Inserted])
 
-  // Režim trajekt: konec při vytažení karty
+  // Režim trajekt: konec při vyjmutí karty ve slotu 1 nebo 2 (ne při startu bez karet).
+  const ferryCardsRef = useRef({ slot1: card1Inserted, slot2: card2Inserted })
   useEffect(() => {
-    if (!card1Inserted && !card2Inserted && ferryTrainModeActive) {
-      const minuteStartUtc = Math.floor(simulatedUtcTimeRef.current / 60000) * 60000
-      const gpsStr = virtualLocationRef.current?.name
-      setFerryTrainEvents((prev) => [...prev, { minuteStartUtc, gpsLocation: gpsStr, type: 'deactivation' }])
-      setFerryTrainModeActive(false)
-    }
-  }, [card1Inserted, card2Inserted, ferryTrainModeActive])
+    const prev = ferryCardsRef.current
+    const next = { slot1: card1Inserted, slot2: card2Inserted }
+    ferryCardsRef.current = next
+    if (ferryCardWithdrawn(prev, next)) setFerryModeRef.current(false)
+  }, [card1Inserted, card2Inserted])
 
   // Režim OUT: konec jen při vytažení poslední karty (přechod z „byla karta“ na „žádná“), ne když už žádná karta není a uživatel OUT právě zapnul
   const hadCardBeforeRef = useRef(card1Inserted || card2Inserted)
@@ -1370,7 +1382,7 @@ export default function App() {
     simulatedUtcTimeRef,
     ferryTrainModeActiveRef,
     ferryDrivingMsRef,
-    setFerryTrainModeActiveRef,
+    endFerryTrainRef,
     card1InsertedRef,
     leftActivityIdRef,
     rightActivityIdRef,
@@ -1385,7 +1397,6 @@ export default function App() {
     setCurrentSpeed,
     setOdometerKm,
     setFaultsAndEvents,
-    setFerryTrainEvents,
     setEventLog,
     setSplitFirstPartTakenByDriver,
     setBreakWarningActive,
@@ -1830,6 +1841,16 @@ export default function App() {
         printState.openPrintSpeedVehicle()
         return
       }
+      if (printAction?.type === 'openTechnical') {
+        addEntry(t.actions.stiskOk, `${t.actions.tiskVozidlo} ${selectedItem.line2 ?? ''}`)
+        printState.openPrintTechnical()
+        return
+      }
+      if (printAction?.type === 'openTechnicalDisplay') {
+        addEntry(t.actions.stiskOk, `${t.actions.tiskVozidlo} ${selectedItem.line2 ?? ''}`)
+        displayBrowseBuildersRef.current.technical()
+        return
+      }
       if (selectedItem.action === 'INPUT_START_COUNTRY' || selectedItem.action === 'INPUT_END_COUNTRY') {
         addEntry(t.actions.stiskOk, selectedItem.action === 'INPUT_START_COUNTRY' ? t.actions.otevreniZadaniStart : t.actions.otevreniZadaniEnd)
         openMenuCountryInput(selectedItem.action, currentMenuPath)
@@ -1841,21 +1862,14 @@ export default function App() {
       }
       if (selectedItem.action === 'MODE_FERRY_START') {
         addEntry(t.actions.stiskOk, t.ui.ferryModeStart)
-        const minuteStartUtc = Math.floor(simulatedUtcTimeRef.current / 60000) * 60000
-        const gpsStr = virtualLocationRef.current?.name
-        setFerryTrainEvents((prev) => [...prev, { minuteStartUtc, gpsLocation: gpsStr, type: 'activation' }])
-        setFerryTrainModeActive(true)
-        ferryDrivingMsRef.current = 0
+        setFerryModeRef.current(true)
         setDisplayMode('operating')
         setCurrentMenuPath([ENTRY_MENU_ID])
         return
       }
       if (selectedItem.action === 'MODE_FERRY_END') {
         addEntry(t.actions.stiskOk, t.ui.ferryModeEnd)
-        const minuteStartUtc = Math.floor(simulatedUtcTimeRef.current / 60000) * 60000
-        const gpsStr = virtualLocationRef.current?.name
-        setFerryTrainEvents((prev) => [...prev, { minuteStartUtc, gpsLocation: gpsStr, type: 'deactivation' }])
-        setFerryTrainModeActive(false)
+        setFerryModeRef.current(false)
         setDisplayMode('operating')
         setCurrentMenuPath([ENTRY_MENU_ID])
         return
@@ -2326,13 +2340,6 @@ export default function App() {
         const distanceFromStartKm = Math.max(0, odometerKmRef.current - ODOMETER_KM)
         virtualLocationRef.current = getVirtualLocationForDistance(distanceFromStartKm)
         drivingSinceLastBreakMsByDriverRef.current[driverForJump] += deltaMs
-        // Režim trajekt: při manuálním posunu času s jízdou ≥ 1 min → konec (100ms interval neběžel)
-        if (ferryTrainModeActiveRef.current && deltaMs >= 60000) {
-          const minuteStartUtc = Math.floor(targetMsUtc / 60000) * 60000
-          const gpsStr = virtualLocationRef.current?.name
-          setFerryTrainEvents((prev) => [...prev, { minuteStartUtc, gpsLocation: gpsStr, type: 'deactivation' }])
-          setFerryTrainModeActive(false)
-        }
         if (driverForJump === 1) {
           const d = drivingSinceLastBreakMsByDriverRef.current[1]
           if (d >= DRIVING_LIMIT_430_MS && !breakWarning430DismissedRef.current) setBreakWarningActive('430')
@@ -2795,6 +2802,8 @@ export default function App() {
     minuteAccumulatorRef.current = null
     WorkShift.resetWorkShift()
     setVehicleLoadUnloadEvents([])
+    ferryTrainModeActiveRef.current = false
+    ferryDrivingMsRef.current = 0
     setFerryTrainEvents([])
     setOutModeEvents([])
     setRecordedGpsLocations([])
@@ -2934,6 +2943,8 @@ export default function App() {
     const onKeyDown = (e: KeyboardEvent) => {
       // Native controls own their keys; do not navigate the tacho while editing speed.
       if (e.target instanceof HTMLElement && e.target.closest('input, select, textarea, button, [role="button"], summary, [contenteditable="true"]')) return
+      // Držení Enter/Backspace = key repeat; brat jen první stisk (samostatné stisky OK).
+      if (e.repeat && (e.key === 'Enter' || e.key === 'Escape' || e.key === 'Backspace' || e.key === 'ArrowLeft')) return
       switch (e.key) {
         case 'ArrowUp':
           e.preventDefault()
@@ -3220,15 +3231,15 @@ export default function App() {
   }
   const slot1DddDaily = useMemo(() => {
     if (!slot1CounterIntervals) return null
-    const dailyIntervals = intervalsWithRecognizedFerryRest(slot1CounterIntervals.intervals, slot1FerryRest?.completed ?? [])
-    const daily = slot1DddDailyRemaining(dailyIntervals, simulatedUtcTime)
-    if (daily.remainingMs == null) return daily
-    const periodStart = dailyIntervals.reduce((latest, interval) => (
-      interval.kind === 'rest' && interval.endMs <= simulatedUtcTime && interval.endMs - interval.startMs >= REDUCED_DAILY_REST_MIN_MS
-        ? Math.max(latest, interval.endMs)
-        : latest
-    ), 0)
-    if (periodStart === 0 || !undeterminedOverlaps(slot1CounterIntervals.undetermined, periodStart, simulatedUtcTime)) return daily
+    const completed = slot1FerryRest?.completed ?? []
+    const dailyIntervals = intervalsWithRecognizedFerryRest(slot1CounterIntervals.intervals, completed)
+    const daily = slot1DddDailyRemaining(
+      dailyIntervals,
+      simulatedUtcTime,
+      completed.map((item) => item.endMs),
+    )
+    if (daily.remainingMs == null || daily.periodStartMs == null) return daily
+    if (!undeterminedOverlaps(slot1CounterIntervals.undetermined, daily.periodStartMs, simulatedUtcTime)) return daily
     return { ...daily, remainingMs: null, drivenMs: null, extensionsRemaining: null }
   }, [slot1CounterIntervals, slot1FerryRest, simulatedUtcTime])
   const slot1DddCalendar = useMemo(() => {
@@ -3511,10 +3522,22 @@ export default function App() {
         isUtc,
       }))
     },
+    technical: () => {
+      openDisplayBrowse(buildTechnicalDataPrintRows({
+        printedAtUtc: simulatedUtcTime,
+        isUtc: true,
+        localOffsetMs: timeOffsetMs,
+        profile: printVehicleProfile,
+      }))
+    },
   }
 
   return (
     <div>
+    <header className="app-branding">
+      <h1 className="app-branding-title">{t.branding.appName}</h1>
+      <p className="app-branding-subtitle">{t.branding.subtitle}</p>
+    </header>
     <div className="app-root" data-lang={language} style={{ minHeight: '100vh', background: '#444', display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-start', margin: 0, padding: 24, gap: 24 }}>
       {cardsOpen && <button className="cards-dismiss" aria-label={t.cardPanel.close} onClick={() => {setCardsOpen(false);setCardPickerSlot(null)}}/>}
       {!cardsOpen && (
@@ -3933,8 +3956,14 @@ export default function App() {
           )}
         />
       </div>
+      <footer className="vdo-labels app-legal-footer">
+        <p className="app-legal-footer-text">{t.branding.footerDisclaimer}</p>
+        <details className="app-legal-details">
+          <summary>{t.branding.legalLink}</summary>
+          <p>{t.branding.legalText}</p>
+        </details>
+      </footer>
       </div>
-      <footer className="vdo-labels">Continental VDO DTCO 4.1 G2V2 · lukas@zmizik.com</footer>
       </div>
 
       {duplicateDataWarningOpen && (

@@ -308,13 +308,7 @@ export function buildDriverCardPrintRows(input: DailyCardPrintInput): PrintRow[]
     if (item.registration) add(24, ' ', item.registration)
     else add(24, ' ---')
   }
-  // Firma před podpisy (volitelně). Typ výtisku 24h(14)(18) je jen v záhlaví – na konci neopakovat.
-  if (profile.companyName || profile.companyAddress || profile.companyId) {
-    separator(3)
-    if (profile.companyName) add(profile.companyName)
-    if (profile.companyAddress) add(profile.companyAddress)
-    if (profile.companyId) add('IČO ', profile.companyId)
-  }
+  // Typ výtisku 24h(14)(18) je jen v záhlaví; název provozovatele (3) na denní sestavě není.
   separator()
   add(4, 37, ' ', '.'.repeat(21))
   add(4, '  ', '.'.repeat(21))

@@ -4,6 +4,7 @@
  *
  * Denní období začíná koncem posledního souvislého odpočinku ≥ 9 h
  * (REDUCED_DAILY_REST_MIN_MS). Půlnoc období neukončí.
+ * Dokončený trajektový odpočinek je další takový konec. Do intervalů se nemaluje.
  * 10 h platí jen při méně než dvou obdobích tohoto kalendářního týdne
  * s řízením ≥ 9 h 01 min a jen když karta týden pokrývá. Jinak 9 h.
  * Počet povolených zkrácení a složení 3 h + 9 h se neposuzuje.
@@ -32,6 +33,8 @@ export type Slot1DddDailyRemaining = {
    * nebo když období nelze ze stejných pravidel sestavit. 0 je skutečná nula.
    */
   extensionsRemaining: number | null
+  /** Konec odpočinku, od kterého běží aktuální denní období. null, když období nelze sestavit. */
+  periodStartMs: number | null
 }
 
 const MISSING_REST_NOTE =
@@ -81,24 +84,33 @@ function drivingMs(intervals: readonly DrivingBreakInterval[], fromMs: number, t
 export function slot1DddDailyRemaining(
   intervals: readonly DrivingBreakInterval[],
   nowMs: number,
+  extraDailyRestEndsMs: readonly number[] = [],
 ): Slot1DddDailyRemaining {
   const boundaries = merged(intervals, 'rest', nowMs)
     .filter((rest) => rest.endMs - rest.startMs >= REDUCED_DAILY_REST_MIN_MS)
     .map((rest) => rest.endMs)
-  if (boundaries.length === 0) {
-    return { remainingMs: null, drivenMs: null, limitMs: null, note: MISSING_REST_NOTE, extensionsRemaining: null }
+  for (const end of extraDailyRestEndsMs) {
+    if (end > 0 && end <= nowMs) boundaries.push(end)
+  }
+  boundaries.sort((left, right) => left - right)
+  const uniqueEnds: number[] = []
+  for (const end of boundaries) {
+    if (uniqueEnds.length === 0 || uniqueEnds[uniqueEnds.length - 1] !== end) uniqueEnds.push(end)
+  }
+  if (uniqueEnds.length === 0) {
+    return { remainingMs: null, drivenMs: null, limitMs: null, note: MISSING_REST_NOTE, extensionsRemaining: null, periodStartMs: null }
   }
 
-  const periodStart = boundaries[boundaries.length - 1]!
+  const periodStart = uniqueEnds[uniqueEnds.length - 1]!
   const drivenMs = drivingMs(intervals, periodStart, nowMs)
   const weekStart = weekStartUtc(nowMs)
   const earliest = intervals.reduce((min, item) => Math.min(min, item.startMs), Number.POSITIVE_INFINITY)
-  const weekCovered = Number.isFinite(earliest) && (earliest <= weekStart || boundaries.some((end) => end <= weekStart))
+  const weekCovered = Number.isFinite(earliest) && (earliest <= weekStart || uniqueEnds.some((end) => end <= weekStart))
   let extended = 0
-  for (let index = 0; index < boundaries.length; index++) {
-    const start = boundaries[index]!
+  for (let index = 0; index < uniqueEnds.length; index++) {
+    const start = uniqueEnds[index]!
     if (start < weekStart) continue
-    const end = index + 1 < boundaries.length ? boundaries[index + 1]! : nowMs
+    const end = index + 1 < uniqueEnds.length ? uniqueEnds[index + 1]! : nowMs
     if (drivingMs(intervals, start, end) >= EXTENDED_DRIVING_THRESHOLD_MS) extended++
   }
   const limitMs = !weekCovered || extended >= DAILY_EXTENSIONS_PER_WEEK ? DAILY_DRIVING_LIMIT_MS : EXTENDED_DRIVING_LIMIT_MS
@@ -111,6 +123,7 @@ export function slot1DddDailyRemaining(
     limitMs,
     note: weekCovered ? RULE_NOTE : WEEK_NOTE,
     extensionsRemaining,
+    periodStartMs: periodStart,
   }
 }
 

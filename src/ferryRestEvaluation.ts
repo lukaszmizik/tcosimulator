@@ -76,20 +76,18 @@ export function ferryDailyRestRemaining(input: {
   }
 }
 
-/** Dokončený pravidelný odpočinek zůstane hranicí denního období i mimo režim trajekt. */
+/**
+ * Dokončený pravidelný odpočinek zůstane hranicí denního období i mimo režim trajekt.
+ * Do osy se nemaluje: souvislých 11 h by přikrylo skutečná přerušení, sloučilo se
+ * s dřívějším odpočinkem a čas by v navazujících výpočtech nešel oddělit.
+ * Hranice je `completed.endMs` a předává se zvlášť.
+ */
 export function intervalsWithRecognizedFerryRest(
   intervals: readonly DrivingBreakInterval[],
   completed: readonly CompletedRegularRest[],
 ): DrivingBreakInterval[] {
-  if (completed.length === 0) return [...intervals]
-  return [
-    ...intervals,
-    ...completed.map((item) => ({
-      kind: 'rest' as const,
-      startMs: item.endMs - DAILY_REST_MIN_11H_MS,
-      endMs: item.endMs,
-    })),
-  ]
+  void completed
+  return intervals.map((interval) => ({ kind: interval.kind, startMs: interval.startMs, endMs: interval.endMs }))
 }
 
 function sourceWindows(

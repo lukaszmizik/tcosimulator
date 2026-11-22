@@ -228,7 +228,8 @@ export function main(): void {
   assert.ok(textRows.some((row) => row.includes('00h30 41 km')))
   assert.ok(textRows.some((row) => row.includes('FIRST')))
   assert.ok(textRows.some((row) => row.includes('SECOND')))
-  assert.ok(textRows.includes('Přeprava Říha'))
+  assert.ok(!textRows.includes('Přeprava Říha'))
+  assert.ok(!textRows.some((row) => row.includes('IČO')))
   for (const slot of [1, 2] as const) {
     const wizard = resolvePrintMenuAction({
       action: `PRINT_24H_D${slot}`, requiresDate: true, requiresUtcConfirm: true, line2: '',

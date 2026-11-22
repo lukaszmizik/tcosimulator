@@ -55,7 +55,12 @@ function span(kind: 'driving' | 'rest', startUtc: number, endUtc: number): DddPa
 }
 
 function textOf(row: string | undefined): string {
-  return (row ?? '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+  // Blikající „h“ je ve vlastním spanu. Mezi číslicemi to na displeji není mezera.
+  return (row ?? '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/(\d) h (\d)/g, '$1h$2')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 function renderLcd(input: {
@@ -1836,7 +1841,20 @@ function ferrySequenceLcd() {
   }
   const unrecognized = slot1DddDailyRemaining(doneIntervals, doneNow)
   if (unrecognized.remainingMs !== null) throw new Error('samotné úseky pod 9 h ukončily denní období')
-  const recognizedDaily = slot1DddDailyRemaining(intervalsWithRecognizedFerryRest(doneIntervals, done.completed), doneNow)
+  const recognizedIntervals = intervalsWithRecognizedFerryRest(doneIntervals, done.completed)
+  if (recognizedIntervals.length !== doneIntervals.length) throw new Error('syntetický interval přidal odpočinek')
+  for (let index = 0; index < doneIntervals.length; index += 1) {
+    const left = recognizedIntervals[index]!
+    const right = doneIntervals[index]!
+    if (left.kind !== right.kind || left.startMs !== right.startMs || left.endMs !== right.endMs) {
+      throw new Error('syntetický interval přepsal přerušení')
+    }
+  }
+  const recognizedDaily = slot1DddDailyRemaining(
+    recognizedIntervals,
+    doneNow,
+    done.completed.map((item) => item.endMs),
+  )
   if (recognizedDaily.remainingMs !== 9 * HOUR - 30 * MINUTE) {
     throw new Error(`uznaný odpočinek ${recognizedDaily.remainingMs}`)
   }

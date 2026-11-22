@@ -23,6 +23,7 @@ import { PrintDriver1Overlay } from '../components/overlays/PrintDriver1Overlay'
 import { PrintVehicle24hOverlay } from '../components/overlays/PrintVehicle24hOverlay'
 import { PrintVDiagramOverlay } from '../components/overlays/PrintVDiagramOverlay'
 import { PrintSpeedVehicleOverlay } from '../components/overlays/PrintSpeedVehicleOverlay'
+import { buildTechnicalDataPrintRows } from './technicalDataPrintRows'
 import type { Driver1PrintCardActivity } from './prepareDriver1Print24h'
 
 export type PrintOverlaysProps = {
@@ -69,10 +70,12 @@ export function PrintOverlays({
     printVehicle24hSelectedDate,
     printVehicle24hIsUtc,
     printSpeedVehicleOpen,
+    printTechnicalOpen,
     onCloseDriver1,
     onCloseVDiagram,
     onCloseVehicle24h,
     onCloseSpeedVehicle,
+    onCloseTechnical,
   } = printState
 
   const activitiesPrint = printState.driverActivitiesPrint
@@ -179,6 +182,21 @@ export function PrintOverlays({
         />
       )}
 
+      {printTechnicalOpen && (
+        <TechnicalPreview
+          input={() => ({
+            printedAtUtc: simulatedUtcTime,
+            isUtc: true,
+            localOffsetMs: vehicleDay().localOffsetMs,
+            profile: vehicleProfile,
+          })}
+          symbols={symbolMap}
+          title={t.ui.printTechnicalTitle}
+          closeLabel={t.printOverlay.close}
+          onClose={onCloseTechnical}
+        />
+      )}
+
       {printSpeedVehicleOpen && <PrintSpeedVehicleOverlay
         onClose={onCloseSpeedVehicle}
         t={t}
@@ -189,6 +207,21 @@ export function PrintOverlays({
         card={card1Inserted ? card1Data : null}
       />}
     </>
+  )
+}
+
+function TechnicalPreview({ input, symbols, title, closeLabel, onClose }: {
+  input: () => Parameters<typeof buildTechnicalDataPrintRows>[0]
+  symbols: SymbolMap | null
+  title: string
+  closeLabel: string
+  onClose: () => void
+}) {
+  const [rows] = useState(() => buildTechnicalDataPrintRows(input()))
+  return (
+    <PrintPreview title={title} closeLabel={closeLabel} onClose={onClose} ready={!!symbols?.[18]}>
+      <PrintRows rows={rows} symbols={symbols} />
+    </PrintPreview>
   )
 }
 

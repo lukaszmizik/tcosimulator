@@ -91,7 +91,8 @@ export function InfoPanel({ items, resetTrigger, symbolMap, collapsed = false, m
     setOpenItems((prev) => {
       const kept = prev.filter((p) => !dismissed.has(p.id) && (!p.activeOnly || currentIds.has(p.id)) && !itemsById.get(p.id)?.hidden)
       const toAdd = items.filter((i) => !i.hidden && !kept.some((p) => p.id === i.id) && !dismissed.has(i.id))
-      const updated = kept.map((p) => itemsById.get(p.id) ?? p)
+      // Živá položka z items má přednost; při změně jazyka přeloží i „visící“ bubliny už mimo aktuální podmínky.
+      const updated = kept.map((p) => itemsById.get(p.id) ?? (languageChanged ? retranslateStickyInfoItem(p, t) : p))
       const resurfaced = mobile
         ? updated.filter((item) => visibleIds.has(item.id) && !previousVisibleIds.has(item.id))
         : []
@@ -106,7 +107,7 @@ export function InfoPanel({ items, resetTrigger, symbolMap, collapsed = false, m
       if (!hasChanges && kept.length === prev.length) return prev
       return [...toAdd, ...resurfaced, ...updated.filter((item) => !resurfaced.includes(item))]
     })
-  }, [items, language, mobile])
+  }, [items, language, mobile, t])
 
   const newestItemId = openItems[0]?.id
   useLayoutEffect(() => {
@@ -124,9 +125,10 @@ export function InfoPanel({ items, resetTrigger, symbolMap, collapsed = false, m
   }
 
   const visibleItems = openItems.flatMap((item) => {
-    if (!item.activeOnly) return [item]
     const current = items.find((candidate) => candidate.id === item.id && !candidate.hidden)
-    return current ? [current] : []
+    if (item.activeOnly) return current ? [current] : []
+    // I u sticky bublin ber živý překlad, dokud položka v items existuje.
+    return [current ?? item]
   })
   if (visibleItems.length === 0) return null
 
@@ -172,6 +174,49 @@ export function InfoPanel({ items, resetTrigger, symbolMap, collapsed = false, m
 
 const SUPPLEMENT_ACTIVITIES_PHASES: CardInsertionState['phase'][] = ['decision1M', 'manualEditor', 'country', 'finalConfirm']
 const MANUAL_ENTRY_PHASES: CardInsertionState['phase'][] = [...SUPPLEMENT_ACTIVITIES_PHASES, 'itsQuestion', 'vdoQuestion']
+
+/** Přeloží sticky bublinu, která už není v aktuálním `items` (podmínka pominula, okno zůstalo otevřené). */
+function retranslateStickyInfoItem(item: InfoItem, t: Translations): InfoItem {
+  const ip = t.infoPanel
+  const id = item.id
+  if (id === 'standby-mode') return { ...item, message: ip.standbyModeInfo }
+  if (id === 'insert-card') return { ...item, message: ip.insertCardToSlot1 }
+  if (id === 'driving-without-card') return { ...item, message: ip.drivingWithoutCard }
+  if (id === 'excess-speed') return { ...item, message: ip.excessSpeedWarning }
+  if (id.startsWith('ejection-blocked-loading-')) return { ...item, message: ip.ejectionBlockedDuringLoading }
+  if (id.startsWith('ejection-blocked-')) return { ...item, message: ip.ejectionBlockedWarning }
+  if (id.startsWith('insertion-while-driving-')) return { ...item, message: ip.insertionWhileDrivingWarning }
+  if (id === 'break-415') return { ...item, message: ip.break415 }
+  if (id === 'break-430') return { ...item, message: ip.break430 }
+  if (id === 'generate-work-week-blocked') return { ...item, message: ip.generateWorkWeekBlocked }
+  if (id === 'out-mode-active') return { ...item, message: ip.outModeActiveInfo }
+  if (id === 'crew-mode-info') return { ...item, message: ip.crewModeInfo }
+  if (id === 'crew-mode-interrupted-warning') return { ...item, message: ip.crewModeInterruptedWarning }
+  if (id === 'crew-mode-not-met-info') return { ...item, message: ip.crewModeNotMetInfo }
+  if (id === 'idle-warning-confirm-info') return { ...item, message: ip.idleWarningConfirmInfo }
+  if (id === 'publish-data-consent-info') return { ...item, message: ip.publishDataConsentInfo }
+  if (id === 'supplement-activities') return { ...item, message: ip.supplementActivities }
+  if (id === 'vehicle-check-before-driving-warning') return { ...item, message: ip.vehicleCheckBeforeDrivingWarning }
+  if (id === 'vehicle-check-before-driving-short') return { ...item, message: ip.vehicleCheckBeforeDrivingShort }
+  if (id === 'ready-to-drive-pre-departure-check') return { ...item, message: ip.readyToDrivePreDepartureCheck }
+  if (id === 'nr165-warning') return { ...item, message: ip.nr165Warning }
+  if (id === 'manual-entry-data') return { ...item, message: ip.manualEntryData }
+  if (id.startsWith('menu-coming-soon') || id === 'menu-coming-soon') return { ...item, message: ip.menuComingSoon }
+  if (id === 'last-withdrawal') {
+    const datePart = item.message.match(/\d{2}\.\d{2}\.\d{4}.*$/)?.[0]?.trim()
+    return { ...item, message: datePart ? `${ip.lastWithdrawal} ${datePart}` : ip.lastWithdrawal }
+  }
+  if (id.startsWith('end-country-found-')) {
+    const dateTime = item.message.match(/\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}/)?.[0]
+    return {
+      ...item,
+      message: dateTime
+        ? ip.endCountryDuplicateWarning.replace('{dateTime}', dateTime)
+        : ip.endCountryDuplicateWarning.replace('{dateTime}', '').trim(),
+    }
+  }
+  return item
+}
 
 function formatSegmentDateTime(seg: { day: number; month: number; year: number; hour: number; minute: number }): string {
   const pad = (n: number) => String(n).padStart(2, '0')

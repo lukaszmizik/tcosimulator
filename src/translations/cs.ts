@@ -24,6 +24,7 @@ export const cs: Translations = {
     printVehicle24hTitle: 'Výtisk vozidlo 24h den',
     printVDiagramTitle: 'Výtisk V-diagram',
     printSpeedVehicleTitle: 'Výtisk vozidlo – překročení rychlosti',
+    printTechnicalTitle: 'Výtisk vozidlo – technické údaje',
     driver1: 'Řidič 1',
     driver2: 'Řidič 2',
     saved: 'uloženo',
@@ -483,5 +484,14 @@ export const cs: Translations = {
     vysunutiKartyZeSachty: 'vysunutí karty ze slotu', // 133
     stiskTlacitkaPrepnuti: 'Stisk tlačítka - přepnutí symbolu', // 134
     vlozeniKarty: 'Vložení karty', // 135
+  },
+  branding: {
+    appName: 'Tacho Simulator',
+    subtitle: 'Neoficiální výukový simulátor digitálního tachografu',
+    footerDisclaimer:
+      'Neoficiální výukový simulátor. Není produktem, schváleným ani podporovaným softwarem společnosti AUMOVIO Germany GmbH (VDO).',
+    legalLink: 'Právní informace',
+    legalText:
+      'Tato aplikace je nezávislou výukovou pomůckou pro nácvik obsluhy tachografu DTCO 4.1/4.1b. Není spojena s výrobcem ani jím certifikována. VDO a DTCO jsou označení příslušných vlastníků, použitá k identifikaci simulovaného zařízení. Simulátor nenahrazuje skutečný tachograf, originální návod ani právní předpisy.',
   },
 }

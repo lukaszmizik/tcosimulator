@@ -28,6 +28,7 @@ export type UsePrintStateReturn = {
   openPrintDriverEvents: (slot: 1 | 2, isUtc: boolean) => void
   onCloseDriverEvents: () => void
   printSpeedVehicleOpen: boolean
+  printTechnicalOpen: boolean
   printStartedToastUntil: number | null
 
   // Odvozené
@@ -38,12 +39,14 @@ export type UsePrintStateReturn = {
   openPrintVDiagram: (dayUtc?: number | null) => void
   openPrintVehicle24h: (dayUtc: number, isUtc: boolean) => void
   openPrintSpeedVehicle: () => void
+  openPrintTechnical: () => void
 
   // Zavření – jednotlivé (pro tlačítko × v overlayi) a všechno najednou (pro Zpět / Reset)
   onCloseDriver1: () => void
   onCloseVDiagram: () => void
   onCloseVehicle24h: () => void
   onCloseSpeedVehicle: () => void
+  onCloseTechnical: () => void
   closeAll: () => void
 
   showPrintStartedToast: () => void
@@ -63,6 +66,7 @@ export function usePrintState(): UsePrintStateReturn {
   const [printVehicleEventsUtc, setPrintVehicleEventsUtc] = useState<boolean | null>(null)
   const [printDriverEvents, setPrintDriverEvents] = useState<{ slot: 1 | 2; isUtc: boolean } | null>(null)
   const [printSpeedVehicleOpen, setPrintSpeedVehicleOpen] = useState(false)
+  const [printTechnicalOpen, setPrintTechnicalOpen] = useState(false)
   const [printStartedToastUntil, setPrintStartedToastUntil] = useState<number | null>(null)
   const printStartedToastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -107,6 +111,10 @@ export function usePrintState(): UsePrintStateReturn {
     setPrintSpeedVehicleOpen(true)
     showPrintStartedToast()
   }, [showPrintStartedToast])
+  const openPrintTechnical = useCallback(() => {
+    setPrintTechnicalOpen(true)
+    showPrintStartedToast()
+  }, [showPrintStartedToast])
 
   const openPrintVehicleEvents = useCallback((isUtc: boolean) => {
     setPrintVehicleEventsUtc(isUtc)
@@ -133,6 +141,7 @@ export function usePrintState(): UsePrintStateReturn {
     setPrintVehicle24hSelectedDate(null)
   }, [])
   const onCloseSpeedVehicle = useCallback(() => setPrintSpeedVehicleOpen(false), [])
+  const onCloseTechnical = useCallback(() => setPrintTechnicalOpen(false), [])
 
   const openPrintDriverActivities = useCallback((dayUtc: number, isUtc: boolean, slot: 1 | 2) => {
     setDriverActivitiesPrint({ dayUtc, isUtc, slot })
@@ -149,6 +158,7 @@ export function usePrintState(): UsePrintStateReturn {
     setPrintVehicle24hOpen(false)
     setPrintVehicle24hSelectedDate(null)
     setPrintSpeedVehicleOpen(false)
+    setPrintTechnicalOpen(false)
     setPrintVehicleEventsUtc(null)
     setPrintDriverEvents(null)
   }, [])
@@ -161,6 +171,7 @@ export function usePrintState(): UsePrintStateReturn {
     || printVDiagramOpen
     || printVehicle24hOpen
     || printSpeedVehicleOpen
+    || printTechnicalOpen
 
   return {
     driverActivitiesPrint,
@@ -182,16 +193,19 @@ export function usePrintState(): UsePrintStateReturn {
     printVehicle24hSelectedDate,
     printVehicle24hIsUtc,
     printSpeedVehicleOpen,
+    printTechnicalOpen,
     printStartedToastUntil,
     isPrintoutActive,
     openPrintDriverCard,
     openPrintVDiagram,
     openPrintVehicle24h,
     openPrintSpeedVehicle,
+    openPrintTechnical,
     onCloseDriver1,
     onCloseVDiagram,
     onCloseVehicle24h,
     onCloseSpeedVehicle,
+    onCloseTechnical,
     closeAll,
     showPrintStartedToast,
   }

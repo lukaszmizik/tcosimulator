@@ -569,6 +569,74 @@ body {
   letter-spacing: 2px;
 }
 
+.app-branding {
+  text-align: center;
+  padding: 8px 12px 7px;
+  background: linear-gradient(180deg, #2a3038 0%, #333940 100%);
+  border-bottom: 1px solid #1f242b;
+  color: #cbd5e1;
+}
+
+.app-branding-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.app-branding-subtitle {
+  margin: 2px 0 0;
+  font-size: 0.7rem;
+  color: #8b9aab;
+  font-weight: 400;
+  line-height: 1.25;
+}
+
+.vdo-labels.app-legal-footer,
+.device-column .vdo-labels.app-legal-footer {
+  grid-column: 1;
+  justify-self: center;
+  width: 100%;
+  box-sizing: border-box;
+  text-transform: none;
+  letter-spacing: normal;
+  max-width: min(44rem, 100%);
+  margin-left: auto;
+  margin-right: auto;
+  padding: 10px 14px 18px;
+  line-height: 1.5;
+  font-size: 14px;
+  color: #94a3b8;
+  text-align: center;
+}
+
+.app-legal-footer-text {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.app-legal-details {
+  text-align: left;
+}
+
+.app-legal-details summary {
+  cursor: pointer;
+  text-align: center;
+  color: #7c8fa3;
+  font-size: 14px;
+  list-style: none;
+}
+
+.app-legal-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.app-legal-details p {
+  margin: 10px 0 0;
+  font-size: 14px;
+  color: #94a3b8;
+}
+
 /* Menu – univerzální styl řádků jako na ostatních obrazovkách (žádný vlastní padding/margin). */
 .lcd-menu-two-rows {
   font-size: 20px;

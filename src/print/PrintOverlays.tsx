@@ -76,13 +76,15 @@ export function PrintOverlays({
     onCloseVehicle24h,
     onCloseSpeedVehicle,
     onCloseTechnical,
+    printStartedToastUntil,
   } = printState
+  const showPreview = printStartedToastUntil == null
 
   const activitiesPrint = printState.driverActivitiesPrint
 
   return (
     <>
-      {activitiesPrint && (
+      {activitiesPrint && showPreview && (
         <PrintDriverActivities
           input={() => ({ ...dailyDriverCard(activitiesPrint.slot), selectedDayUtc: activitiesPrint.dayUtc, isUtc: activitiesPrint.isUtc })}
           symbols={symbolMap}
@@ -91,7 +93,7 @@ export function PrintOverlays({
           title={`${t.printOverlay.driverActivitiesTitle} ${activitiesPrint.slot}`}
         />
       )}
-      {printDriver1Open && printDriver1SelectedDate != null && (
+      {printDriver1Open && printDriver1SelectedDate != null && showPreview && (
         <DailyDriverCardPrint
           input={() => ({ ...dailyDriverCard(printDriverSlot), selectedDayUtc: printDriver1SelectedDate, isUtc: printDriver1IsUtc })}
           symbols={symbolMap}
@@ -102,7 +104,7 @@ export function PrintOverlays({
       )}
 
       <PrintDriver1Overlay
-        open={printDriver1Open && printDriver1SelectedDate == null}
+        open={printDriver1Open && printDriver1SelectedDate == null && showPreview}
         onClose={onCloseDriver1}
         t={t}
         printDriver1SelectedDate={printDriver1SelectedDate}
@@ -113,7 +115,7 @@ export function PrintOverlays({
         eventLog={eventLog}
       />
 
-      {printVehicle24hOpen && (
+      {printVehicle24hOpen && showPreview && (
         <PrintVehicle24hOverlay
           onClose={onCloseVehicle24h}
           t={t}
@@ -127,7 +129,7 @@ export function PrintOverlays({
         />
       )}
 
-      {printVDiagramOpen && (
+      {printVDiagramOpen && showPreview && (
         <PrintVDiagramOverlay
           onClose={onCloseVDiagram}
           t={t}
@@ -139,7 +141,7 @@ export function PrintOverlays({
         />
       )}
 
-      {printState.printVehicleEventsUtc !== null && (
+      {printState.printVehicleEventsUtc !== null && showPreview && (
         <VehicleEventsPreview
           input={() => ({
             records: vehicleEvents,
@@ -158,7 +160,7 @@ export function PrintOverlays({
         />
       )}
 
-      {printState.printDriverEvents && (
+      {printState.printDriverEvents && showPreview && (
         <DriverEventsPreview
           input={() => {
             const slot = printState.printDriverEvents!.slot
@@ -182,7 +184,7 @@ export function PrintOverlays({
         />
       )}
 
-      {printTechnicalOpen && (
+      {printTechnicalOpen && showPreview && (
         <TechnicalPreview
           input={() => ({
             printedAtUtc: simulatedUtcTime,
@@ -197,7 +199,7 @@ export function PrintOverlays({
         />
       )}
 
-      {printSpeedVehicleOpen && <PrintSpeedVehicleOverlay
+      {printSpeedVehicleOpen && showPreview && <PrintSpeedVehicleOverlay
         onClose={onCloseSpeedVehicle}
         t={t}
         simulatedUtcTime={simulatedUtcTime}

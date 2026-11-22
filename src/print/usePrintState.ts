@@ -3,7 +3,7 @@
  * Sdružuje všechny výtiskové stavy a handlery pro použití v App a v menu.
  */
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 
 type DriverActivitiesPrint = { dayUtc: number; isUtc: boolean; slot: 1 | 2 }
 
@@ -69,63 +69,83 @@ export function usePrintState(): UsePrintStateReturn {
   const [printTechnicalOpen, setPrintTechnicalOpen] = useState(false)
   const [printStartedToastUntil, setPrintStartedToastUntil] = useState<number | null>(null)
   const printStartedToastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pendingPrintRef = useRef<(() => void) | null>(null)
+
+  const cancelPendingPrint = useCallback(() => {
+    if (printStartedToastTimeoutRef.current) {
+      clearTimeout(printStartedToastTimeoutRef.current)
+      printStartedToastTimeoutRef.current = null
+    }
+    pendingPrintRef.current = null
+    setPrintStartedToastUntil(null)
+  }, [])
+
+  const armPrint = useCallback((open: () => void) => {
+    if (printStartedToastTimeoutRef.current) clearTimeout(printStartedToastTimeoutRef.current)
+    pendingPrintRef.current = open
+    setPrintStartedToastUntil(Date.now() + 2000)
+    printStartedToastTimeoutRef.current = setTimeout(() => {
+      printStartedToastTimeoutRef.current = null
+      const openPending = pendingPrintRef.current
+      pendingPrintRef.current = null
+      setPrintStartedToastUntil(null)
+      openPending?.()
+    }, 2000)
+  }, [])
+
+  useEffect(() => () => {
+    if (printStartedToastTimeoutRef.current) clearTimeout(printStartedToastTimeoutRef.current)
+  }, [])
 
   const showPrintStartedToast = useCallback(() => {
-    if (printStartedToastTimeoutRef.current) clearTimeout(printStartedToastTimeoutRef.current)
-    const until = Date.now() + 1000
-    setPrintStartedToastUntil(until)
-    printStartedToastTimeoutRef.current = setTimeout(() => {
-      setPrintStartedToastUntil(null)
-      printStartedToastTimeoutRef.current = null
-    }, 1000)
-  }, [])
+    armPrint(() => {})
+  }, [armPrint])
 
   const openPrintDriverCard = useCallback(
     (dayUtc: number | null, isUtc = true, slot: 1 | 2 = 1) => {
-      setPrintDriver1SelectedDate(dayUtc)
-      setPrintDriver1IsUtc(isUtc)
-      setPrintDriverSlot(slot)
-      setPrintDriver1Open(true)
-      showPrintStartedToast()
+      armPrint(() => {
+        setPrintDriver1SelectedDate(dayUtc)
+        setPrintDriver1IsUtc(isUtc)
+        setPrintDriverSlot(slot)
+        setPrintDriver1Open(true)
+      })
     },
-    [showPrintStartedToast],
+    [armPrint],
   )
   const openPrintVDiagram = useCallback(
     (dayUtc?: number | null) => {
-      setPrintVDiagramSelectedDate(dayUtc ?? null)
-      setPrintVDiagramOpen(true)
-      showPrintStartedToast()
+      armPrint(() => {
+        setPrintVDiagramSelectedDate(dayUtc ?? null)
+        setPrintVDiagramOpen(true)
+      })
     },
-    [showPrintStartedToast],
+    [armPrint],
   )
   const openPrintVehicle24h = useCallback(
     (dayUtc: number, isUtc: boolean) => {
-      setPrintVehicle24hSelectedDate(dayUtc)
-      setPrintVehicle24hIsUtc(isUtc)
-      setPrintVehicle24hOpen(true)
-      showPrintStartedToast()
+      armPrint(() => {
+        setPrintVehicle24hSelectedDate(dayUtc)
+        setPrintVehicle24hIsUtc(isUtc)
+        setPrintVehicle24hOpen(true)
+      })
     },
-    [showPrintStartedToast],
+    [armPrint],
   )
   const openPrintSpeedVehicle = useCallback(() => {
-    setPrintSpeedVehicleOpen(true)
-    showPrintStartedToast()
-  }, [showPrintStartedToast])
+    armPrint(() => setPrintSpeedVehicleOpen(true))
+  }, [armPrint])
   const openPrintTechnical = useCallback(() => {
-    setPrintTechnicalOpen(true)
-    showPrintStartedToast()
-  }, [showPrintStartedToast])
+    armPrint(() => setPrintTechnicalOpen(true))
+  }, [armPrint])
 
   const openPrintVehicleEvents = useCallback((isUtc: boolean) => {
-    setPrintVehicleEventsUtc(isUtc)
-    showPrintStartedToast()
-  }, [showPrintStartedToast])
+    armPrint(() => setPrintVehicleEventsUtc(isUtc))
+  }, [armPrint])
   const onCloseVehicleEvents = useCallback(() => setPrintVehicleEventsUtc(null), [])
 
   const openPrintDriverEvents = useCallback((slot: 1 | 2, isUtc: boolean) => {
-    setPrintDriverEvents({ slot, isUtc })
-    showPrintStartedToast()
-  }, [showPrintStartedToast])
+    armPrint(() => setPrintDriverEvents({ slot, isUtc }))
+  }, [armPrint])
   const onCloseDriverEvents = useCallback(() => setPrintDriverEvents(null), [])
 
   const onCloseDriver1 = useCallback(() => {
@@ -144,12 +164,12 @@ export function usePrintState(): UsePrintStateReturn {
   const onCloseTechnical = useCallback(() => setPrintTechnicalOpen(false), [])
 
   const openPrintDriverActivities = useCallback((dayUtc: number, isUtc: boolean, slot: 1 | 2) => {
-    setDriverActivitiesPrint({ dayUtc, isUtc, slot })
-    showPrintStartedToast()
-  }, [showPrintStartedToast])
+    armPrint(() => setDriverActivitiesPrint({ dayUtc, isUtc, slot }))
+  }, [armPrint])
   const onCloseDriverActivities = useCallback(() => setDriverActivitiesPrint(null), [])
 
   const closeAll = useCallback(() => {
+    cancelPendingPrint()
     setDriverActivitiesPrint(null)
     setPrintDriver1Open(false)
     setPrintDriver1SelectedDate(null)
@@ -161,7 +181,7 @@ export function usePrintState(): UsePrintStateReturn {
     setPrintTechnicalOpen(false)
     setPrintVehicleEventsUtc(null)
     setPrintDriverEvents(null)
-  }, [])
+  }, [cancelPendingPrint])
 
   const isPrintoutActive =
     driverActivitiesPrint !== null
@@ -172,6 +192,7 @@ export function usePrintState(): UsePrintStateReturn {
     || printVehicle24hOpen
     || printSpeedVehicleOpen
     || printTechnicalOpen
+    || printStartedToastUntil !== null
 
   return {
     driverActivitiesPrint,

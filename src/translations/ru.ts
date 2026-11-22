@@ -154,7 +154,19 @@ export const ru: Translations = {
     startCountry: 'Страна начала', // 32
     printUtcLine1: 'Распечатка с',
     printUtc: 'временем UTC', // 33
-    printStarted: 'запущен...', // 34
+    printStartedLine1: 'Распечатка',
+    printStarted: 'началась ...', // 34
+    saveConfirmLine1: 'Ввод сохранён',
+    saveConfirmLine2: '',
+    countryQuestionMarker: '?',
+    expiryLine1: 'Срок действ.',
+    expiryLine2: 'карты',
+    languagePrompt1: 'Выбрать язык?',
+    languagePrompt2: '',
+    languageTitle: 'Язык',
+    languageName: 'русский',
+    mainMenuPrompt1: 'Вызвать главное',
+    mainMenuPrompt2: 'меню?',
     cardWarning: '\u00A0карта!', // 35 (неразрывный пробел перед текстом)
     excessSpeed: 'Превыш. скор.',
     ejectionBlockedL1: 'Возврат карт',

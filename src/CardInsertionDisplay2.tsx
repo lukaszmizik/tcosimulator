@@ -33,8 +33,8 @@ export type CardInsertionDisplay2Props = {
 /** Zobrazení – shodné s CardWizard (L1, L2, symboly, kurzor) */
 export function CardInsertionDisplay2(props: CardInsertionDisplay2Props) {
   const { symbolMap, cardInsertionState: cs, isMultiManning, countries, spanishRegions, lastEjectionTimeBySlot, localTime, timeOffsetMs = 0, timeStr, currentSpeed, odometerKm, card1Inserted, card2Inserted, leftActivityId, rightActivityId } = props
-  const { t, language } = useDeviceLanguage()
-  const countryQuestion = language === 'en' ? '' : '?'
+  const { t } = useDeviceLanguage()
+  const countryQuestion = t.tachoDisplay.countryQuestionMarker
   /** Ve fázích načítání (welcome, loading) se zobrazuje pouze příjmení. */
   const displayName = cs.phase === 'welcome' || cs.phase === 'loading' ? (cs.cardSurname ?? cs.cardName) : cs.cardName
 
@@ -263,8 +263,8 @@ export function CardInsertionDisplay2(props: CardInsertionDisplay2Props) {
   if (cs.phase === 'itsVdoConfirmSaved') {
     return (
       <div className="lcd-two-rows lcd-card-insertion">
-        <div className="lcd-row lcd-row-left">{t.cardWizard.input}</div>
-        <div className="lcd-row lcd-row-left">{t.cardWizard.inputSaved}</div>
+        <div className="lcd-row lcd-row-left">{t.tachoDisplay.saveConfirmLine1}</div>
+        <div className="lcd-row lcd-row-left">{t.tachoDisplay.saveConfirmLine2}</div>
       </div>
     )
   }

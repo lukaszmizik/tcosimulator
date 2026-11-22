@@ -1,11 +1,11 @@
-import { LANGUAGE_PAGE, MAIN_MENU_PAGE, UTC_PAGE, languageLabels, utcRows } from './firstLevelDisplay'
+import { LANGUAGE_PAGE, MAIN_MENU_PAGE, UTC_PAGE, utcRows } from './firstLevelDisplay'
 import type { DeviceLanguage } from './translations/types'
 /**
  * Vizuál displeje tachografu - L1, L2, ikonky, všechny obrazovky
  */
 
 import { useState, useEffect } from 'react'
-import { useDeviceLanguage } from './translations'
+import { getTranslations, useDeviceLanguage } from './translations'
 import type { SymbolMap } from './TachoTypes'
 import type { CardInsertionState, CardWithdrawalState, MenuCountryInputState, MenuLoadUnloadConfirmState, PrintWizardState, ActivityHistoryEntry } from './TachoTypes'
 import type { DisplayBrowseState } from './print/printDisplayBrowse'
@@ -195,14 +195,14 @@ function LoadUnloadConfirmDisplay() {
   const { t } = useDeviceLanguage()
   return (
     <div className="lcd-two-rows lcd-card-insertion">
-      <div className="lcd-row lcd-row-left">{t.tachoDisplay.input}</div>
-      <div className="lcd-row lcd-row-left">{t.tachoDisplay.saved}</div>
+      <div className="lcd-row lcd-row-left">{t.tachoDisplay.saveConfirmLine1}</div>
+      <div className="lcd-row lcd-row-left">{t.tachoDisplay.saveConfirmLine2}</div>
     </div>
   )
 }
 
 export function TachoDisplay(props: TachoDisplayProps) {
-  const { language } = useDeviceLanguage()
+  const { language, t } = useDeviceLanguage()
   const { symbolMap, cardInsertionState, cardWithdrawalState, drivingWithoutCardWarningActive, drivingWithoutValidCardWarningActive, breakWarningActive, workWarningActive, workWarningSlot = 1, workWarningMs, excessSpeedWarningActive, ejectionBlockedWarningActive, expiredInsertedCardWarningSlot, insertionWhileDrivingWarningSlot, overrideWarningCode, menuCountryInputState, menuLoadUnloadConfirmState, printWizardState, displayBrowseState, printStartedToastUntil, displayMode, showOutOnL2 = false } = props
 
   if (typeof window !== 'undefined' && window.location.search.includes('debug=1')) {
@@ -299,15 +299,14 @@ export function TachoDisplay(props: TachoDisplayProps) {
   if (displayBrowseState) {
     return <DisplayBrowseDisplay symbolMap={symbolMap} state={displayBrowseState} />
   }
-  if (printStartedToastUntil != null && Date.now() < printStartedToastUntil) {
+  if (printStartedToastUntil != null) {
     return <PrintStartedDisplay symbolMap={symbolMap} />
   }
   if (props.expiryNote && props.ignitionOn && displayMode === 'operating') {
-    const lines = { cs: ['vyprší za', 'dní'], en: ['expires in', 'days'], ru: ['Срок действ.', 'карты'] }[language]
     const { slot, days } = props.expiryNote
     return <div className="lcd-two-rows lcd-card-insertion">
-      <div className="lcd-row lcd-row-left">{parseSymbols(`(47)(14)${slot} ${lines[0]}`, symbolMap)}</div>
-      <div className="lcd-row lcd-row-left">{lines[1]} {days}</div>
+      <div className="lcd-row lcd-row-left">{parseSymbols(`(47)(14)${slot} ${t.tachoDisplay.expiryLine1}`, symbolMap)}</div>
+      <div className="lcd-row lcd-row-left">{t.tachoDisplay.expiryLine2} {days}</div>
     </div>
   }
   if (displayMode === 'operating') {
@@ -465,7 +464,7 @@ function DisplayBrowseDisplay(props: { symbolMap: SymbolMap | null; state: Displ
 function PrintStartedDisplay(props: { symbolMap: SymbolMap | null }) {
   const { symbolMap } = props
   const { t } = useDeviceLanguage()
-  const l1 = parseSymbols('výtisk', symbolMap)
+  const l1 = parseSymbols(t.tachoDisplay.printStartedLine1, symbolMap)
   return (
     <div className="lcd-two-rows lcd-card-insertion">
       <div className="lcd-row lcd-row-left"><span className="lcd-inline-symbols">{l1}</span></div>
@@ -476,14 +475,14 @@ function PrintStartedDisplay(props: { symbolMap: SymbolMap | null }) {
 
 function MenuCountryInputDisplay(props: TachoDisplayProps) {
   const { symbolMap, menuCountryInputState, countries } = props
-  const { t, language } = useDeviceLanguage()
-  const countryQuestion = language === 'en' ? '' : '?'
+  const { t } = useDeviceLanguage()
+  const countryQuestion = t.tachoDisplay.countryQuestionMarker
   const mc = menuCountryInputState!
   if (mc.phase === 'confirmSaved') {
     return (
       <div className="lcd-two-rows lcd-card-insertion">
-        <div className="lcd-row lcd-row-left">{t.tachoDisplay.input}</div>
-        <div className="lcd-row lcd-row-left">{t.tachoDisplay.saved}</div>
+        <div className="lcd-row lcd-row-left">{t.tachoDisplay.saveConfirmLine1}</div>
+        <div className="lcd-row lcd-row-left">{t.tachoDisplay.saveConfirmLine2}</div>
       </div>
     )
   }
@@ -790,14 +789,14 @@ function OperatingDisplay(props: TachoDisplayProps) {
   }
 
   if (vdoCounterActive && !vdoNamedScreen && currentSpeed === 0 && operatingScreenIndex >= UTC_PAGE) {
-    const labels = languageLabels[props.languageDraft ?? language]
+    const labels = getTranslations(props.languageDraft ?? language).tachoDisplay
     let rows: string[]
     if (operatingScreenIndex === LANGUAGE_PAGE) {
-      if (props.languageDraft) rows = ['(20) ' + labels.title, labels.name]
-      else if (props.languageSaved) rows = [labels.title, t.ui.saved]
-      else rows = labels.prompt
+      if (props.languageDraft) rows = ['(20) ' + labels.languageTitle, labels.languageName]
+      else if (props.languageSaved) rows = [labels.languageTitle, t.ui.saved]
+      else rows = [labels.languagePrompt1, labels.languagePrompt2]
     } else if (operatingScreenIndex === MAIN_MENU_PAGE) {
-      rows = labels.menu
+      rows = [labels.mainMenuPrompt1, labels.mainMenuPrompt2]
     } else {
       rows = utcRows(props.simulatedUtcTime ?? props.localTime.getTime(), props.localTime)
     }
@@ -1036,15 +1035,12 @@ function OperatingDisplay(props: TachoDisplayProps) {
 }
 
 function MenuDisplay(props: TachoDisplayProps) {
-  const { symbolMap, currentMenu, selectedItem, currentMenuId, entryMenuId } = props
+  const { symbolMap, currentMenu, selectedItem } = props
   if (!currentMenu) return null
   const item = selectedItem
   const iconChar = item ? getIconChar(item.display_icon ?? null) : ''
 
-  const rawLine1 =
-    currentMenuId === entryMenuId
-      ? (item?.line1 ?? '')
-      : (currentMenu.header_line1 ?? '')
+  const rawLine1 = item?.line1 ? item.line1 : (currentMenu.header_line1 ?? '')
   const rawLine2 = item?.line2 ?? ''
   const line1 = parseSymbols(rawLine1, symbolMap)
   const line2 = parseSymbols(rawLine2, symbolMap)

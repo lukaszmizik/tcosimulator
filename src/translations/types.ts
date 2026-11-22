@@ -161,7 +161,19 @@ export type Translations = {
     startCountry: string
     printUtcLine1: string
     printUtc: string
+    printStartedLine1: string
     printStarted: string
+    saveConfirmLine1: string
+    saveConfirmLine2: string
+    countryQuestionMarker: string
+    expiryLine1: string
+    expiryLine2: string
+    languagePrompt1: string
+    languagePrompt2: string
+    languageTitle: string
+    languageName: string
+    mainMenuPrompt1: string
+    mainMenuPrompt2: string
     cardWarning: string
     excessSpeed: string
     /** L1: text za symboly (35)(14) – „výhoz není“ */

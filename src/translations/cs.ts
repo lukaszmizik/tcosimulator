@@ -153,7 +153,19 @@ export const cs: Translations = {
     startCountry: 'výchozí země', // 32
     printUtcLine1: 'výtisk v',
     printUtc: 'UTC času?', // 33
-    printStarted: 'spuštěn...', // 34
+    printStartedLine1: 'výtisk',
+    printStarted: 'spuštěn ...', // 34
+    saveConfirmLine1: 'zadání',
+    saveConfirmLine2: 'uloženo',
+    countryQuestionMarker: '?',
+    expiryLine1: 'vyprší za',
+    expiryLine2: 'dní',
+    languagePrompt1: 'výběr',
+    languagePrompt2: 'jazyka?',
+    languageTitle: 'jazyk',
+    languageName: 'česky',
+    mainMenuPrompt1: 'vyvolat hlavní',
+    mainMenuPrompt2: 'menu?',
     cardWarning: '\u00A0karta!', // 35 (nezlomitelná mezera před textem)
     excessSpeed: 'vys. rychlost',
     ejectionBlockedL1: 'výhoz není',

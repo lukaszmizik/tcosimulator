@@ -4,11 +4,6 @@ export const UTC_PAGE = 2
 export const LANGUAGE_PAGE = 3
 export const MAIN_MENU_PAGE = 4
 export const languages: DeviceLanguage[] = ['cs', 'en', 'ru']
-export const languageLabels = {
-  cs: { prompt: ['výběr', 'jazyka?'], title: 'jazyk', name: 'česky', menu: ['vyvolat hlavní', 'menu?'] },
-  en: { prompt: ['select', 'language?'], title: 'language', name: 'english', menu: ['call main menu?', ''] },
-  ru: { prompt: ['Выбрать язык?', ''], title: 'Язык', name: 'русский', menu: ['Вызвать главное', 'меню?'] },
-}
 
 export function utcRows(utcMs: number, local: Date) {
   const iso = new Date(utcMs).toISOString()

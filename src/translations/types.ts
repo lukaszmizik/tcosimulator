@@ -172,6 +172,8 @@ export type Translations = {
     printUtc: string
     printStartedLine1: string
     printStarted: string
+    /** Značka UTC na řádku editoru místního času a času firmy. */
+    utcMark: string
     saveConfirmLine1: string
     saveConfirmLine2: string
     countryQuestionMarker: string

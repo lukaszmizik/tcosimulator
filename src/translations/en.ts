@@ -166,6 +166,7 @@ export const en: Translations = {
     printUtc: 'UTC time', // 33
     printStartedLine1: 'printout',
     printStarted: 'started ...', // 34
+    utcMark: 'UTC',
     saveConfirmLine1: 'entry stored',
     saveConfirmLine2: '',
     countryQuestionMarker: '',

@@ -166,6 +166,7 @@ export const cs: Translations = {
     printUtc: 'UTC času?', // 33
     printStartedLine1: 'výtisk',
     printStarted: 'spuštěn ...', // 34
+    utcMark: 'UTC',
     saveConfirmLine1: 'zadání',
     saveConfirmLine2: 'uloženo',
     countryQuestionMarker: '?',

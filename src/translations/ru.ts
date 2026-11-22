@@ -167,6 +167,7 @@ export const ru: Translations = {
     printUtc: 'временем UTC', // 33
     printStartedLine1: 'Распечатка',
     printStarted: 'началась ...', // 34
+    utcMark: 'UTC',
     saveConfirmLine1: 'Ввод сохранён',
     saveConfirmLine2: '',
     countryQuestionMarker: '?',

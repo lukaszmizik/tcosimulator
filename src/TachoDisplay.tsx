@@ -1,4 +1,10 @@
 import { LANGUAGE_PAGE, MAIN_MENU_PAGE, UTC_PAGE, utcRows } from './firstLevelDisplay'
+import {
+  formatTachographClock,
+  shownInstant,
+  timeOffsetSymbol,
+  type TimeOffsetEditorState,
+} from './timeOffsetEditor'
 import type { DeviceLanguage } from './translations/types'
 /**
  * Vizuál displeje tachografu - L1, L2, ikonky, všechny obrazovky
@@ -63,6 +69,8 @@ export type TachoDisplayProps = {
   menuCountryInputState: MenuCountryInputState | null
   menuLoadUnloadConfirmState: MenuLoadUnloadConfirmState | null
   printWizardState: PrintWizardState | null
+  /** Editor místního času (37) nebo času sídla firmy (3). */
+  timeOffsetEditor?: TimeOffsetEditorState | null
   /** Prohlížení dat výtisku na LCD (menu Displej). */
   displayBrowseState?: DisplayBrowseState | null
   /** Hláška „výtisk spuštěn“ – zobrazí se 1 s po potvrzení výtisku (timestamp do kdy platí). */
@@ -296,6 +304,9 @@ export function TachoDisplay(props: TachoDisplayProps) {
   if (printWizardState) {
     return <PrintWizardDisplay {...props} />
   }
+  if (props.timeOffsetEditor) {
+    return <TimeOffsetEditorDisplay {...props} />
+  }
   if (displayBrowseState) {
     return <DisplayBrowseDisplay symbolMap={symbolMap} state={displayBrowseState} />
   }
@@ -457,6 +468,25 @@ function DisplayBrowseDisplay(props: { symbolMap: SymbolMap | null; state: Displ
     <div className="lcd-two-rows lcd-card-insertion">
       <div className="lcd-row lcd-row-left"><span className="lcd-inline-symbols">{renderPrintCells(line1, symbolMap)}</span></div>
       <div className="lcd-row lcd-row-left"><span className="lcd-inline-symbols">{renderPrintCells(line2, symbolMap)}</span></div>
+    </div>
+  )
+}
+
+function TimeOffsetEditorDisplay(props: TachoDisplayProps) {
+  const { symbolMap, timeOffsetEditor, simulatedUtcTime = Date.now() } = props
+  const { t } = useDeviceLanguage()
+  const editor = timeOffsetEditor!
+  const utc = formatTachographClock(simulatedUtcTime)
+  const local = formatTachographClock(shownInstant(simulatedUtcTime, editor.draftOffsetMs))
+  const mark = parseSymbols(`(${timeOffsetSymbol(editor.kind)})`, symbolMap)
+  return (
+    <div className="lcd-two-rows lcd-card-insertion">
+      <div className="lcd-row lcd-row-left">
+        <span>{utc.date} {utc.time} {t.tachoDisplay.utcMark}</span>
+      </div>
+      <div className="lcd-row lcd-row-left">
+        <span className="lcd-field-blink">{mark} {local.date} {local.time}</span>
+      </div>
     </div>
   )
 }

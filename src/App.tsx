@@ -54,6 +54,14 @@ import {
 import { DRIVING_SYMBOL, segmentToMsUtc } from './CardLogic'
 import { activitiesForApplyTime, clockAfterApplyTime, insertedCardId, planApplyTimeJump } from './applyTimeJump'
 import {
+  browserClockOffsetStorage,
+  commitClockOffsets,
+  loadClockOffsets,
+  stepTimeOffset,
+  writeClockOffsets,
+  type TimeOffsetEditorState,
+} from './timeOffsetEditor'
+import {
   applyForwardDistance,
   applySecondDistances,
   noteBackwardJump,
@@ -206,7 +214,17 @@ export default function App() {
   const [selectedIndex, setSelectedIndex] = useState(0)
   // Simulovaný čas UTC – vnitřní čas simulátoru, nezávislý na systémovém čase
   const [simulatedUtcTime, setSimulatedUtcTime] = useState(() => Date.now())
-  const [timeOffsetMs, setTimeOffsetMs] = useState(0)
+  const [timeOffsetMs, setTimeOffsetMs] = useState(() => loadClockOffsets(browserClockOffsetStorage()).localOffsetMs)
+  const [ownerOffsetMs, setOwnerOffsetMs] = useState(() => loadClockOffsets(browserClockOffsetStorage()).ownerOffsetMs)
+  const [timeOffsetEditor, setTimeOffsetEditor] = useState<TimeOffsetEditorState | null>(null)
+  const clockOffsetsReady = useRef(false)
+  useEffect(() => {
+    if (!clockOffsetsReady.current) {
+      clockOffsetsReady.current = true
+      return
+    }
+    writeClockOffsets(browserClockOffsetStorage(), { localOffsetMs: timeOffsetMs, ownerOffsetMs })
+  }, [timeOffsetMs, ownerOffsetMs])
   const [printVehicleProfile, setPrintVehicleProfile] = useState(loadPrintVehicleProfile)
   const localTime = useMemo(
     () => new Date(simulatedUtcTime + timeOffsetMs),
@@ -1623,6 +1641,10 @@ export default function App() {
       handlePrintWizardKey('up')
       return
     }
+    if (timeOffsetEditor) {
+      setTimeOffsetEditor({ ...timeOffsetEditor, draftOffsetMs: stepTimeOffset(timeOffsetEditor.draftOffsetMs, 1) })
+      return
+    }
     if (drivingWithoutCardWarningActive || drivingWithoutValidCardWarningActive || ignitionWarningActive) return
     if (menuCountryInputState) {
       handleMenuCountryInputKey('up')
@@ -1635,7 +1657,7 @@ export default function App() {
     }
     if (visibleItems.length === 0) return
     setSelectedIndex((prev) => stepMenuIndex(prev, visibleItems.length, 'up'))
-  }, [ignitionOn, wakeDisplayFromStandby, displayMode, card1Inserted, card2Inserted, visibleItems.length, cardInsertionState, cardWithdrawalState, printWizardState, displayBrowseState, menuCountryInputState, menuLoadUnloadConfirmState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, drivingWithoutCardWarningActive, drivingWithoutValidCardWarningActive, ignitionWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, insertionWhileDrivingWarningSlot, expiredInsertedCardWarningSlot, isPrintoutActive, browseOperatingTimes])
+  }, [ignitionOn, wakeDisplayFromStandby, displayMode, card1Inserted, card2Inserted, visibleItems.length, cardInsertionState, cardWithdrawalState, printWizardState, timeOffsetEditor, displayBrowseState, menuCountryInputState, menuLoadUnloadConfirmState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, drivingWithoutCardWarningActive, drivingWithoutValidCardWarningActive, ignitionWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, insertionWhileDrivingWarningSlot, expiredInsertedCardWarningSlot, isPrintoutActive, browseOperatingTimes])
 
   const handleDown = useCallback(() => {
     if (!ignitionOn) {
@@ -1661,6 +1683,10 @@ export default function App() {
       handlePrintWizardKey('down')
       return
     }
+    if (timeOffsetEditor) {
+      setTimeOffsetEditor({ ...timeOffsetEditor, draftOffsetMs: stepTimeOffset(timeOffsetEditor.draftOffsetMs, -1) })
+      return
+    }
     if (drivingWithoutCardWarningActive || drivingWithoutValidCardWarningActive || ignitionWarningActive) return
     if (menuCountryInputState) {
       handleMenuCountryInputKey('down')
@@ -1673,7 +1699,7 @@ export default function App() {
     }
     if (visibleItems.length === 0) return
     setSelectedIndex((prev) => stepMenuIndex(prev, visibleItems.length, 'down'))
-  }, [ignitionOn, wakeDisplayFromStandby, displayMode, card1Inserted, card2Inserted, visibleItems.length, cardInsertionState, cardWithdrawalState, printWizardState, displayBrowseState, menuCountryInputState, menuLoadUnloadConfirmState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, drivingWithoutCardWarningActive, drivingWithoutValidCardWarningActive, ignitionWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, insertionWhileDrivingWarningSlot, expiredInsertedCardWarningSlot, isPrintoutActive, browseOperatingTimes])
+  }, [ignitionOn, wakeDisplayFromStandby, displayMode, card1Inserted, card2Inserted, visibleItems.length, cardInsertionState, cardWithdrawalState, printWizardState, timeOffsetEditor, displayBrowseState, menuCountryInputState, menuLoadUnloadConfirmState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, drivingWithoutCardWarningActive, drivingWithoutValidCardWarningActive, ignitionWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, insertionWhileDrivingWarningSlot, expiredInsertedCardWarningSlot, isPrintoutActive, browseOperatingTimes])
 
   const handleOK = useCallback(() => {
     if (!ignitionOn) {
@@ -1763,6 +1789,20 @@ export default function App() {
     if (printWizardState) {
       addEntry('Stisk OK')
       handlePrintWizardKey('ok')
+      return
+    }
+    if (timeOffsetEditor) {
+      const saved = commitClockOffsets(
+        { localOffsetMs: timeOffsetMs, ownerOffsetMs },
+        timeOffsetEditor,
+        true,
+      )
+      const label = timeOffsetEditor.kind === 'local' ? t.menu.items.IV_LOCAL.line2 : t.menu.items.IV_OWNER.line2
+      addEntry(t.actions.stiskOk, label)
+      if (saved.panelDeltaMs !== 0) setPanelDateTime((prev) => new Date(prev.getTime() + saved.panelDeltaMs))
+      setTimeOffsetMs(saved.offsets.localOffsetMs)
+      setOwnerOffsetMs(saved.offsets.ownerOffsetMs)
+      setTimeOffsetEditor(null)
       return
     }
     if (menuCountryInputState?.phase === 'confirmSaved' || menuLoadUnloadConfirmState) return
@@ -1891,6 +1931,12 @@ export default function App() {
         displayBrowseBuildersRef.current.technical()
         return
       }
+      if (selectedItem.action === 'SET_LOCAL_TIME' || selectedItem.action === 'SET_OWNER_TIME') {
+        const kind = selectedItem.action === 'SET_LOCAL_TIME' ? 'local' : 'owner'
+        addEntry(t.actions.stiskOk, selectedItem.line2 ?? '')
+        setTimeOffsetEditor({ kind, draftOffsetMs: kind === 'local' ? timeOffsetMs : ownerOffsetMs })
+        return
+      }
       if (selectedItem.action === 'INPUT_START_COUNTRY' || selectedItem.action === 'INPUT_END_COUNTRY') {
         addEntry(t.actions.stiskOk, selectedItem.action === 'INPUT_START_COUNTRY' ? t.actions.otevreniZadaniStart : t.actions.otevreniZadaniEnd)
         openMenuCountryInput(selectedItem.action, currentMenuPath)
@@ -1947,7 +1993,7 @@ export default function App() {
     }
     setMenuComingSoonInfo({ id: `menu-coming-soon-${Date.now()}` })
     addEntry(t.actions.stiskOk, t.infoPanel.menuComingSoon)
-  }, [card1Data, card2Data, driverCardStateByTemplateId, currentMenuId, languagePage, languageDraft, languageCard, language, lcdLanguage, setLanguage, setDeviceLanguage, t, ignitionOn, wakeDisplayFromStandby, displayMode, currentSpeed, selectedItem, menusById, currentMenuPath, countries, spanishRegions, secondHistory, activityHistory, simulatedUtcTime, overrideWarningCode, drivingWithoutCardWarningActive, ignitionWarningActive, breakWarningActive, workWarningActive, excessSpeedWarningActive, ejectionBlockedReason, expiredInsertedCardWarningSlot, insertionWhileDrivingWarningSlot, cardInsertionState, cardWithdrawalState, printWizardState, displayBrowseState, menuCountryInputState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, openMenuCountryInput, confirmMenuLoadUnload, isPrintoutActive, printState, addEntry, getCardInsertionOkDetail])
+  }, [card1Data, card2Data, driverCardStateByTemplateId, currentMenuId, languagePage, languageDraft, languageCard, language, lcdLanguage, setLanguage, setDeviceLanguage, t, ignitionOn, wakeDisplayFromStandby, displayMode, currentSpeed, selectedItem, menusById, currentMenuPath, countries, spanishRegions, secondHistory, activityHistory, simulatedUtcTime, timeOffsetMs, ownerOffsetMs, timeOffsetEditor, overrideWarningCode, drivingWithoutCardWarningActive, ignitionWarningActive, breakWarningActive, workWarningActive, excessSpeedWarningActive, ejectionBlockedReason, expiredInsertedCardWarningSlot, insertionWhileDrivingWarningSlot, cardInsertionState, cardWithdrawalState, printWizardState, displayBrowseState, menuCountryInputState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, openMenuCountryInput, confirmMenuLoadUnload, isPrintoutActive, printState, addEntry, getCardInsertionOkDetail])
 
   const handleBack = useCallback(() => {
     if (!ignitionOn) {
@@ -1985,6 +2031,12 @@ export default function App() {
       handlePrintWizardKey('back')
       return
     }
+    if (timeOffsetEditor) {
+      const label = timeOffsetEditor.kind === 'local' ? t.menu.items.IV_LOCAL.line2 : t.menu.items.IV_OWNER.line2
+      addEntry(t.actions.stiskZpet, label)
+      setTimeOffsetEditor(null)
+      return
+    }
     if (drivingWithoutCardWarningActive || drivingWithoutValidCardWarningActive || ignitionWarningActive || excessSpeedWarningActive || ejectionBlockedWarningActive || insertionWhileDrivingWarningSlot) return
     if (menuCountryInputState) {
       addEntry(t.actions.stiskZpet, t.actions.navratZeZadaniZeme)
@@ -2016,7 +2068,7 @@ export default function App() {
       setCurrentMenuPath((path) => leaveSubmenu(path).path)
       setSelectedIndex(leaveSubmenu(currentMenuPath).index)
     }
-  }, [languagePage, languageDraft, t, ignitionOn, wakeDisplayFromStandby, displayMode, canGoBack, vdoCounterActive, overrideWarningCode, cardInsertionState, cardWithdrawalState, printWizardState, displayBrowseState, menuCountryInputState, menuLoadUnloadConfirmState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, leaveMenuLoadUnloadByBack, drivingWithoutCardWarningActive, drivingWithoutValidCardWarningActive, ignitionWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, insertionWhileDrivingWarningSlot, expiredInsertedCardWarningSlot, isPrintoutActive, printState, addEntry])
+  }, [languagePage, languageDraft, t, ignitionOn, wakeDisplayFromStandby, displayMode, canGoBack, vdoCounterActive, overrideWarningCode, cardInsertionState, cardWithdrawalState, printWizardState, timeOffsetEditor, displayBrowseState, menuCountryInputState, menuLoadUnloadConfirmState, handleCardInsertionKey, handleCardWithdrawalKey, handlePrintWizardKey, handleMenuCountryInputKey, leaveMenuLoadUnloadByBack, drivingWithoutCardWarningActive, drivingWithoutValidCardWarningActive, ignitionWarningActive, excessSpeedWarningActive, ejectionBlockedWarningActive, insertionWhileDrivingWarningSlot, expiredInsertedCardWarningSlot, isPrintoutActive, printState, addEntry])
 
   const cycleLeftActivity = useCallback(() => {
     setLeftActivityId((id) => getNextActivity(id))
@@ -2457,6 +2509,7 @@ export default function App() {
     }
     cancelMenuCountryInput()
     cancelMenuLoadUnload()
+    setTimeOffsetEditor(null)
     setTargetSpeed(0)
     setIgnitionOn(false)
     setDisplayAwakeFromStandby(false)
@@ -2845,6 +2898,8 @@ export default function App() {
     setSimulatedUtcTime(now)
     setPanelDateTime(new Date(now))
     setTimeOffsetMs(0)
+    setOwnerOffsetMs(0)
+    setTimeOffsetEditor(null)
     setIgnitionOn(false)
     setDisplayAwakeFromStandby(false)
     setLeftActivityId('REST')
@@ -3063,6 +3118,7 @@ export default function App() {
     menuCountryInputState,
     menuLoadUnloadConfirmState,
     printWizardState,
+    timeOffsetEditor,
     displayBrowseState,
     printStartedToastUntil: printState.printStartedToastUntil,
     displayMode,

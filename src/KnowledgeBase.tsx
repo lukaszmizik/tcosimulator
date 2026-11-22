@@ -1,28 +1,11 @@
 import { useId, useRef, useState } from 'react'
 import type { SymbolMap } from './TachoTypes'
 import type { SupportedLanguage } from './translations/types'
+import { getTranslations } from './translations'
 import messageSymbols from './assets/dtco-message-symbols.svg'
 import { searchKnowledge, type KnowledgeSection } from './data/knowledgeBase'
 import pictogramAtlas from './assets/dtco-manual-pictograms.svg'
 import './knowledgeBase.css'
-
-const labels = {
-  cs: {
-    title: 'Znalostní báze', pictograms: 'Piktogramy', messages: 'Hlášení displeje',
-    close: 'Zavřít', search: 'Hledat v přehledu', empty: 'Žádná shoda.', action: 'Co udělat',
-    source: 'DTCO 4.1–4.1b · český návod, vydání 4',
-  },
-  en: {
-    title: 'Knowledge base', pictograms: 'Pictograms', messages: 'Display messages',
-    close: 'Close', search: 'Search the knowledge base', empty: 'No matches.', action: 'What to do',
-    source: 'DTCO 4.1–4.1b · Czech manual, edition 4',
-  },
-  ru: {
-    title: 'База знаний', pictograms: 'Пиктограммы', messages: 'Сообщения дисплея',
-    close: 'Закрыть', search: 'Поиск по базе знаний', empty: 'Совпадений нет.', action: 'Что делать',
-    source: 'DTCO 4.1–4.1b · руководство на чешском, издание 4',
-  },
-}
 
 const sections = ['pictograms', 'messages'] as const
 function renderSymbols(text: string) {
@@ -36,7 +19,7 @@ export function KnowledgeBase({ language }: {
   language: SupportedLanguage
   symbolMap: SymbolMap | null
 }) {
-  const copy = labels[language === 'mn' ? 'en' : language]
+  const copy = getTranslations(language).knowledgeBase
   const dialog = useRef<HTMLDialogElement>(null)
   const results = useRef<HTMLDivElement>(null)
   const title = useId()

@@ -397,4 +397,14 @@ export type Translations = {
     legalLink: string
     legalText: string
   }
+  knowledgeBase: {
+    title: string
+    pictograms: string
+    messages: string
+    close: string
+    search: string
+    empty: string
+    action: string
+    source: string
+  }
 }

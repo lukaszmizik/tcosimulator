@@ -508,4 +508,14 @@ export const en: Translations = {
     legalText:
       'This application is an independent training aid for practicing operation of the DTCO 4.1/4.1b tachograph. It is not affiliated with or certified by the manufacturer. VDO and DTCO are designations of their respective owners, used to identify the simulated device. The simulator does not replace a real tachograph, the original manual, or legal regulations.',
   },
+  knowledgeBase: {
+    title: 'Knowledge base',
+    pictograms: 'Pictograms',
+    messages: 'Display messages',
+    close: 'Close',
+    search: 'Search the knowledge base',
+    empty: 'No matches.',
+    action: 'What to do',
+    source: 'DTCO 4.1–4.1b · Czech manual, edition 4',
+  },
 }

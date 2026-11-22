@@ -1,4 +1,5 @@
 import type { SupportedLanguage } from '../translations/types'
+import { mnPictogramLabels, mnPictogramTitles } from './knowledgeBaseMn'
 
 // Czech DTCO 4.1–4.1b manual, edition 4 (2025-03).
 // The symbol codes identify the original glyphs in dtco-manual-pictograms.svg.
@@ -308,10 +309,10 @@ export function getPictogramGroups(language: SupportedLanguage) {
   const index = languageIndex[language]
   return reference.map(({ category, rows }) => ({
     id: category,
-    title: titles[category][index],
+    title: language === 'mn' ? mnPictogramTitles[category] : titles[category][index],
     entries: rows.map(([code, ...labels], rowIndex) => ({
       id: `${category}-${rowIndex}`,
-      label: labels[index],
+      label: language === 'mn' ? mnPictogramLabels[category][rowIndex] : labels[index],
       symbol: code.replace(/[\uE000-\uF8FF]/g, ' '),
       pictogram: category === 'countries' ? undefined : pictogramId(code),
     })),

@@ -1,4 +1,5 @@
 import type { SupportedLanguage } from '../translations/types'
+import { mnMessageDescriptions, mnMessageTitles } from './knowledgeBaseMn'
 
 type Message = readonly [display: string, meaning: string, action: string]
 type Group = { title: string, messages: readonly Message[] }
@@ -241,13 +242,16 @@ export function getMessageGroups(language: SupportedLanguage) {
   const groups = catalog[language === 'mn' ? 'en' : language]
   return groups.map(({ title, messages }, groupIndex) => ({
     id: String(groupIndex),
-    title,
-    entries: messages.map(([display, meaning, action], index) => ({
-      id: String(index),
-      display: display.split('\n'),
-      label: '',
-      meaning,
-      action,
-    })),
+    title: language === 'mn' ? mnMessageTitles[groupIndex] : title,
+    entries: messages.map(([display, meaning, action], index) => {
+      const prepared = language === 'mn' ? mnMessageDescriptions[groupIndex][index] : undefined
+      return {
+        id: String(index),
+        display: display.split('\n'),
+        label: '',
+        meaning: prepared ? prepared[0] : meaning,
+        action: prepared ? prepared[1] : action,
+      }
+    }),
   }))
 }

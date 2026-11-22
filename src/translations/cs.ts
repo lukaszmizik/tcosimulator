@@ -508,4 +508,14 @@ export const cs: Translations = {
     legalText:
       'Tato aplikace je nezávislou výukovou pomůckou pro nácvik obsluhy tachografu DTCO 4.1/4.1b. Není spojena s výrobcem ani jím certifikována. VDO a DTCO jsou označení příslušných vlastníků, použitá k identifikaci simulovaného zařízení. Simulátor nenahrazuje skutečný tachograf, originální návod ani právní předpisy.',
   },
+  knowledgeBase: {
+    title: 'Znalostní báze',
+    pictograms: 'Piktogramy',
+    messages: 'Hlášení displeje',
+    close: 'Zavřít',
+    search: 'Hledat v přehledu',
+    empty: 'Žádná shoda.',
+    action: 'Co udělat',
+    source: 'DTCO 4.1–4.1b · český návod, vydání 4',
+  },
 }

@@ -14,6 +14,7 @@ import { IDLE_WARNING_MS, IDLE_CRITICAL_MS } from './Constants'
 import type { CardInsertionState, CardData, CardInsertionPhase, ManualEntrySegment } from './TachoTypes'
 import type { CountryEntry } from './data/countriesLoader'
 import { createInitialCardInsertionState } from './CardLogic'
+import { showsReadyToDrive } from './slotCardRules'
 
 const INPUT_WAITING_PHASES: CardInsertionState['phase'][] = ['invalidCard', 'decision1M', 'manualEditor', 'country', 'finalConfirm', 'itsQuestion', 'vdoQuestion']
 
@@ -108,7 +109,9 @@ export function useCardWizard2(params: UseCardWizard2Params) {
     const { phase, phaseStartTime } = cardInsertionState
     if (phase === 'finalizeStep1') {
       const elapsed = Date.now() - phaseStartTime
-      const nextPhase = cardInsertionState.skipReadyToDriveScreen ? 'finalizeStep3' : 'finalizeStep2'
+      const nextPhase = showsReadyToDrive(cardInsertionState.slot) && !cardInsertionState.skipReadyToDriveScreen
+        ? 'finalizeStep2'
+        : 'finalizeStep3'
       if (elapsed >= FINALIZE_STEP1_MS) {
         setCardInsertionState((p) => (p?.phase === 'finalizeStep1' ? { ...p!, phase: nextPhase, phaseStartTime: Date.now() } : p))
         return
@@ -188,7 +191,10 @@ export function useCardWizard2(params: UseCardWizard2Params) {
           const progress = Math.min(1, elapsed / LOADING_MS)
           if (progress >= 1) {
             if (prev.cardExpired) return { ...prev, phase: 'invalidCard', phaseStartTime: Date.now(), loadingProgress: 1 }
-            if (prev.supplementDeclined) return { ...prev, phase: 'readyToDrive', phaseStartTime: Date.now(), loadingProgress: 1, supplementDeclined: false }
+            if (prev.supplementDeclined) {
+              const phase = showsReadyToDrive(prev.slot) ? 'readyToDrive' : 'finalizeStep1'
+              return { ...prev, phase, phaseStartTime: Date.now(), loadingProgress: 1, supplementDeclined: false }
+            }
             if (prev.firstInsertion && !prev.showFirstManualEntryBoundary) return { ...prev, phase: 'decision1M', phaseStartTime: Date.now(), loadingProgress: 1 }
             return { ...prev, phase: 'lastRemoval', phaseStartTime: Date.now(), loadingProgress: 1 }
           }

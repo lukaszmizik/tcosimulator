@@ -25,6 +25,7 @@ import {
 } from './TachoTypes'
 import { getVirtualLocationForDistance } from './VirtualRoute'
 import { SPLIT_REST_FIRST_MS, SPLIT_REST_SECOND_MS } from './VDOCounter'
+import { drivingWithoutDriverCard } from './slotCardRules'
 
 type UseDrivingIntervalParams = {
   outModeActiveRef: MutableRefObject<boolean>
@@ -149,8 +150,8 @@ export function useDrivingInterval(params: UseDrivingIntervalParams) {
         if (step.ended) endFerryTrainRef.current()
       }
       const activeId = activeNoCardIdRef.current
-      const hasDriverCard = card1InsertedRef.current
-      if (activeId !== null && (!isDriving || hasDriverCard)) {
+      const missingDriverCard = drivingWithoutDriverCard(card1InsertedRef.current)
+      if (activeId !== null && (!isDriving || !missingDriverCard)) {
         const endUtc = simulatedUtcTimeRef.current
         activeNoCardIdRef.current = null
         setFaultsAndEvents(prev => prev.map(record =>
@@ -159,7 +160,7 @@ export function useDrivingInterval(params: UseDrivingIntervalParams) {
         setEventLog(prev => prev.map(record =>
           record.id === activeId ? { ...record, endTime: endUtc } : record
         ))
-      } else if (activeId === null && isDriving && !hasDriverCard && !outModeActiveRef.current) {
+      } else if (activeId === null && isDriving && missingDriverCard && !outModeActiveRef.current) {
         const id = crypto.randomUUID()
         const startUtc = simulatedUtcTimeRef.current
         activeNoCardIdRef.current = id

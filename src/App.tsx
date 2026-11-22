@@ -61,6 +61,7 @@ import {
   writeClockOffsets,
   type TimeOffsetEditorState,
 } from './timeOffsetEditor'
+import { IGNITION_CARD_WARNING_MS, keptDeferredAfterEject } from './slotCardRules'
 import {
   applyForwardDistance,
   applySecondDistances,
@@ -901,34 +902,11 @@ export default function App() {
 
     const gpsName = virtualLocationRef.current?.name ?? '—'
     const deferred = deferredEndCountryInCrewModeRef.current
-    const alreadyAddedForCurrentSlot = Boolean(deferred[prev.slot])
-    if (deferred[1]) {
-      const commit = deferred[1].templateId === CARD2_TEMPLATE_ID ? setDriver2ManualEntryBuffer : setDriver1ManualEntryBuffer
-      commit((buf) =>
-        isDuplicateEndCountry(buf, deferred[1]!.withdrawalTime, deferred[1]!.countryCode)
-          ? buf
-          : [...buf, makeEndCountrySegment(deferred[1]!.withdrawalTime, deferred[1]!.countryCode)]
-      )
-      setRecordedGpsLocations((r) => [...r, { minuteStartUtc: deferred[1]!.withdrawalTime, gpsLocation: '—', recordType: 'end_country_card' }])
-    }
-    if (deferred[2]) {
-      const commit = deferred[2].templateId === CARD1_TEMPLATE_ID ? setDriver1ManualEntryBuffer : setDriver2ManualEntryBuffer
-      commit((buf) =>
-        isDuplicateEndCountry(buf, deferred[2]!.withdrawalTime, deferred[2]!.countryCode)
-          ? buf
-          : [...buf, makeEndCountrySegment(deferred[2]!.withdrawalTime, deferred[2]!.countryCode)]
-      )
-      setRecordedGpsLocations((r) => [...r, { minuteStartUtc: deferred[2]!.withdrawalTime, gpsLocation: '—', recordType: 'end_country_card' }])
-    }
-    deferredEndCountryInCrewModeRef.current = {}
-    if (isMultiManning) {
-      deferredEndCountryInCrewModeRef.current = { [prev.slot]: { withdrawalTime, countryCode, templateId } }
-    } else if (!alreadyAddedForCurrentSlot) {
-      commitSlotManual(prev.slot, (buf) =>
-        isDuplicateEndCountry(buf, withdrawalTime, countryCode) ? buf : [...buf, makeEndCountrySegment(withdrawalTime, countryCode)]
-      )
-      setRecordedGpsLocations((r) => [...r, { minuteStartUtc: withdrawalTime, gpsLocation: gpsName ?? '—', recordType: 'end_country_card' }])
-    }
+    commitSlotManual(prev.slot, (buf) =>
+      isDuplicateEndCountry(buf, withdrawalTime, countryCode) ? buf : [...buf, makeEndCountrySegment(withdrawalTime, countryCode)]
+    )
+    setRecordedGpsLocations((r) => [...r, { minuteStartUtc: withdrawalTime, gpsLocation: gpsName ?? '—', recordType: 'end_country_card' }])
+    deferredEndCountryInCrewModeRef.current = keptDeferredAfterEject(deferred, prev.slot)
 
     if (prev.slot === 1) {
       setCard1Data(null)
@@ -940,7 +918,7 @@ export default function App() {
     setCardInsertionState((p) => (p?.slot === prev.slot ? null : p))
     setVdoCounterActive(false)
     setDisplayMode('operating')
-  }, [countries, isMultiManning, setVdoCounterActive, setDisplayMode, commitSlotManual, noteDddWithdrawal])
+  }, [countries, setVdoCounterActive, setDisplayMode, commitSlotManual, noteDddWithdrawal])
 
   const handleCardWithdrawalKey = useCallback((action: 'ok' | 'up' | 'down' | 'back') => {
     const prev = cardWithdrawalStateRef.current
@@ -1070,8 +1048,8 @@ export default function App() {
     setRecordedGpsLocations,
   })
 
-  /** Před fyzickým vysunutím karty: zapiš obsah aktuální minuty z akumulátoru do historie obou karet (je-li vložena). */
-  const flushActivitiesToCardBeforeEject = useCallback((_slot: 1 | 2) => {
+  /** Před vysunutím karty zapíše rozpracovanou minutu jen do historie vysouvané šachty. */
+  const flushActivitiesToCardBeforeEject = useCallback((slot: 1 | 2) => {
     const acc = minuteAccumulatorRef.current
     if (!acc || acc.secondsInMinute === 0) return
     const pickWinner = (counts: Record<ActivityKind, number>, last: ActivityKind): ActivityKind => {
@@ -1107,32 +1085,32 @@ export default function App() {
       driver1CardId: insertedCardId(c1Inserted, number1, tid1),
       driver2CardId: insertedCardId(c2Inserted, number2, tid2),
     }
-    setActivityHistory((prev) => [...prev, entry])
-    if (c1Inserted && tid1) {
-      setCardActivityHistoryByTemplateId((p) => {
-        const arr = p[tid1] ?? []
-        if (arr.some((e) => e.minuteStartUtc === entry.minuteStartUtc)) return p
-        const newArr = [...arr, entry]
-        if (tid1 === CARD1_TEMPLATE_ID) saveCard1ActivityHistory(newArr)
-        else if (tid1 === CARD2_TEMPLATE_ID) saveCard2ActivityHistory(newArr)
-        return { ...p, [tid1]: newArr }
+    const ejectedInserted = slot === 1 ? c1Inserted : c2Inserted
+    const otherInserted = slot === 1 ? c2Inserted : c1Inserted
+    const tid = slot === 1 ? tid1 : tid2
+    const number = slot === 1 ? number1 : number2
+    if (!otherInserted) {
+      setActivityHistory((prev) => {
+        if (prev.some((e) => e.minuteStartUtc === entry.minuteStartUtc)) return prev
+        return [...prev, entry]
       })
     }
-    if (c2Inserted && tid2) {
+    if (ejectedInserted && tid) {
       setCardActivityHistoryByTemplateId((p) => {
-        const arr = p[tid2] ?? []
+        const arr = p[tid] ?? []
         if (arr.some((e) => e.minuteStartUtc === entry.minuteStartUtc)) return p
         const newArr = [...arr, entry]
-        if (tid2 === CARD1_TEMPLATE_ID) saveCard1ActivityHistory(newArr)
-        else if (tid2 === CARD2_TEMPLATE_ID) saveCard2ActivityHistory(newArr)
-        return { ...p, [tid2]: newArr }
+        if (tid === CARD1_TEMPLATE_ID) saveCard1ActivityHistory(newArr)
+        else if (tid === CARD2_TEMPLATE_ID) saveCard2ActivityHistory(newArr)
+        return { ...p, [tid]: newArr }
       })
     }
-    if (c1Inserted && number1) recordDddMinuteRef.current(number1, entry)
-    if (c2Inserted && number2) recordDddMinuteRef.current(number2, entry)
-    acc.secondsInMinute = 0
-    acc.counts.driver1 = { driving: 0, rest: 0, otherWork: 0, availability: 0, none: 0 }
-    acc.counts.driver2 = { driving: 0, rest: 0, otherWork: 0, availability: 0, none: 0 }
+    if (ejectedInserted && number) recordDddMinuteRef.current(number, entry)
+    if (!otherInserted) {
+      acc.secondsInMinute = 0
+      acc.counts.driver1 = { driving: 0, rest: 0, otherWork: 0, availability: 0, none: 0 }
+      acc.counts.driver2 = { driving: 0, rest: 0, otherWork: 0, availability: 0, none: 0 }
+    }
   }, [])
 
   flushActivitiesToCardBeforeEjectRef.current = flushActivitiesToCardBeforeEject
@@ -1218,13 +1196,13 @@ export default function App() {
     }
   }, [ignitionOn])
 
-  // Detekce chybějící karty při startu: ihned po START zkontroluj slot 1,
-  // pokud není karta, aktivuj výstrahu. Hláška se skryje po OK nebo vložení karty.
-  // Persistence: po OK se neobjeví znovu až do dalšího cyklu STOP/START.
-  // Hláška "!karta" se objeví až po zapnutí zapalování (pokud není vložena karta).
+  // Detekce chybějící karty při startu: ihned po START zkontroluj slot 1.
+  // Hláška zhasne po OK, po vložení karty do slotu 1, nebo sama po 20 s.
+  // Po OK se neobjeví znovu až do dalšího cyklu STOP/START. Karta ve slotu 2 ji neruší.
   useEffect(() => {
     if (!ignitionOn) {
       ignitionWarningDismissedRef.current = false
+      setIgnitionWarningActive(false)
       return
     }
     if (card1Inserted) {
@@ -1233,6 +1211,11 @@ export default function App() {
     }
     if (ignitionWarningDismissedRef.current) return
     setIgnitionWarningActive(true)
+    const timer = window.setTimeout(() => {
+      ignitionWarningDismissedRef.current = true
+      setIgnitionWarningActive(false)
+    }, IGNITION_CARD_WARNING_MS)
+    return () => window.clearTimeout(timer)
   }, [ignitionOn, card1Inserted])
 
   // Režim trajekt: konec při vyjmutí karty ve slotu 1 nebo 2 (ne při startu bez karet).

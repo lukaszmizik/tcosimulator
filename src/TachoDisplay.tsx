@@ -870,6 +870,9 @@ function OperatingDisplay(props: TachoDisplayProps) {
                 {parseSymbols(`(14) ${t.tachoDisplay.cardWarning}`, symbolMap)}
               </div>
               <div className="lcd-row-sides">
+                {card2Inserted && (
+                  <TachoIcon code={SPECIAL_SYMBOLS.CARD_SYMBOL} />
+                )}
                 <TachoIcon code={rightEdgeChar} />
               </div>
             </>
@@ -1038,6 +1041,9 @@ function OperatingDisplay(props: TachoDisplayProps) {
               {parseSymbols(`(14) ${t.tachoDisplay.cardWarning}`, symbolMap)}
             </div>
             <div className="lcd-row-sides">
+              {card2Inserted && (
+                <TachoIcon code={SPECIAL_SYMBOLS.CARD_SYMBOL} />
+              )}
               <TachoIcon code={rightEdgeChar} />
             </div>
           </>

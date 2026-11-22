@@ -10,6 +10,7 @@ import type { SymbolMap, TachoState } from './TachoTypes'
 import { ACTIVITY_SYMBOLS, SPECIAL_SYMBOLS } from './TachoTypes'
 import { parseSymbols, TachoIcon } from './Symbols'
 import { formatLcdOdometer, getActivityCode, utcMsToSegment } from './CardLogic'
+import { showsReadyToDrive } from './slotCardRules'
 
 export type CardInsertionDisplay2Props = {
   lcdPreview?: boolean
@@ -283,7 +284,7 @@ export function CardInsertionDisplay2(props: CardInsertionDisplay2Props) {
     )
   }
 
-  if (cs.phase === 'finalizeStep2' || cs.phase === 'readyToDrive') {
+  if ((cs.phase === 'finalizeStep2' || cs.phase === 'readyToDrive') && showsReadyToDrive(cs.slot)) {
     if (cs.showPleaseWait) {
       return (
         <div className="lcd-two-rows lcd-card-insertion">
@@ -300,7 +301,7 @@ export function CardInsertionDisplay2(props: CardInsertionDisplay2Props) {
     )
   }
 
-  if (cs.phase === 'finalizeStep1' || cs.phase === 'finalizeStep3' || cs.phase === 'finalizeStep4') {
+  if (cs.phase === 'finalizeStep1' || cs.phase === 'finalizeStep2' || cs.phase === 'finalizeStep3' || cs.phase === 'finalizeStep4' || cs.phase === 'readyToDrive') {
     if (cs.showPleaseWait) {
       return (
         <div className="lcd-two-rows lcd-card-insertion">

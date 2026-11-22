@@ -14,6 +14,7 @@ import type { Translations } from './translations/types'
 import type { SymbolMap } from './TachoTypes'
 import { ACTIVITY_SYMBOLS } from './TachoTypes'
 import { segmentToMsUtc } from './CardLogic'
+import { showsReadyToDrive } from './slotCardRules'
 import type { VehicleCheckResult } from './vehiclePreDepartureCheck'
 import { parseSymbols, ACTIVITY_ID_TO_BG } from './Symbols'
 
@@ -741,8 +742,9 @@ export function useInfoPanelItems(props: {
 
   // Hláška jen když displej skutečně zobrazuje „Připraven k jízdě“ (finalizeStep2 / readyToDrive)
   const showReadyToDriveReminder =
-    cardInsertionState?.phase === 'readyToDrive' ||
-    cardInsertionState?.phase === 'finalizeStep2'
+    showsReadyToDrive(cardInsertionState?.slot ?? 2) &&
+    (cardInsertionState?.phase === 'readyToDrive' ||
+      cardInsertionState?.phase === 'finalizeStep2')
   if (showReadyToDriveReminder) {
     items.push({
       id: 'ready-to-drive-pre-departure-check',

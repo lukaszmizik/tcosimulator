@@ -14,6 +14,10 @@ export type ControlPanelProps = {
   currentSpeed: number
   /** Datum a čas, které se nastaví po stisknutí potvrzovacího tlačítka */
   panelDateTime: Date
+  /** Potvrzený místní čas simulátoru, jen pro označení rozpracovaného cíle. */
+  localTimeMs: number
+  /** Skutečný UTC čas simulátoru. */
+  simulatedUtcTime: number
   canDecrementHours: boolean
   canDecrementMinutes: boolean
   onAdjustHours: (delta: number) => void
@@ -40,8 +44,25 @@ export type ControlPanelProps = {
 }
 
 
+function utcClockParts(ms: number, language: SupportedLanguage) {
+  const time = new Intl.DateTimeFormat(language, {
+    timeZone: 'UTC',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  }).format(ms)
+  const date = new Intl.DateTimeFormat(language, { timeZone: 'UTC' }).format(ms)
+  const value = new Date(ms)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const stamp = `${value.getUTCFullYear()}-${pad(value.getUTCMonth() + 1)}-${pad(value.getUTCDate())}T${pad(value.getUTCHours())}:${pad(value.getUTCMinutes())}:${pad(value.getUTCSeconds())}Z`
+  return { time, date, stamp }
+}
+
 export function ControlPanel(p: ControlPanelProps) {
   const { t } = p
+  const timePending = Math.floor(p.panelDateTime.getTime() / 60000) !== Math.floor(p.localTimeMs / 60000)
+  const utcClock = utcClockParts(p.simulatedUtcTime, p.language)
   return <section className="dashboard" data-running={p.ignitionOn} aria-label={t.controls.simulationControlsTitle}>
     <div className="dashboard-grid">
       <section className="dash-module mode-module">
@@ -55,7 +76,18 @@ export function ControlPanel(p: ControlPanelProps) {
       </section>
       <section className="dash-module clock-module">
         <h2>{t.controls.simulationTime}</h2>
-        <div className="dash-clock"><b>{p.panelDateTime.toLocaleTimeString(p.language, {hour:'2-digit', minute:'2-digit', second:'2-digit'})}</b><time>{p.panelDateTime.toLocaleDateString(p.language)}</time></div>
+        <div className="clock-pair">
+          <div className="dash-clock dash-clock-local">
+            <span className="clock-caption"><span>{t.controls.localTime}</span>{timePending && <span className="clock-draft">{t.controls.timePending}</span>}</span>
+            <b>{p.panelDateTime.toLocaleTimeString(p.language, {hour:'2-digit', minute:'2-digit', second:'2-digit'})}</b>
+            <time>{p.panelDateTime.toLocaleDateString(p.language)}</time>
+          </div>
+          <div className="dash-clock dash-clock-utc">
+            <span className="clock-caption">{t.controls.utcTime}</span>
+            <b>{utcClock.time}</b>
+            <time dateTime={utcClock.stamp}>{utcClock.date}</time>
+          </div>
+        </div>
         <div className="clock-adjust"><button disabled={!p.canDecrementHours} onClick={()=>p.onAdjustHours(-1)}>−1 h</button><button onClick={()=>p.onAdjustHours(1)}>+1 h</button><button disabled={!p.canDecrementMinutes} onClick={()=>p.onAdjustMinutes(-1)}>−1 min</button><button onClick={()=>p.onAdjustMinutes(1)}>+1 min</button></div>
         <div className="clock-presets">{[15,30,45].map(m=><button key={m} onClick={()=>p.onAdjustMinutes(m)}>+{m}m</button>)}</div>
         <button className="apply-time" onClick={p.onApplyTime} title={t.ui.applyTimeTitle}>✓ {t.controls.applyTime}</button>

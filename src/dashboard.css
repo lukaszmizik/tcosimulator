@@ -25,9 +25,14 @@ body { min-width: 0; background: #071018; }
 .dashboard .start-key[aria-pressed="true"] { background:linear-gradient(#14732b,#05441a);border:2px solid #3ce751;box-shadow:inset 0 1px 4px #74ff5244,0 0 18px #26d74e2b; }
 .dashboard .stop-key[aria-pressed="true"] { background:linear-gradient(#71363e,#391c24);border:2px solid #e77a83; }
 .dashboard[data-running="false"] .dash-module { background:linear-gradient(145deg,#172129,#0c141b);border-color:#283740; }
-.dash-clock { display:flex; flex-direction:column; align-items:center; justify-content:center;gap:4px; background:#090f14; border:1px solid #39434c;border-radius:11px;padding:10px 6px;font-variant-numeric:tabular-nums; }
+.clock-pair { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:6px; }
+.dash-clock { display:flex; flex-direction:column; align-items:center; justify-content:center;gap:4px; min-width:0; background:#090f14; border:1px solid #39434c;border-radius:11px;padding:10px 6px;font-variant-numeric:tabular-nums; }
 .dash-clock b { font-size:25px;letter-spacing:1px; }
 .dash-clock time { font-size:13px;color:#a9bac6; }
+.clock-caption { display:flex; align-items:baseline; justify-content:center; gap:5px; width:100%; overflow:hidden; color:#8ea3b0; font-size:10px; line-height:1; white-space:nowrap; }
+.clock-draft { color:#b7a57a; font-size:9px; }
+.dash-clock-utc b { font-size:18px; font-weight:600; letter-spacing:0; color:#93a7b4; }
+.dash-clock-utc time { font-size:11px; color:#7f93a0; }
 .clock-adjust { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:10px 0 8px; }
 .clock-presets { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px; }
 .dashboard .clock-presets button { padding:6px 2px;min-height:34px;font-size:13px; }
@@ -67,7 +72,8 @@ body { min-width: 0; background: #071018; }
  .mode-status { margin-bottom:12px;font-size:10px; }
  .dash-module { padding:12px 10px;border-radius:14px; }
  .dash-module h2 { font-size:14px; }
- .dash-clock b { font-size:20px; }
+ .dash-clock-local b { font-size:17px; letter-spacing:0; }
+ .dash-clock-utc b { font-size:14px; }
  .dashboard .reset-key { min-height:48px; }
  .reset-key span { display:inline;font-size:23px;margin-right:8px; }
  .dashboard .show-card-data-key { min-height:44px;font-size:11px;padding:6px 4px; }
@@ -95,9 +101,12 @@ html body { min-width:0 !important; width:100%; }
 .dashboard .mode-status { margin-bottom:13px; }
 .dashboard .mode-keys { gap:8px; }
 .dashboard .mode-keys button { min-height:44px;font-size:15px; }
-.dashboard .dash-clock { padding:5px;gap:1px; }
-.dashboard .dash-clock b { font-size:22px; }
-.dashboard .dash-clock time { font-size:12px; }
+.dashboard .dash-clock { padding:2px 4px 3px;gap:1px; }
+.dashboard .dash-clock-local b { font-size:18px; line-height:1; }
+.dashboard .dash-clock time { font-size:11px; line-height:1.15; }
+.dashboard .dash-clock-utc b { font-size:15px; line-height:1; }
+.dashboard .dash-clock-utc time { font-size:10px; line-height:1.15; }
+.dashboard .clock-pair { gap:5px; }
 .dashboard .clock-adjust { gap:5px;margin:7px 0 6px; }
 .dashboard .clock-adjust button { min-height:32px;padding:5px; }
 .dashboard .clock-presets button { min-height:30px; }
@@ -160,7 +169,8 @@ html body { min-width:0 !important; width:100%; }
  .slot-tap-controls button { min-height:42px; }
  .dashboard button:where(:not(.info-panels-wrapper button)),.dashboard .clock-adjust button,.dashboard .clock-presets button,.dashboard .apply-time { min-height:44px; }
  .dashboard .mode-keys { flex-direction:column; }
- .dashboard .dash-clock b { font-size:18px;letter-spacing:0; }
+ .dashboard .dash-clock-local b { font-size:15px;letter-spacing:0; }
+ .dashboard .dash-clock-utc b { font-size:13px; }
  .dashboard .clock-presets { gap:3px; }
  .dashboard .clock-presets button { font-size:11px; }
 }

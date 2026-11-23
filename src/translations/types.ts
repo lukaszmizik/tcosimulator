@@ -335,6 +335,9 @@ export type Translations = {
     ignitionOn: string
     ignitionOff: string
     simulationTime: string
+    localTime: string
+    utcTime: string
+    timePending: string
     applyTime: string
     incrementHours: string
     incrementMinutes: string

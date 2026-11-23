@@ -4050,6 +4050,8 @@ export default function App() {
           onTargetSpeedChange={setTargetSpeed}
           currentSpeed={currentSpeed}
           panelDateTime={panelDateTime}
+          localTimeMs={localTimeMs}
+          simulatedUtcTime={simulatedUtcTime}
           canDecrementHours={canDecrementHours}
           canDecrementMinutes={canDecrementMinutes}
           onAdjustHours={adjustHours}

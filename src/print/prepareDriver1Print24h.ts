@@ -7,7 +7,8 @@
  */
 
 import { segmentToMsUtc } from '../CardLogic'
-import type { ActivityHistoryEntry, EditorActivityId, ManualEntrySegment, SecondActivitySnapshot } from '../TachoTypes'
+import { secondSampleAt, type SecondSampleRead } from '../secondHistoryBuffer'
+import type { ActivityHistoryEntry, EditorActivityId, ManualEntrySegment } from '../TachoTypes'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -129,9 +130,9 @@ export function simulatedPrintCardActivities(
 
 /** Rozpracovaná minuta podle skutečných záznamů a identifikace karty v šachtě. */
 export function ongoingPrintCardActivity(
-  samples: readonly SecondActivitySnapshot[], cardId: string, now: number, isCrew: boolean,
+  samples: SecondSampleRead, cardId: string, now: number, isCrew: boolean,
 ): Driver1PrintCardActivity | null {
-  const sample = samples[samples.length - 1]
+  const sample = secondSampleAt(samples, samples.length - 1)
   if (!sample || sample.timestampUtc > now || now - sample.timestampUtc > 1000) return null
   const slot = sample.driver1CardId === cardId ? 1 : sample.driver2CardId === cardId ? 2 : null
   if (!slot) return null
@@ -141,8 +142,8 @@ export function ongoingPrintCardActivity(
   const minuteStart = Math.floor(now / 60_000) * 60_000
   let start = sample.timestampUtc
   for (let index = samples.length - 2; index >= 0; index--) {
-    const previous = samples[index]
-    if (previous.timestampUtc < minuteStart || start - previous.timestampUtc !== 1000 ||
+    const previous = secondSampleAt(samples, index)
+    if (!previous || previous.timestampUtc < minuteStart || start - previous.timestampUtc !== 1000 ||
       (slot === 1 ? previous.driver1CardId !== cardId || previous.driver1 !== activity
         : previous.driver2CardId !== cardId || previous.driver2 !== activity)) break
     start = previous.timestampUtc

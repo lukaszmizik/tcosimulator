@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { insertedCardId } from './applyTimeJump'
-import type { CardData, ManualEntrySegment, SecondActivitySnapshot } from './TachoTypes'
+import type { SecondSampleRead } from './secondHistoryBuffer'
+import type { CardData, ManualEntrySegment } from './TachoTypes'
 import { NO_CARD } from './TachoTypes'
 import { evaluatePreDepartureWork, type VehicleCheckResult } from './vehiclePreDepartureCheck'
 
@@ -19,7 +20,7 @@ export function useVehiclePreDepartureCheck({
   isDriving: boolean
   simulatedUtcTime: number
   manualEntries: ManualEntrySegment[]
-  secondHistory: SecondActivitySnapshot[]
+  secondHistory: SecondSampleRead
 }): VehicleCheckResult {
   const wasDrivingRef = useRef(false)
   const [checked, setChecked] = useState<{ card: CardData; result: VehicleCheckResult } | null>(null)

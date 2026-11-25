@@ -17,7 +17,6 @@ import type {
   ActivityDurationsMs,
   ActivityHistoryEntry,
   DayOdometerRecord,
-  SecondActivitySnapshot,
   FaultOrEvent,
   EventLogEntry,
   ManualActivityEntry,
@@ -127,7 +126,7 @@ import { cardTimesSlot, counterCardSlot, counterIndexAfterCardRemoval, slot1Coun
 import { buildVdoCounterOutlook } from './vdoCounterOutlook'
 import { parseSymbols } from './Symbols'
 import { isWarningCode } from './data/warnings'
-import { LANGUAGE_PAGE, languages, recalledLanguage, rememberLanguage } from './firstLevelDisplay'
+import { LANGUAGE_PAGE, clearSessionCardLanguages, discardPersistedLessonIdentity, languages, recalledLanguage, rememberLanguage } from './firstLevelDisplay'
 import { useDeviceLanguage, useLanguage } from './translations'
 import type { DeviceLanguage } from './translations/types'
 import { ControlPanel } from './ControlPanel'
@@ -155,11 +154,10 @@ import {
   appendVehicleCardInsertion,
   browserCardInsertionStorage,
   currentVehicleCardInsertion,
-  loadVehicleCardInsertions,
   snapshotDriverInsertion,
-  writeVehicleCardInsertions,
   type VehicleCardInsertion,
 } from './print/vehicleCardInsertions'
+import { appendSecondSamples, emptySecondHistory, secondHistoryFrom, type SecondSampleRead } from './secondHistoryBuffer'
 import { driver1PrintCardActivities, simulatedPrintCardActivities, ongoingPrintCardActivity } from './print/prepareDriver1Print24h'
 import { useMenuCountryInput } from './useMenuCountryInput'
 import { useMenuLoadUnload } from './useMenuLoadUnload'
@@ -301,9 +299,10 @@ export default function App() {
   const [card1Inserted, setCard1Inserted] = useState(false)
   const [driverCardInsertedAtUtc, setDriverCardInsertedAtUtc] = useState(0)
   const [card2Inserted, setCard2Inserted] = useState(false)
-  const [vehicleCardInsertions, setVehicleCardInsertions] = useState<VehicleCardInsertion[]>(
-    () => loadVehicleCardInsertions(browserCardInsertionStorage()),
-  )
+  const [vehicleCardInsertions, setVehicleCardInsertions] = useState<VehicleCardInsertion[]>(() => {
+    discardPersistedLessonIdentity(browserCardInsertionStorage())
+    return []
+  })
   useEffect(() => {
     const next = counterIndexAfterCardRemoval({
       index: operatingScreenIndex,
@@ -367,7 +366,7 @@ export default function App() {
   const [splitFirstPartTakenByDriver, setSplitFirstPartTakenByDriver] = useState<Record<1 | 2, boolean>>({ 1: false, 2: false })
   // Původní události tachografu (tachoEvents) aktuálně nevyužíváme – ponecháno pro budoucí rozšíření
   /** Sekundový tracker aktivit (R1, R2, rychlost) – pro detailní historii. */
-  const [secondHistory, setSecondHistory] = useState<SecondActivitySnapshot[]>([])
+  const [secondHistory, setSecondHistory] = useState<SecondSampleRead>(() => emptySecondHistory())
   /** Historie aktivit po minutách v aktuální relaci. */
   const [activityHistory, setActivityHistory] = useState<ActivityHistoryEntry[]>(() => loadTachographActivityHistory())
   /** Varování / chyby (např. jízda bez karty). */
@@ -508,7 +507,6 @@ export default function App() {
   const activitySinceRef = useRef<{ 1: { activity: string; at: number }; 2: { activity: string; at: number } } | null>(null)
   const rightActivityIdRef = useRef(rightActivityId)
   const activityDurationsMsRef = useRef(activityDurationsMs)
-  activityDurationsMsRef.current = activityDurationsMs
   const simulatedUtcTimeRef = useRef(simulatedUtcTime)
   const drivingSinceLastBreakMsByDriverRef = useRef<Record<1 | 2, number>>({ 1: 0, 2: 0 })
   const restSinceLastBreakMsByDriverRef = useRef<Record<1 | 2, number>>({ 1: 0, 2: 0 })
@@ -1142,17 +1140,39 @@ export default function App() {
     ],
   )
 
-  // Uložení centralizovaného stavu jako data atributu pro ladění / budoucí použití
+  // Diagnostický JSON historie jen při ?debug=1. Běžný běh ho neskládá při každém vykreslení.
+  const showDebugPanel = typeof window !== 'undefined' && window.location.search.includes('debug=1')
   const tachoStateJson = useMemo(() => JSON.stringify(tachoState), [tachoState])
+  const activityDurationsJson = useMemo(
+    () => (showDebugPanel ? JSON.stringify(activityDurationsMs) : undefined),
+    [showDebugPanel, activityDurationsMs],
+  )
+  const manualActivitiesDriver1Json = useMemo(
+    () => (showDebugPanel ? JSON.stringify(driver1ManualActivities) : undefined),
+    [showDebugPanel, driver1ManualActivities],
+  )
+  const manualActivitiesDriver2Json = useMemo(
+    () => (showDebugPanel ? JSON.stringify(driver2ManualActivities) : undefined),
+    [showDebugPanel, driver2ManualActivities],
+  )
+  const faultsAndEventsJson = useMemo(
+    () => (showDebugPanel ? JSON.stringify(faultsAndEvents) : undefined),
+    [showDebugPanel, faultsAndEvents],
+  )
+  const eventLogJson = useMemo(
+    () => (showDebugPanel ? JSON.stringify(eventLog) : undefined),
+    [showDebugPanel, eventLog],
+  )
+  const driver2ManualEntriesJson = useMemo(
+    () => (showDebugPanel ? JSON.stringify(driver2ManualEntryBuffer) : undefined),
+    [showDebugPanel, driver2ManualEntryBuffer],
+  )
 
   const [virtualLocation, setVirtualLocation] = useState<VirtualRoutePoint>(() =>
     getVirtualLocationForDistance(0),
   )
   virtualLocationRef.current = virtualLocation
   currentLocationCountryCodeRefForWizard.current = virtualLocation?.country ?? null
-
-  // JSON pro ladění a případné využití ve vnějším nástroji
-  const faultsAndEventsJson = useMemo(() => JSON.stringify(faultsAndEvents), [faultsAndEvents])
 
   const currentMenuId = currentMenuPath[currentMenuPath.length - 1]
   const currentMenu = menusById[currentMenuId]
@@ -1428,8 +1448,7 @@ export default function App() {
     setSplitFirstPartTakenByDriver,
     setBreakWarningActive,
     setActivityDurationsMs,
-    setDrivingSinceLastBreakMsByDriver,
-    setRestSinceLastBreakMsByDriver,
+    activityDurationsMsRef,
   })
 
   // Při vypnutí zapalování zrušit zvýraznění šachty a resetovat varování pracovní doby
@@ -2210,15 +2229,13 @@ export default function App() {
   const insertCardIntoSlot = useCallback((cardId: string, slot: 1 | 2) => {
     const rememberInsertion = (target: 1 | 2, card: CardData, imported?: Parameters<typeof snapshotDriverInsertion>[0]['imported']) => {
       setVehicleCardInsertions((current) => {
-        const next = appendVehicleCardInsertion(current, snapshotDriverInsertion({
+        return appendVehicleCardInsertion(current, snapshotDriverInsertion({
           insertedAtUtc: simulatedUtcTimeRef.current,
           slot: target,
           sequence: current.length,
           card,
           imported,
         }))
-        writeVehicleCardInsertions(browserCardInsertionStorage(), next)
-        return next
       })
     }
     if (!ignitionOn) return
@@ -2569,20 +2586,17 @@ export default function App() {
         [tid2]: [...(prev[tid2] ?? []), ...activityEntries],
       }))
     }
-    setSecondHistory((prev) => {
-      const next = [...prev, ...secondEntries]
-      while (next.length > 86400) next.shift()
-      return next
-    })
+    setSecondHistory((prev) => appendSecondSamples(prev, secondEntries))
     minuteAccumulatorRef.current = null
 
     const availabilityMs = isMultiManningRef.current ? drivingMs : 0
-    setActivityDurationsMs((prev) => ({
-      ...prev,
-      driving: prev.driving + drivingMs,
-      otherWork: prev.otherWork + otherWorkMs,
-      availability: prev.availability + availabilityMs,
-    }))
+    activityDurationsMsRef.current = {
+      ...activityDurationsMsRef.current,
+      driving: activityDurationsMsRef.current.driving + drivingMs,
+      otherWork: activityDurationsMsRef.current.otherWork + otherWorkMs,
+      availability: activityDurationsMsRef.current.availability + availabilityMs,
+    }
+    setActivityDurationsMs(activityDurationsMsRef.current)
 
     drivingSinceLastBreakMsByDriverRef.current[1] += 250 * 60000
     restSinceLastBreakMsByDriverRef.current[1] = 0
@@ -2713,7 +2727,7 @@ export default function App() {
     setSimulatedUtcTime(nowUtc)
     setPanelDateTime(new Date(nowUtc))
     setTimeOffsetMs(0)
-    setSecondHistory(generatedSecondHistory)
+    setSecondHistory(secondHistoryFrom(generatedSecondHistory))
     drivingSinceLastBreakMsByDriverRef.current = { 1: 0, 2: 0 }
     restSinceLastBreakMsByDriverRef.current = { 1: 0, 2: 0 }
     setDrivingSinceLastBreakMsByDriver({ 1: 0, 2: 0 })
@@ -2829,9 +2843,10 @@ export default function App() {
     setGenerateWorkWeekBlockedWarning(false)
     setDuplicateDataWarningOpen(false)
     setIgnitionWarningActive(false)
-    setActivityDurationsMs({ ...INITIAL_ACTIVITY_DURATIONS })
+    activityDurationsMsRef.current = { ...INITIAL_ACTIVITY_DURATIONS }
+    setActivityDurationsMs(activityDurationsMsRef.current)
     setActivityHistory([])
-    setSecondHistory([])
+    setSecondHistory(emptySecondHistory())
     setCard1Inserted(false)
     setCard2Inserted(false)
     setCard1Data(null)
@@ -2922,7 +2937,7 @@ export default function App() {
     clearCard2LastWithdrawal()
     setFaultsAndEvents([])
     setEventLog([])
-    writeVehicleCardInsertions(browserCardInsertionStorage(), [])
+    clearSessionCardLanguages()
     setVehicleCardInsertions([])
   }, [printState])
 
@@ -3179,8 +3194,6 @@ export default function App() {
   })
 
   const lcdDebugEnabled = useMemo(() => new URLSearchParams(window.location.search).get('lcdDebug') === '1', [])
-  /** Diagnostika režimu OUT: v URL přidej ?debug=1 a zobrazí se panel se stavem. */
-  const showDebugPanel = typeof window !== 'undefined' && window.location.search.includes('debug=1')
   const slot1DrivingBreak = useMemo(() => {
     if (!card1Inserted || card1Data?.templateId !== CARD1_TEMPLATE_ID) return null
     return buildSlot1VirtualCardDrivingBreak({
@@ -3785,17 +3798,17 @@ export default function App() {
       <div
         ref={vdoWrapperRef}
         className="vdo-wrapper"
-        data-activity-durations={JSON.stringify(activityDurationsMs)}
-        data-manual-activities-driver1={JSON.stringify(getManualActivitiesForSlot(1))}
-        data-manual-activities-driver2={JSON.stringify(getManualActivitiesForSlot(2))}
+        data-activity-durations={activityDurationsJson}
+        data-manual-activities-driver1={manualActivitiesDriver1Json}
+        data-manual-activities-driver2={manualActivitiesDriver2Json}
         data-tacho-state={tachoStateJson}
         data-is-bargraf-running={isBargrafRunning}
         data-is-card-initializing={isCardInitializing}
         data-second-history-length={secondHistory.length}
         data-activity-history-length={activityHistory.length}
         data-faults-events={faultsAndEventsJson}
-        data-event-log={JSON.stringify(eventLog)}
-        data-driver2-manual-entries={JSON.stringify(driver2ManualEntryBuffer)}
+        data-event-log={eventLogJson}
+        data-driver2-manual-entries={driver2ManualEntriesJson}
         data-debug-out-mode-active={String(outModeActive)}
         data-debug-show-out-on-l2={String(outModeActive)}
         data-debug-driving-without-card-warning={String(drivingWithoutCardWarningActive)}

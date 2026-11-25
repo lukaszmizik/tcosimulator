@@ -4,10 +4,14 @@
  *
  * Běh na pozadí (backgroundRunRef): při škrcení timerů prohlížečem dohoní wall-clock
  * a zapíše činnosti po minutách (stejný princip jako „Nastavit čas“).
+ * Interval i návrat na stránku čtou jeden časový základ. Samotné visibilitychange sekundu nepřidá.
+ * Vypnutý běh na pozadí dlouhou prodlevu nedohání. Ruční skok srovná základ a nevytvoří sekundové vzorky.
  */
 
 import { useEffect, type Dispatch, type MutableRefObject, type SetStateAction } from 'react'
 import { activitiesForApplyTime, insertedCardId, planApplyTimeJump } from './applyTimeJump'
+import { appendSecondSamples, type SecondSampleRead } from './secondHistoryBuffer'
+import { nextSimulationClockAction, type ClockAnchor } from './simulationClock'
 import { DRIVING_SYMBOL, activityFromChar, getActivityCode } from './CardLogic'
 import { CARD1_TEMPLATE_ID, saveCard1ActivityHistory } from './data/card1_write_data'
 import { CARD2_TEMPLATE_ID, saveCard2ActivityHistory } from './data/card2_write_data'
@@ -16,7 +20,6 @@ import {
   type ActivityKind,
   type CardData,
   type RecordedGpsLocation,
-  type SecondActivitySnapshot,
   type VirtualRoutePoint,
 } from './TachoTypes'
 
@@ -48,7 +51,7 @@ type UseSimulationSecondClockParams = {
   virtualLocationRef: MutableRefObject<VirtualRoutePoint | null>
   drivingMsSinceLastGpsRecordRef: MutableRefObject<number>
   drivingSinceLastGpsMsRef: MutableRefObject<number>
-  setSecondHistory: Dispatch<SetStateAction<SecondActivitySnapshot[]>>
+  setSecondHistory: Dispatch<SetStateAction<SecondSampleRead>>
   setActivityHistory: Dispatch<SetStateAction<ActivityHistoryEntry[]>>
   setCardActivityHistoryByTemplateId: Dispatch<SetStateAction<Record<string, ActivityHistoryEntry[]>>>
   setRecordedGpsLocations: Dispatch<SetStateAction<RecordedGpsLocation[]>>
@@ -89,7 +92,7 @@ export function useSimulationSecondClock(params: UseSimulationSecondClockParams)
   } = params
 
   useEffect(() => {
-    let lastWallMs = Date.now()
+    const lastWallMs = Date.now()
 
     const ensureCounts = (): MinuteAccumulator['counts'] => ({
       driver1: { driving: 0, rest: 0, otherWork: 0, availability: 0, none: 0 },
@@ -175,6 +178,7 @@ export function useSimulationSecondClock(params: UseSimulationSecondClockParams)
 
     const advanceOneSecond = () => {
       const next = simulatedUtcTimeRef.current + 1000
+      simulatedUtcTimeRef.current = next
       setSimulatedUtcTime(next)
 
       const timestamp = next
@@ -189,18 +193,14 @@ export function useSimulationSecondClock(params: UseSimulationSecondClockParams)
       const c2InsertedNow = card2InsertedRef.current
       const card1Id = insertedCardId(c1InsertedNow, card1DataRef.current?.cardNumber, card1DataRef.current?.templateId)
       const card2Id = insertedCardId(c2InsertedNow, card2DataRef.current?.cardNumber, card2DataRef.current?.templateId)
-      setSecondHistory((prev) => {
-        const nextArr = [...prev, {
-          timestampUtc: timestamp,
-          driver1: driver1Activity,
-          driver2: driver2Activity,
-          speed,
-          driver1CardId: card1Id,
-          driver2CardId: card2Id,
-        }]
-        if (nextArr.length > 86400) nextArr.shift()
-        return nextArr
-      })
+      setSecondHistory((prev) => appendSecondSamples(prev, [{
+        timestampUtc: timestamp,
+        driver1: driver1Activity,
+        driver2: driver2Activity,
+        speed,
+        driver1CardId: card1Id,
+        driver2CardId: card2Id,
+      }]))
 
       const minuteStartUtc = Math.floor(timestamp / 60000) * 60000
       let acc = minuteAccumulatorRef.current
@@ -301,26 +301,29 @@ export function useSimulationSecondClock(params: UseSimulationSecondClockParams)
       onBackgroundCatchUpRef.current(fromUtc, deltaMs)
     }
 
-    const tick = () => {
-      const now = Date.now()
-      const wallDelta = now - lastWallMs
-      lastWallMs = now
-
-      if (!backgroundRunRef.current || wallDelta < 2000) {
-        advanceOneSecond()
-        return
+    const anchor: ClockAnchor = {
+      lastAccountedWallMs: lastWallMs,
+      expectedSimUtc: simulatedUtcTimeRef.current,
+    }
+    const applyWall = (now: number, source: 'interval' | 'visibility') => {
+      const action = nextSimulationClockAction(anchor, {
+        nowMs: now,
+        simulatedUtcMs: simulatedUtcTimeRef.current,
+        background: backgroundRunRef.current,
+        source,
+      })
+      anchor.lastAccountedWallMs = action.anchor.lastAccountedWallMs
+      anchor.expectedSimUtc = action.anchor.expectedSimUtc
+      if (action.type === 'step') advanceOneSecond()
+      else if (action.type === 'catchup') catchUpLargeGap(action.deltaMs)
+      if (action.type === 'step' || action.type === 'catchup') {
+        anchor.expectedSimUtc = simulatedUtcTimeRef.current
       }
-      const deltaMs = Math.floor(wallDelta / 1000) * 1000
-      if (deltaMs < 2000) {
-        advanceOneSecond()
-        return
-      }
-      catchUpLargeGap(deltaMs)
     }
 
-    const id = setInterval(tick, 1000)
+    const id = setInterval(() => applyWall(Date.now(), 'interval'), 1000)
     const onVisibility = () => {
-      if (document.visibilityState === 'visible') tick()
+      if (document.visibilityState === 'visible') applyWall(Date.now(), 'visibility')
     }
     document.addEventListener('visibilitychange', onVisibility)
     return () => {

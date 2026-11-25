@@ -5,7 +5,8 @@
  * vzorky té minuty nahrazuje jeden uzavřený záznam.
  */
 
-import type { ActivityHistoryEntry, ActivityKind, ManualEntrySegment, SecondActivitySnapshot } from './TachoTypes'
+import { filterSecondSamples, type SecondSampleRead } from './secondHistoryBuffer'
+import type { ActivityHistoryEntry, ActivityKind, ManualEntrySegment } from './TachoTypes'
 import { activityRecordedForCard, manualIntervalsOutside } from './slot1DddDrivingBreak.ts'
 import {
   drivingBreakDisplay,
@@ -37,7 +38,7 @@ export function capSlot1DrivingBreak(
 
 export function buildSlot1VirtualCardDrivingBreak(input: {
   cardHistory: readonly ActivityHistoryEntry[]
-  secondSamples: readonly SecondActivitySnapshot[]
+  secondSamples: SecondSampleRead
   nowMs: number
 }): DrivingBreakDisplay {
   return drivingBreakDisplay(buildSlot1DrivingBreakIntervals(input), input.nowMs)
@@ -51,7 +52,7 @@ export function buildSlot1VirtualCardDrivingBreak(input: {
 export function buildSlot1VirtualCounterIntervals(input: {
   cardHistory: readonly ActivityHistoryEntry[]
   manual: readonly ManualEntrySegment[]
-  secondSamples: readonly SecondActivitySnapshot[]
+  secondSamples: SecondSampleRead
   nowMs: number
   /** 1 je levá šachta. 2 čte činnost zaznamenanou pro pravou šachtu, pokud záznam nemá číslo karty. */
   driverSlot?: 1 | 2
@@ -65,7 +66,7 @@ export function buildSlot1VirtualCounterIntervals(input: {
 
 export function buildSlot1DrivingBreakIntervals(input: {
   cardHistory: readonly ActivityHistoryEntry[]
-  secondSamples: readonly SecondActivitySnapshot[]
+  secondSamples: SecondSampleRead
   nowMs: number
   driverSlot?: 1 | 2
   cardId?: string | null
@@ -107,18 +108,16 @@ export function buildSlot1DrivingBreakIntervals(input: {
 }
 
 function openMinuteFromSamples(
-  samples: readonly SecondActivitySnapshot[],
+  samples: SecondSampleRead,
   openMinute: number,
   nowMs: number,
   driverSlot: 1 | 2,
   cardId: string | null | undefined,
 ): DrivingBreakInterval[] {
-  const inMinute = samples
-    .filter((sample) => {
-      const minute = Math.floor(sample.timestampUtc / MINUTE_MS) * MINUTE_MS
-      return minute === openMinute && sample.timestampUtc > openMinute && sample.timestampUtc <= nowMs
-    })
-    .sort((a, b) => a.timestampUtc - b.timestampUtc)
+  const inMinute = filterSecondSamples(samples, (sample) => {
+    const minute = Math.floor(sample.timestampUtc / MINUTE_MS) * MINUTE_MS
+    return minute === openMinute && sample.timestampUtc > openMinute && sample.timestampUtc <= nowMs
+  }).sort((a, b) => a.timestampUtc - b.timestampUtc)
 
   const runs: DrivingBreakInterval[] = []
   for (const sample of inMinute) {

@@ -6,12 +6,12 @@ import type { PrintRow } from '../src/print/driverCardPrintRows.ts'
 import { applyPrintWizardKey, resolvePrintMenuAction } from '../src/print/printWizardHandling.ts'
 import {
   INSERTED_CARDS_PRINT_LIMIT,
+  VEHICLE_CARD_INSERTIONS_STORAGE_KEY,
   appendVehicleCardInsertion,
   currentVehicleCardInsertion,
-  loadVehicleCardInsertions,
+  discardPersistedVehicleCardInsertions,
   selectInsertedCardsForPrint,
   snapshotDriverInsertion,
-  writeVehicleCardInsertions,
   type VehicleCardInsertion,
 } from '../src/print/vehicleCardInsertions.ts'
 
@@ -122,6 +122,16 @@ history = appendVehicleCardInsertion(history, fromFile)
 assert.equal(history.length, 2)
 assert.equal(currentVehicleCardInsertion(history, 1, virtual.cardIdentification)?.id, virtual.id)
 assert.equal(currentVehicleCardInsertion(history, 1, undefined), null)
+const laterSameCard = snapshotDriverInsertion({
+  insertedAtUtc: virtual.insertedAtUtc + 60_000,
+  slot: 1,
+  sequence: 2,
+  card: { name: 'Lukas Zmizik', surname: 'Zmizik', lastWithdrawal: null, templateId: 'zmizik' },
+})
+history = appendVehicleCardInsertion(history, laterSameCard)
+assert.equal(history.length, 3)
+assert.equal(history.filter((item) => item.cardIdentification === virtual.cardIdentification).length, 2)
+assert.equal(currentVehicleCardInsertion(history, 1, virtual.cardIdentification)?.id, laterSameCard.id)
 
 const empty = buildInsertedCardsPrintRows({
   printedAtUtc: printedAt,
@@ -230,13 +240,25 @@ assert.ok(capped.indexOf('00:02') < capped.indexOf('01:29'))
 assert.equal(capped.includes('FUTURE'), false)
 
 const storage = memoryStorage()
-writeVehicleCardInsertions(storage, history)
-assert.equal(loadVehicleCardInsertions(storage).length, 2)
-writeVehicleCardInsertions(storage, [])
-assert.deepEqual(loadVehicleCardInsertions(storage), [])
-const storedKey = storage.key(0)
-assert.ok(storedKey)
-storage.setItem(storedKey, '{"cardGeneration":"GEN2 v2"}')
-assert.deepEqual(loadVehicleCardInsertions(storage), [])
+const otherTab = memoryStorage()
+storage.setItem(VEHICLE_CARD_INSERTIONS_STORAGE_KEY, JSON.stringify([{
+  id: 'old',
+  insertedAtUtc: printedAt,
+  slot: 1,
+  cardType: 'driver',
+  cardIdentification: 'SYNTH-DDD-001',
+  surnameOrOrganisation: 'Synthetic Driver',
+  firstName: 'Test',
+}]))
+otherTab.setItem(VEHICLE_CARD_INSERTIONS_STORAGE_KEY, JSON.stringify([{ id: 'kept-in-other-memory' }]))
+storage.setItem('simulator.printVehicleProfile', '{"companyName":"Firma"}')
+storage.setItem('tcosimulator.clockOffsets', '{"localOffsetMs":1}')
+storage.setItem('tcosimulator.virtualCardNames', '{"zmizik":"Alois Nebel"}')
+discardPersistedVehicleCardInsertions(storage)
+assert.equal(storage.getItem(VEHICLE_CARD_INSERTIONS_STORAGE_KEY), null)
+assert.equal(storage.getItem('simulator.printVehicleProfile'), '{"companyName":"Firma"}')
+assert.equal(storage.getItem('tcosimulator.clockOffsets'), '{"localOffsetMs":1}')
+assert.equal(storage.getItem('tcosimulator.virtualCardNames'), '{"zmizik":"Alois Nebel"}')
+assert.notEqual(otherTab.getItem(VEHICLE_CARD_INSERTIONS_STORAGE_KEY), null)
 
 console.log('inserted cards print ok')

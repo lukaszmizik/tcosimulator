@@ -8,7 +8,7 @@ export function evaluatePreDepartureWork(
   insertedAtUtc: number,
   departureUtc: number,
   manualEntries: ManualEntrySegment[],
-  secondHistory: SecondActivitySnapshot[],
+  secondHistory: Iterable<SecondActivitySnapshot>,
 ): VehicleCheckResult {
   let shiftStartUtc = insertedAtUtc
   const intervals: { start: number; end: number }[] = []

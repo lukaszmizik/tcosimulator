@@ -143,7 +143,7 @@ export type PrintMenuActionInput = {
   line2: string
   requiresDate: boolean
   requiresUtcConfirm: boolean
-  secondHistory: Array<{ timestampUtc: number }>
+  secondHistory: Iterable<{ timestampUtc: number }>
   simulatedUtcTime: number
   currentMenuPath: string[]
   vehicleActivities?: readonly { minuteStartUtc: number }[]

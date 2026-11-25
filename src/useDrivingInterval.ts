@@ -27,6 +27,35 @@ import { getVirtualLocationForDistance } from './VirtualRoute'
 import { SPLIT_REST_FIRST_MS, SPLIT_REST_SECOND_MS } from './VDOCounter'
 import { drivingWithoutDriverCard } from './slotCardRules'
 
+export function activityDurationDelta(char: string, dtMs: number): ActivityDurationsMs {
+  if (char === DRIVING_SYMBOL) return { driving: dtMs, rest: 0, otherWork: 0, availability: 0 }
+  const act = MANUAL_ACTIVITIES.find((item) => item.code === char)
+  if (act?.id === 'REST') return { driving: 0, rest: dtMs, otherWork: 0, availability: 0 }
+  if (act?.id === 'WORK') return { driving: 0, rest: 0, otherWork: dtMs, availability: 0 }
+  if (act?.id === 'AVAILABILITY') return { driving: 0, rest: 0, otherWork: 0, availability: dtMs }
+  return { driving: 0, rest: 0, otherWork: 0, availability: 0 }
+}
+
+/** Zobrazení doby činnosti je po minutách. Stejná minuta nepotřebuje nové vykreslení. */
+export function activityDurationMinuteKey(durations: ActivityDurationsMs): string {
+  return [
+    Math.floor(durations.driving / 60000),
+    Math.floor(durations.rest / 60000),
+    Math.floor(durations.otherWork / 60000),
+    Math.floor(durations.availability / 60000),
+  ].join(':')
+}
+
+export function sameDisplayedOdometerKm(previous: number, next: number): boolean {
+  return Math.round(previous * 10) === Math.round(next * 10)
+}
+
+/** STOP dál ukazuje skutečnou rychlost do zastavení. Stání se zapnutým zapalováním pod prahem je 0. */
+export function publishedSpeed(ignition: boolean, speed: number): number {
+  if (!ignition) return speed
+  return speed <= SPEED_STOPPED_THRESHOLD_KMH ? 0 : speed
+}
+
 type UseDrivingIntervalParams = {
   outModeActiveRef: MutableRefObject<boolean>
   activeNoCardIdRef: MutableRefObject<string | null>
@@ -61,8 +90,7 @@ type UseDrivingIntervalParams = {
   setSplitFirstPartTakenByDriver: Dispatch<SetStateAction<Record<1 | 2, boolean>>>
   setBreakWarningActive: Dispatch<SetStateAction<'415' | '430' | null>>
   setActivityDurationsMs: Dispatch<SetStateAction<ActivityDurationsMs>>
-  setDrivingSinceLastBreakMsByDriver: Dispatch<SetStateAction<Record<1 | 2, number>>>
-  setRestSinceLastBreakMsByDriver: Dispatch<SetStateAction<Record<1 | 2, number>>>
+  activityDurationsMsRef: MutableRefObject<ActivityDurationsMs>
 }
 
 export function useDrivingInterval(params: UseDrivingIntervalParams) {
@@ -98,14 +126,16 @@ export function useDrivingInterval(params: UseDrivingIntervalParams) {
     setSplitFirstPartTakenByDriver,
     setBreakWarningActive,
     setActivityDurationsMs,
-    setDrivingSinceLastBreakMsByDriver,
-    setRestSinceLastBreakMsByDriver,
+    activityDurationsMsRef,
   } = params
 
   // Simulace jízdy: posuvník = cílová rychlost, vozidlo plynule zrychluje/brzdí, km se přičítají dle skutečné rychlosti
   // Zároveň se sčítají doby trvání jednotlivých symbolů (řízení, odpočinek, jiná práce, pohotovost)
   // Důležité: i při vypnutém zapalování (vozidlo v klidu) se aktualizují aktivity (REST), aby L1 vpravo správně odečítal čas přestávky
   useEffect(() => {
+    let lastPublishedSpeed = publishedSpeed(ignitionOnRef.current, currentSpeedRef.current)
+    let lastPublishedOdometerKm = odometerKmRef.current
+    let lastDurationKey = activityDurationMinuteKey(activityDurationsMsRef.current)
     const id = setInterval(() => {
       /** V režimu OUT se výstraha „jízda bez karty“ nesmí zobrazovat – každý tick ji zrušíme. */
       if (outModeActiveRef.current) {
@@ -119,7 +149,6 @@ export function useDrivingInterval(params: UseDrivingIntervalParams) {
       if (!ignition) {
         curr = Math.max(0, curr - (ACCEL_KMH_PER_SEC * SIM_DT_MS) / 1000)
         currentSpeedRef.current = curr
-        setCurrentSpeed(curr)
       } else {
         const step = (ACCEL_KMH_PER_SEC * SIM_DT_MS) / 1000
         const diff = target - curr
@@ -132,12 +161,21 @@ export function useDrivingInterval(params: UseDrivingIntervalParams) {
         const avgSpeed = (currentSpeedRef.current + curr) / 2
         currentSpeedRef.current = curr
         /** Při rychlosti pod prahem považuj za zastavené → setDrivingMode(false) → práce () pro řidiče 1 */
-        setCurrentSpeed(curr <= SPEED_STOPPED_THRESHOLD_KMH ? 0 : curr)
         deltaKm = (avgSpeed * SIM_DT_MS) / 3600000
-        odometerKmRef.current += deltaKm
-        setOdometerKm((prev) => prev + deltaKm)
+        if (deltaKm !== 0) {
+          odometerKmRef.current += deltaKm
+          if (!sameDisplayedOdometerKm(lastPublishedOdometerKm, odometerKmRef.current)) {
+            lastPublishedOdometerKm = odometerKmRef.current
+            setOdometerKm(lastPublishedOdometerKm)
+          }
+        }
         const distanceFromStartKm = Math.max(0, odometerKmRef.current - ODOMETER_KM)
         virtualLocationRef.current = getVirtualLocationForDistance(distanceFromStartKm)
+      }
+      const shownSpeed = publishedSpeed(ignition, curr)
+      if (shownSpeed !== lastPublishedSpeed) {
+        lastPublishedSpeed = shownSpeed
+        setCurrentSpeed(shownSpeed)
       }
       noteDayKmRef.current(simulatedUtcTimeRef.current, deltaKm)
 
@@ -173,16 +211,8 @@ export function useDrivingInterval(params: UseDrivingIntervalParams) {
 
       const leftChar = isDriving ? DRIVING_SYMBOL : getActivityCode(leftActivityIdRef.current)
       const rightChar = isDriving ? getActivityCode('AVAILABILITY') : getActivityCode(rightActivityIdRef.current)
-      const add = (char: string) => {
-        if (char === DRIVING_SYMBOL) return { driving: SIM_DT_MS, rest: 0, otherWork: 0, availability: 0 }
-        const act = MANUAL_ACTIVITIES.find((a) => a.code === char)
-        if (act?.id === 'REST') return { driving: 0, rest: SIM_DT_MS, otherWork: 0, availability: 0 }
-        if (act?.id === 'WORK') return { driving: 0, rest: 0, otherWork: SIM_DT_MS, availability: 0 }
-        if (act?.id === 'AVAILABILITY') return { driving: 0, rest: 0, otherWork: 0, availability: SIM_DT_MS }
-        return { driving: 0, rest: 0, otherWork: 0, availability: 0 }
-      }
-      const leftDelta = add(leftChar)
-      const rightDelta = add(rightChar)
+      const leftDelta = activityDurationDelta(leftChar, SIM_DT_MS)
+      const rightDelta = activityDurationDelta(rightChar, SIM_DT_MS)
 
       const updateDriver = (driver: 1 | 2, char: string, delta: { driving: number; rest: number }, prevChar: string | null) => {
         const drivingRef = drivingSinceLastBreakMsByDriverRef.current[driver]
@@ -237,14 +267,19 @@ export function useDrivingInterval(params: UseDrivingIntervalParams) {
       updateDriver(1, leftChar, leftDelta, prevLeftChar)
       updateDriver(2, rightChar, rightDelta, prevRightChar)
 
-      setActivityDurationsMs((prev) => ({
-        driving: prev.driving + leftDelta.driving + rightDelta.driving,
-        rest: prev.rest + leftDelta.rest + rightDelta.rest,
-        otherWork: prev.otherWork + leftDelta.otherWork + rightDelta.otherWork,
-        availability: prev.availability + leftDelta.availability + rightDelta.availability,
-      }))
-      setDrivingSinceLastBreakMsByDriver({ ...drivingSinceLastBreakMsByDriverRef.current })
-      setRestSinceLastBreakMsByDriver({ ...restSinceLastBreakMsByDriverRef.current })
+      const previousDurations = activityDurationsMsRef.current
+      const nextDurations = {
+        driving: previousDurations.driving + leftDelta.driving + rightDelta.driving,
+        rest: previousDurations.rest + leftDelta.rest + rightDelta.rest,
+        otherWork: previousDurations.otherWork + leftDelta.otherWork + rightDelta.otherWork,
+        availability: previousDurations.availability + leftDelta.availability + rightDelta.availability,
+      }
+      activityDurationsMsRef.current = nextDurations
+      const durationKey = activityDurationMinuteKey(nextDurations)
+      if (durationKey !== lastDurationKey) {
+        lastDurationKey = durationKey
+        setActivityDurationsMs(nextDurations)
+      }
     }, SIM_DT_MS)
     return () => clearInterval(id)
   }, [])

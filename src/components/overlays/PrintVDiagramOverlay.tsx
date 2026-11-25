@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { VEHICLE_TECHNICAL_DATA } from '../../data/vehicle_technical_data'
 import type { PrintVehicleProfile } from '../../data/printVehicleProfile'
+import { filterSecondSamples, type SecondSampleRead } from '../../secondHistoryBuffer'
 import type { SecondActivitySnapshot, SymbolMap } from '../../TachoTypes'
 import type { Translations } from '../../translations/types'
 import { createPrintRows, printDateUtc, printTimeUtc } from '../../print/driverCardPrintRows'
@@ -23,16 +24,15 @@ export function PrintVDiagramOverlay(props: {
   t: Translations
   dateUtc: number
   simulatedUtcTime: number
-  secondHistory: readonly SecondActivitySnapshot[]
+  secondHistory: SecondSampleRead
   symbolMap: SymbolMap | null
   profile: PrintVehicleProfile
 }) {
   const { t, onClose, symbolMap, profile, simulatedUtcTime, dateUtc, secondHistory } = props
   const [printout] = useState(() => {
     const dayStart = Math.floor(dateUtc / DAY) * DAY
-    const samples = secondHistory
-      .filter(({ timestampUtc, speed }) => timestampUtc >= dayStart &&
-        timestampUtc < dayStart + DAY && Number.isFinite(speed))
+    const samples = filterSecondSamples(secondHistory, ({ timestampUtc, speed }) => timestampUtc >= dayStart &&
+      timestampUtc < dayStart + DAY && Number.isFinite(speed))
       .sort((a, b) => a.timestampUtc - b.timestampUtc)
     const paths = BAND_HOURS.slice(1).map(() => [] as string[])
     let band = 0

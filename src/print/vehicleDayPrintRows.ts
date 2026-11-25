@@ -65,7 +65,7 @@ export type VehicleDayPrintData = {
   profile: PrintVehicleProfile
   localOffsetMs: number
   history: readonly ActivityHistoryEntry[]
-  seconds: readonly SecondActivitySnapshot[]
+  seconds: Iterable<SecondActivitySnapshot>
   events: readonly EventLogEntry[]
   out: readonly OutModeEvent[]
   ferry: readonly FerryTrainEvent[]

@@ -16,7 +16,7 @@ import type { VehicleDayPrintData } from './vehicleDayPrintRows'
 import type { UsePrintStateReturn } from './usePrintState'
 import type { SymbolMap } from '../TachoTypes'
 import type { CardData, EventLogEntry, ManualEntrySegment } from '../TachoTypes'
-import type { SecondActivitySnapshot } from '../TachoTypes'
+import type { SecondSampleRead } from '../secondHistoryBuffer'
 import type { Translations } from '../translations/types'
 import { printCardHolder } from './driverCardPrintRows'
 import { PrintDriver1Overlay } from '../components/overlays/PrintDriver1Overlay'
@@ -32,7 +32,7 @@ export type PrintOverlaysProps = {
   printState: UsePrintStateReturn
   t: Translations
   simulatedUtcTime: number
-  secondHistory: SecondActivitySnapshot[]
+  secondHistory: SecondSampleRead
   symbolMap: SymbolMap | null
   card1Inserted: boolean
   card1Data: CardData | null

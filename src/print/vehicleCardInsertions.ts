@@ -9,7 +9,7 @@ import type { DddParsedCard } from '../types/tachoViewerDddMapper'
 import { printCardHolder, printDateUtc } from './driverCardPrintRows'
 
 export const INSERTED_CARDS_PRINT_LIMIT = 88
-const STORAGE_KEY = 'tcosimulator.vehicleCardInsertions'
+export const VEHICLE_CARD_INSERTIONS_STORAGE_KEY = 'tcosimulator.vehicleCardInsertions'
 
 export type VehicleCardType = 'driver' | 'company' | 'control' | 'workshop'
 export type VehicleCardGeneration = 'GEN1' | 'GEN2' | 'GEN2 v2'
@@ -31,7 +31,6 @@ export type VehicleCardInsertion = {
   expiresLabel?: string
 }
 
-const cardTypes = new Set<VehicleCardType>(['driver', 'company', 'control', 'workshop'])
 const generations = new Set<VehicleCardGeneration>(['GEN1', 'GEN2', 'GEN2 v2'])
 
 function generationOf(holder: object): string | undefined {
@@ -109,21 +108,6 @@ export function currentVehicleCardInsertion(
   return null
 }
 
-function optionalText(value: unknown): string | undefined {
-  return typeof value === 'string' ? text(value) : undefined
-}
-
-function isVehicleCardInsertion(value: unknown): value is VehicleCardInsertion {
-  if (!value || typeof value !== 'object') return false
-  const item = value as Partial<VehicleCardInsertion>
-  return typeof item.id === 'string'
-    && item.id.length > 0
-    && typeof item.insertedAtUtc === 'number'
-    && Number.isFinite(item.insertedAtUtc)
-    && (item.slot === 1 || item.slot === 2)
-    && cardTypes.has(item.cardType as VehicleCardType)
-}
-
 export function browserCardInsertionStorage(): Storage | null {
   try {
     return typeof localStorage === 'undefined' ? null : localStorage
@@ -132,40 +116,12 @@ export function browserCardInsertionStorage(): Storage | null {
   }
 }
 
-export function loadVehicleCardInsertions(storage: Pick<Storage, 'getItem'> | null): VehicleCardInsertion[] {
-  if (!storage) return []
-  try {
-    const parsed = JSON.parse(storage.getItem(STORAGE_KEY) ?? '[]') as unknown
-    if (!Array.isArray(parsed)) return []
-    return parsed.filter(isVehicleCardInsertion).map((item) => ({
-      id: item.id,
-      insertedAtUtc: item.insertedAtUtc,
-      slot: item.slot,
-      cardType: item.cardType,
-      cardIdentification: optionalText(item.cardIdentification),
-      issuingCountry: optionalText(item.issuingCountry),
-      cardSerialNumber: optionalText(item.cardSerialNumber),
-      cardGeneration: knownGeneration(optionalText(item.cardGeneration)),
-      cardVersion: optionalText(item.cardVersion),
-      manufacturerCode: optionalText(item.manufacturerCode),
-      surnameOrOrganisation: optionalText(item.surnameOrOrganisation),
-      firstName: optionalText(item.firstName),
-      expiresAtUtc: typeof item.expiresAtUtc === 'number' && Number.isFinite(item.expiresAtUtc) ? item.expiresAtUtc : undefined,
-      expiresLabel: optionalText(item.expiresLabel),
-    }))
-  } catch {
-    return []
-  }
-}
-
-export function writeVehicleCardInsertions(
-  storage: Pick<Storage, 'setItem'> | null,
-  entries: readonly VehicleCardInsertion[],
-): void {
+/** Evidence vložení patří jedné otevřené stránce. Starý trvalý zápis se jen smaže. */
+export function discardPersistedVehicleCardInsertions(storage: Pick<Storage, 'removeItem'> | null): void {
   if (!storage) return
   try {
-    storage.setItem(STORAGE_KEY, JSON.stringify(entries))
+    storage.removeItem(VEHICLE_CARD_INSERTIONS_STORAGE_KEY)
   } catch {
-    // Plná paměť prohlížeče nesmí shodit vložení karty.
+    // Nedostupné úložiště nesmí shodit otevření lekce.
   }
 }

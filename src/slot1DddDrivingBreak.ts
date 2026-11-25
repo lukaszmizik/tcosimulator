@@ -18,7 +18,8 @@
  */
 
 import type { DddCardRecord } from './dddCardSession'
-import type { ActivityHistoryEntry, ActivityKind, EditorActivityId, ManualEntrySegment, SecondActivitySnapshot } from './TachoTypes'
+import { filterSecondSamples, type SecondSampleRead } from './secondHistoryBuffer'
+import type { ActivityHistoryEntry, ActivityKind, EditorActivityId, ManualEntrySegment } from './TachoTypes'
 import type { DddParsedActivity } from './types/tachoViewerDddMapper'
 import { firstUncoveredInterval, weekStartUtc } from './slot1DddDailyRemaining'
 import {
@@ -63,7 +64,7 @@ export type Slot1DddDrivingBreakIntervals = {
 export function buildSlot1DddDrivingBreak(input: {
   cards: Readonly<Record<string, DddCardRecord>>
   cardNumber: string
-  secondSamples: readonly SecondActivitySnapshot[]
+  secondSamples: SecondSampleRead
   nowMs: number
   /** Činnost zaznamenaná pro fyzickou šachtu, ve které karta právě je. Historický slot ve výpisu to není. */
   recordedDriver?: 1 | 2
@@ -142,7 +143,7 @@ function holeReason(card: DddCardRecord, startMs: number, endMs: number): 'gap' 
 export function buildSlot1DddDrivingBreakIntervals(input: {
   cards: Readonly<Record<string, DddCardRecord>>
   cardNumber: string
-  secondSamples: readonly SecondActivitySnapshot[]
+  secondSamples: SecondSampleRead
   nowMs: number
   /** Činnost zaznamenaná pro fyzickou šachtu, ve které karta právě je. Historický slot ve výpisu to není. */
   recordedDriver?: 1 | 2
@@ -156,7 +157,7 @@ export function buildSlot1DddDrivingBreakIntervals(input: {
 
 function intervalsForCard(
   card: DddCardRecord,
-  secondSamples: readonly SecondActivitySnapshot[],
+  secondSamples: SecondSampleRead,
   nowMs: number,
   recordedDriver: 1 | 2,
 ): Slot1DddDrivingBreakIntervals {
@@ -184,7 +185,7 @@ function intervalsForCard(
 export function buildSlot1DddOutSources(input: {
   cards: Readonly<Record<string, DddCardRecord>>
   cardNumber: string
-  secondSamples: readonly SecondActivitySnapshot[]
+  secondSamples: SecondSampleRead
   nowMs: number
   recordedDriver?: 1 | 2
 }): { imported: DrivingBreakInterval[]; vehicle: DrivingBreakInterval[]; manual: DrivingBreakInterval[] } {
@@ -278,18 +279,16 @@ function manualIntervals(segments: readonly ManualEntrySegment[], nowMs: number)
 }
 
 function openMinuteFromSamples(
-  samples: readonly SecondActivitySnapshot[],
+  samples: SecondSampleRead,
   openMinute: number,
   nowMs: number,
   recordedDriver: 1 | 2,
   cardId: string,
 ): DrivingBreakInterval[] {
-  const inMinute = samples
-    .filter((sample) => {
-      const minute = Math.floor(sample.timestampUtc / MINUTE_MS) * MINUTE_MS
-      return minute === openMinute && sample.timestampUtc > openMinute && sample.timestampUtc <= nowMs
-    })
-    .sort((a, b) => a.timestampUtc - b.timestampUtc)
+  const inMinute = filterSecondSamples(samples, (sample) => {
+    const minute = Math.floor(sample.timestampUtc / MINUTE_MS) * MINUTE_MS
+    return minute === openMinute && sample.timestampUtc > openMinute && sample.timestampUtc <= nowMs
+  }).sort((a, b) => a.timestampUtc - b.timestampUtc)
 
   const runs: DrivingBreakInterval[] = []
   for (const sample of inMinute) {

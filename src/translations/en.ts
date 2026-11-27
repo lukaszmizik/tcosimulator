@@ -60,9 +60,18 @@ export const en: Translations = {
   infoPanel: {
     standbyModeInfo: 'Device is in Stand-by mode. Turn on ignition with the Start button.\nEverything is under development, please report any bugs to lukas@zmizik.com',
     insertCardToSlot1: 'To start driving, insert any card into slot no. 1 by dragging.', // 1
-    drivingWithoutCard: 'Driving without card – insert driver card into slot 1. This warning is recorded in the tachograph memory.', // 2
-    break415: 'Warning 4:15 – take a 15 or 30 minute break (if you already had 15m). That the warning was shown is visible in VDO data on remote download (it is not a legal VU event).', // 3
-    break430: 'Warning 4:30 – You have exceeded the driving time! Take a 45 minute break immediately. That the warning was shown is visible in VDO data on remote download (it is not a legal “security breach” event).', // 4
+    drivingWithoutCard: 'Stop safely. When the vehicle is stationary, insert the driver card into slot 1. OK only confirms the message. The event is recorded in the tachograph memory.', // 2
+    break415: 'Warning at 4 h 15 min. {remaining} of driving left. {advice} That the warning was shown is visible in VDO data on remote download (it is not a legal VU event).', // 3
+    break415Pending: 'Warning at 4 h 15 min. You are approaching the 4 h 30 min driving limit. {advice} That the warning was shown is visible in VDO data on remote download (it is not a legal VU event).',
+    break430: 'You have exceeded 4 h 30 min of driving. {advice} That the warning was shown is visible in VDO data on remote download (it is not a legal “security breach” event).', // 4
+    break430Reached: 'You have reached 4 h 30 min of driving. {advice} That the warning was shown is visible in VDO data on remote download (it is not a legal “security breach” event).',
+    break430Exceeded: 'You have exceeded 4 h 30 min of driving. {advice} That the warning was shown is visible in VDO data on remote download (it is not a legal “security breach” event).',
+    breakAdviceFull: 'The recommended break is 45 minutes.',
+    breakAdviceSecond: 'The first part of the break, at least 15 minutes, is already recognised. 30 minutes remain.',
+    breakAdviceNeutral: 'Take a driving break.',
+    durationHour: 'h',
+    durationMinute: 'min',
+    durationSecond: 's',
     work545: 'Warning 5:45 – continuous working time is nearing six hours. Driving and other work count; availability does not. Under Directive 2002/15/EC, work without a break must not exceed 6 hours. Confirm with OK and plan a break of at least 15 minutes. A shorter rest does not interrupt the work.',
     work600: {
       intro: 'You have worked 6 hours without a break. Confirm the message with OK.',
@@ -78,18 +87,31 @@ export const en: Translations = {
     },
     supplementActivities: 'You must now supplement activities on your card.', // 5
     lastWithdrawal: 'Last card withdrawal was', // 6
+    lastRemovalWait: 'The tachograph shows when the card was last withdrawn: {time}. Wait a moment; the question about manual entries appears on its own.',
+    lastRemovalPeriod: 'The tachograph shows the start of the period you can fill in: {time}. Wait a moment; the question about manual entries appears on its own.',
+    supplementFromWithdrawal: 'What were you doing from the card withdrawal until you inserted it?',
+    supplementFromStart: 'What were you doing from {time} until you inserted the card?',
+    supplementChoiceHelp: 'YES lets you enter those activities. NO skips manual entry. Choose the answer with the arrows and confirm with OK.',
+    manualEditorHint: 'The arrows change the blinking value. OK moves to the next one. If you rested first and worked afterwards, enter each part separately.',
+    finalConfirmHint: 'Check the times and symbols in the summary. YES confirms the entry, NO returns you to the editor.',
+    endShiftHold: 'After stopping, hold button {button} for about two seconds.',
+    withdrawalCountry: 'Ejecting the card from slot {slot}. Check the destination country. The arrows can change it, OK confirms it and ejection continues. Back cancels the ejection.',
+    stoppedWork: 'The vehicle is stationary. Driver 1 is set to other work – (9) crossed hammers. Starting a break? Short presses of button 1 select the bed (8) – rest.',
+    stoppedRest: 'The vehicle is stationary. Driver 1 is set to rest – (8) bed. The break is already selected, do not press button 1.',
+    stoppedAvailability: 'The vehicle is stationary. Driver 1 is set to availability – (7). Starting a break? Short presses of button 1 select the bed (8) – rest.',
+    stoppedOther: 'The vehicle is stationary. Driver 1 is set to another activity. Starting a break? Short presses of button 1 select the bed (8) – rest.',
     endCountryFound: 'I found a shift end record at', // 7
-    endCountryDuplicateWarning: 'Earlier shift end found at {dateTime}. This step will cause your record to show an error.',
-    nr165Warning: 'You are about to enter start country twice in a row. This would be an offence under NR 165...', // 8
+    endCountryDuplicateWarning: 'You already entered the destination country{when}. Did you mean the country of departure?',
+    nr165Warning: 'You already entered the country of departure{when}. Did you mean the destination country?', // 8
     generateWorkWeekBlocked: 'There is saved data on the card. Therefore random data was not generated. Delete the data from the card using the \'Reset\' button and try again.',
     manualEntryData: 'Inserted data:',
-    vehicleCheckBeforeDrivingWarning: 'Before driving it was necessary to carry out a vehicle check, which is reported with symbol (9). You are now driving but not acting in accordance with Regulation (EU) No 165/2014',
-    vehicleCheckBeforeDrivingShort: 'Before driving it was necessary to carry out a vehicle check, which is reported with symbol (9). Your pre-drive check was shorter than 4 minutes. This may be disputed by some control authorities and they may treat it as an aggravating circumstance.',
+    vehicleCheckBeforeDrivingWarning: 'No other work (9) – the vehicle check – was recorded before departure. Compare the record with the scenario.',
+    vehicleCheckBeforeDrivingShort: 'Other work (9) lasting {duration} was recorded before driving. Compare it with the scenario.',
     idleWarningConfirmInfo: 'The device is waiting for confirmation of your selection. If you do not perform any action within 10 minutes, the card will be automatically ejected and the entered data will not be saved.',
-    readyToDrivePreDepartureCheck: 'The tachograph signals that you can depart, but you know that before departure you have the obligation to perform a pre-departure check which is reported as work activity (9).',
-    crewModeInfo: 'The conditions for crew mode have just been met. Your floating day is 30 hours during which your regular daily rest period will be 9 hours. You cannot spend your daily rest period in a moving vehicle! Remember that if driver 1 starts driving without a card inserted in slot 2, crew mode will be interrupted. Both drivers must end their shift at the same time!',
-    crewModeNotMetInfo: 'The presence of the second card was recorded, but the conditions for crew mode were not met. Each of your floating days is 24 hours. You must complete your daily rest periods within this time.',
-    crewModeInterruptedWarning: 'As driver no. 1 started driving without driver no. 2, crew mode was interrupted and your recorded activities exceed the parameters for a single driver\'s shift length. This is a safety violation!',
+    readyToDrivePreDepartureCheck: 'Carry out the vehicle check before departure. On the display, check the (9) crossed-hammers symbol – other work. If you see another activity, change it with short presses of button 1.',
+    crewModeInfo: 'A card is in slot 1 and slot 2, and the simulator has met the crew condition it watches: driver 2’s card is in the slot within one hour of the start of driving. It therefore uses a 30-hour floating day and a regular daily rest of 9 hours. Daily rest cannot be taken in a moving vehicle. If driver 1 drives without a card in slot 2, the simulator stops crew mode. Both drivers should end the shift together. The cards alone do not mean the simulator has calculated that the shift length was exceeded.',
+    crewModeNotMetInfo: 'A card is inserted in slot 2, but the crew condition watched by the simulator is not met: driver 2’s card was not in the slot in time relative to the start of driving. The simulator therefore keeps a 24-hour floating day. Slot 2 by itself does not mean the drivers exceeded the shift length.',
+    crewModeInterruptedWarning: 'Driver 1 is driving and slot 2 has no card. The simulator therefore no longer runs crew mode. This is the card state and the condition the simulator watches. This message does not calculate the shift length and does not by itself mean it was exceeded.',
     duplicateDataWarning: 'Warning: The card already contains saved data. Cannot write data to occupied memory. Clear the data using the Reset button',
     publishDataConsentInfo: 'When using the card for the first time, you will be prompted to give consent for the processing of personal data, including special categories of personal data. You can withdraw your consent at any time through the device menu.',
     ejectionBlockedWarning: 'This is an error! You cannot eject the card while driving. Ejection is only possible after the vehicle has stopped.',

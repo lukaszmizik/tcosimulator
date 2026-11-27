@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const revision = '41eda34b9b6bfcde1d3f038e9d4532192e55067d'
+const revision = '0030c9ba5045f6e2de871b300d446fb91def9599'
 const root = fileURLToPath(new URL('../', import.meta.url))
 const vendor = join(root, 'vendor', 'cardviewer')
 const files = (await readFile(new URL('./cardviewer-files.txt', import.meta.url), 'utf8'))

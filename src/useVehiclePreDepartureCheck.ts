@@ -3,7 +3,7 @@ import { insertedCardId } from './applyTimeJump'
 import type { SecondSampleRead } from './secondHistoryBuffer'
 import type { CardData, ManualEntrySegment } from './TachoTypes'
 import { NO_CARD } from './TachoTypes'
-import { evaluatePreDepartureWork, type VehicleCheckResult } from './vehiclePreDepartureCheck'
+import { evaluatePreDepartureWork, type PreDepartureCheck } from './vehiclePreDepartureCheck'
 
 export function useVehiclePreDepartureCheck({
   card,
@@ -21,9 +21,9 @@ export function useVehiclePreDepartureCheck({
   simulatedUtcTime: number
   manualEntries: ManualEntrySegment[]
   secondHistory: SecondSampleRead
-}): VehicleCheckResult {
+}): PreDepartureCheck {
   const wasDrivingRef = useRef(false)
-  const [checked, setChecked] = useState<{ card: CardData; result: VehicleCheckResult } | null>(null)
+  const [checked, setChecked] = useState<{ card: CardData; check: PreDepartureCheck } | null>(null)
 
   useEffect(() => {
     const startedDriving = isDriving && !wasDrivingRef.current
@@ -36,9 +36,9 @@ export function useVehiclePreDepartureCheck({
 
     const cardId = insertedCardId(true, card.cardNumber, card.templateId)
     if (cardId === NO_CARD) return
-    const result = evaluatePreDepartureWork(cardId, insertedAtUtc, simulatedUtcTime, manualEntries, secondHistory)
-    setChecked({ card, result })
+    const check = evaluatePreDepartureWork(cardId, insertedAtUtc, simulatedUtcTime, manualEntries, secondHistory)
+    setChecked({ card, check })
   }, [card, checked, driverCardWizardOpen, insertedAtUtc, isDriving, manualEntries, secondHistory, simulatedUtcTime])
 
-  return card && checked?.card === card && !driverCardWizardOpen ? checked.result : 'none'
+  return card && checked?.card === card && !driverCardWizardOpen ? checked.check : { result: 'none', workMs: 0 }
 }

@@ -66,7 +66,17 @@ export type Translations = {
     insertCardToSlot1: string
     drivingWithoutCard: string
     break415: string
+    /** 4:15, když čítač výstrahy neříká, kolik řízení zbývá. */
+    break415Pending: string
     break430: string
+    break430Reached: string
+    break430Exceeded: string
+    breakAdviceFull: string
+    breakAdviceSecond: string
+    breakAdviceNeutral: string
+    durationHour: string
+    durationMinute: string
+    durationSecond: string
     work545: string
     /** Výstraha 6:00. Úvod, tabulka přestávek a věta se symboly (2) a (9). */
     work600: {
@@ -80,8 +90,28 @@ export type Translations = {
     }
     supplementActivities: string
     lastWithdrawal: string
+    /** Obrazovka Posled. vyjmutí, když tachograf ukazuje skutečné vyjmutí. {time} */
+    lastRemovalWait: string
+    /** Stejná obrazovka při prvním vložení ukazuje jen počátek doplňovaného období. {time} */
+    lastRemovalPeriod: string
+    supplementFromWithdrawal: string
+    /** {time} je počátek doplňovaného období. */
+    supplementFromStart: string
+    supplementChoiceHelp: string
+    manualEditorHint: string
+    finalConfirmHint: string
+    /** {button} je číslo tlačítka šachty. */
+    endShiftHold: string
+    /** {slot} je šachta, ze které výhoz běží. */
+    withdrawalCountry: string
+    stoppedWork: string
+    stoppedRest: string
+    stoppedAvailability: string
+    stoppedOther: string
     endCountryFound: string
+    /** {when} je prázdné, nebo mezera a čas v závorce. */
     endCountryDuplicateWarning: string
+    /** {when} je prázdné, nebo mezera a čas v závorce. */
     nr165Warning: string
     generateWorkWeekBlocked: string
     manualEntryData: string

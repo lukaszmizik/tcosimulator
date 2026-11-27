@@ -1,6 +1,5 @@
 import { advanceOverspeed, qualifiesAsOverspeed, type OverspeedRun } from './overspeed'
 import { useMemo, useState, useCallback, useEffect, useRef } from 'react'
-import { createPortal } from 'react-dom'
 import { loadCountries, type CountryEntry } from './data/countriesLoader'
 import { buildSymbolMapFromFile } from './Symbols'
 import { buildMenusById, applyMenuTranslations, ENTRY_MENU_ID } from './MenuStructure'
@@ -110,12 +109,12 @@ import {
 import { generateRandomWorkWeek } from './MockDataGenerator'
 import { workWeekToTxtString, simulatorToGraphData } from './workWeekExportTxt'
 import { parseWorkWeekTxt, activitiesByDay, expandToWeeksContainingData, type DayData, type CountryMarker } from './workWeekTxtParser'
-import { WorkWeekGraphView } from './WorkWeekGraphView'
+import { SimulatorCardGraph } from './SimulatorCardGraph'
 import { InsertedCardsHistory } from './InsertedCardsHistory'
-import { InfoPanel, useInfoPanelItems, useNr165Warning, Nr165WarningBox, lcdTeachInfoItem, visibleLcdTeachScreen, type InfoItem } from './InfoPanel'
+import { InfoPanel, useInfoPanelItems, useNr165Warning, Nr165WarningBox, lcdTeachInfoItem, visibleLcdTeachScreen, formatTachographMinute, nextFirstStopHint, type InfoItem } from './InfoPanel'
 import { useVehiclePreDepartureCheck } from './useVehiclePreDepartureCheck'
 import { SPLIT_REST_SECOND_MS, formatDurationHhMm } from './VDOCounter'
-import { drivingBreakDisplay, drivingRestTotals } from './drivingBreakDisplay'
+import { drivingBreakDisplay, drivingRestTotals, recognizedBreakAdvice, type RecognizedBreakAdvice } from './drivingBreakDisplay'
 import { drivingRemainderUndocumented, evaluateRecordedOut, undeterminedOverlaps } from './outDrivingEvaluation'
 import { ferryDailyRestRemaining, intervalsWithRecognizedFerryRest } from './ferryRestEvaluation'
 import { buildSlot1VirtualCardDrivingBreak, buildSlot1VirtualCounterIntervals } from './slot1DrivingBreak'
@@ -509,6 +508,9 @@ export default function App() {
   const activityDurationsMsRef = useRef(activityDurationsMs)
   const simulatedUtcTimeRef = useRef(simulatedUtcTime)
   const drivingSinceLastBreakMsByDriverRef = useRef<Record<1 | 2, number>>({ 1: 0, 2: 0 })
+  const breakAdviceRef = useRef<RecognizedBreakAdvice>('neutral')
+  const firstStopRef = useRef({ sinceMs: null as number | null, phase: 'wait' as 'wait' | 'shown' })
+  const [firstStopHint, setFirstStopHint] = useState(false)
   const restSinceLastBreakMsByDriverRef = useRef<Record<1 | 2, number>>({ 1: 0, 2: 0 })
   const splitFirstPartTakenByDriverRef = useRef<Record<1 | 2, boolean>>({ 1: false, 2: false })
   const breakWarning415DismissedRef = useRef(false)
@@ -837,6 +839,17 @@ export default function App() {
     timeOffsetMs,
     getCurrentLocationCountryCode: () => currentLocationCountryCodeRefForWizard.current ?? null,
   })
+
+  useEffect(() => {
+    const next = nextFirstStopHint(firstStopRef.current, {
+      speed: currentSpeed,
+      nowMs: Date.now(),
+      cardInserted: card1Inserted,
+      wizardOpen: cardInsertionState?.slot === 1,
+    })
+    firstStopRef.current = { sinceMs: next.sinceMs, phase: next.phase }
+    setFirstStopHint((shown) => (shown === next.show ? shown : next.show))
+  }, [currentSpeed, card1Inserted, cardInsertionState])
 
   /** Jízda: výstraha zmizí po zastavení. Načítání: zůstane do OK (text bubliny drží uložený důvod). */
   useEffect(() => {
@@ -3186,12 +3199,30 @@ export default function App() {
     vehicleCheck,
     menuComingSoonInfo,
     outModeActive,
+    currentSpeed,
+    timeOffsetMs,
+    simulatedUtcTime,
+    drivingSinceBreakMs: drivingSinceLastBreakMsByDriverRef.current[1],
+    breakAdvice: breakAdviceRef.current,
+    stoppedActivityId: firstStopHint ? leftActivityId : null,
+    endShiftButton: displayMode === 'menu' && currentSpeed <= 0 && ignitionOn && !cardWithdrawalState && !cardInsertionState
+      ? selectedItem?.id === 'ID1_END' && card1Inserted
+        ? 1
+        : selectedItem?.id === 'ID2_END' && card2Inserted
+          ? 2
+          : null
+      : null,
+    withdrawalCountrySlot: cardWithdrawalState?.phase === 'countrySelect' ? cardWithdrawalState.slot : null,
   })
-  const showNr165Warning = useNr165Warning({
+  const repeatedStartCountry = useNr165Warning({
     menuCountryInputState,
     driver1ManualEntryBuffer,
     driver2ManualEntryBuffer,
   })
+  const showNr165Warning = repeatedStartCountry != null
+  const nr165When = repeatedStartCountry
+    ? ` (${formatTachographMinute(segmentToMsUtc(repeatedStartCountry), timeOffsetMs)})`
+    : ''
 
   const lcdDebugEnabled = useMemo(() => new URLSearchParams(window.location.search).get('lcdDebug') === '1', [])
   const slot1DrivingBreak = useMemo(() => {
@@ -3321,6 +3352,13 @@ export default function App() {
   }, [slot1CounterIntervals, simulatedUtcTime])
   const slot1DrivingUndocumented = slot1CounterIntervals != null && slot1DddBreak != null
     && drivingRemainderUndocumented(slot1CounterIntervals.intervals, slot1CounterIntervals.undetermined, simulatedUtcTime)
+  breakAdviceRef.current = (
+    !isMultiManning
+    && !tachoState.ferryTrainModeActive
+    && !outModeActive
+    && !slot1DrivingUndocumented
+    && slot1DddBreak
+  ) ? recognizedBreakAdvice(slot1DddBreak) : 'neutral'
   const drivenSinceRestMs = slotRestTotals == null || slot1DrivingUndocumented ? null : slotRestTotals.drivenSinceRestMs
   const recognizedBreakMs = slotRestTotals == null ? null : slotRestTotals.recognizedBreakMs
   const slotWorkingTime = useMemo(() => {
@@ -3535,7 +3573,7 @@ export default function App() {
     ...(mobileInfoPanels && nr165Visible ? [{
       id: 'nr165-warning',
       type: 'warning' as const,
-      message: t.infoPanel.nr165Warning,
+      message: t.infoPanel.nr165Warning.replace('{when}', nr165When),
       activeOnly: true,
       onDismiss: () => setNr165Dismissed(true),
     }] : []),
@@ -4104,6 +4142,7 @@ export default function App() {
                   <Nr165WarningBox
                     onClose={() => setNr165Dismissed(true)}
                     symbolMap={symbolMap}
+                    when={nr165When}
                   />
                 )}
               </div>
@@ -4154,58 +4193,40 @@ export default function App() {
         vehicleCardInsertions={vehicleCardInsertions}
       />
 
-      {workWeekGraphData !== null &&
-        createPortal(
-          <WorkWeekGraphView
-            days={workWeekGraphData.days}
-            countryMarkers={workWeekGraphData.countryMarkers}
-            manualEntryBuffer={workWeekGraphData.manualEntryBuffer}
-            lastWithdrawalUtc={workWeekGraphData.lastWithdrawalUtc}
-            card2Data={workWeekGraphData.card2Data}
-            loadUnloadEvents={vehicleLoadUnloadEvents}
-            ferryTrainEvents={ferryTrainEvents}
-            outModeEvents={outModeEvents}
-            recordedGpsLocations={recordedGpsLocations}
-            faultsAndEvents={faultsAndEvents}
-            symbolMap={symbolMap}
-            onResetLoadUnload={() => setVehicleLoadUnloadEvents([])}
-            onClose={() => {
-              setWorkWeekGraphData(null)
-            }}
-          />,
-          document.body
-        )}
+      {workWeekGraphData !== null && (
+        <SimulatorCardGraph
+          data={workWeekGraphData}
+          loadUnloadEvents={vehicleLoadUnloadEvents}
+          ferryTrainEvents={ferryTrainEvents}
+          outModeEvents={outModeEvents}
+          recordedGpsLocations={recordedGpsLocations}
+          faultsAndEvents={faultsAndEvents}
+          symbolMap={symbolMap}
+          onResetLoadUnload={() => setVehicleLoadUnloadEvents([])}
+          onClose={() => setWorkWeekGraphData(null)}
+        />
+      )}
 
-      {dddPreviewOpen && dddPreview !== null &&
-        createPortal(
-          <WorkWeekGraphView
-            days={dddPreview.days}
-            countryMarkers={dddPreview.countryMarkers}
-            card2Data={dddPreview.card2Data}
-            holderName={`${dddPreview.firstName} ${dddPreview.surname}`.trim()}
-            focusMs={dddPreview.focusMs}
-            onClose={() => setDddPreviewOpen(false)}
-          />,
-          document.body
-        )}
+      {dddPreviewOpen && dddPreview !== null && (
+        <SimulatorCardGraph
+          data={{
+            days: dddPreview.days,
+            countryMarkers: dddPreview.countryMarkers,
+            card2Data: dddPreview.card2Data,
+          }}
+          initialFocusedDayUtc={dddPreview.focusMs}
+          headingNote={`${dddPreview.firstName} ${dddPreview.surname}`.trim()}
+          onClose={() => setDddPreviewOpen(false)}
+        />
+      )}
     </div>
-    {cardGraphsWindowOpen && (insertedSlot1 || insertedSlot2) && (
-      <div className="card-graphs-window-overlay" role="dialog" aria-modal="true" aria-label={t.cardPanel.dataTitle}>
-        <div className="card-graphs-window" data-card-graphs-window="">
-          <button
-            type="button"
-            className="card-graphs-window-close"
-            data-card-graphs-close=""
-            aria-label={t.ui.close}
-            onClick={() => setCardGraphsWindowOpen(false)}
-          >
-            ×
-          </button>
-          <div className="card-graphs-window-body">
-            <InsertedCardsHistory slot1={insertedSlot1} slot2={insertedSlot2} vehicleOutEvents={outModeEvents} />
-          </div>
-        </div>
-      </div>
+    {cardGraphsWindowOpen && (
+      <InsertedCardsHistory
+        slot1={insertedSlot1}
+        slot2={insertedSlot2}
+        symbolMap={symbolMap}
+        onClose={() => setCardGraphsWindowOpen(false)}
+      />
     )}
     </div>
   )

@@ -60,9 +60,18 @@ export const cs: Translations = {
   infoPanel: {
     standbyModeInfo: 'Zařízení je v režimu Stand-by. Zapni zapalování tlačítkem Start.\nVše je ve vývoji, případné chyby mi nahlaš na lukas@zmizik.com',
     insertCardToSlot1: 'Pro zahájení řízení klepni na slot 1 a vyber kartu, nebo ji do slotu přetáhni.', // 1
-    drivingWithoutCard: 'Jízda bez karty – vlož kartu řidiče do slotu 1. Tato výstraha se zapisuje do paměti tachografu.', // 2
-    break415: 'Výstraha 4:15 – proveď pauzu 15 minut nebo 30 minut (pokud jsi už měl 15m). Zobrazení výstrahy je viditelné ve VDO datech při dálkovém stažení (není to zákonná událost VU).', // 3
-    break430: 'Výstraha 4:30 – Překročil jsi dobu řízení! Neprodleně udělej přestávku 45 minut. Zobrazení výstrahy je viditelné ve VDO datech při dálkovém stažení (není to zákonná událost typu porušení bezpečnosti).', // 4
+    drivingWithoutCard: 'Bezpečně zastav. Až vozidlo stojí, vlož kartu řidiče do slotu 1. Tlačítkem OK potvrzuješ pouze hlášení. Událost se zapisuje do paměti tachografu.', // 2
+    break415: 'Výstraha 4 h 15 min. Zbývá {remaining} řízení. {advice} Zobrazení výstrahy je viditelné ve VDO datech při dálkovém stažení (není to zákonná událost VU).', // 3
+    break415Pending: 'Výstraha 4 h 15 min. Blížíš se limitu 4 h 30 min řízení. {advice} Zobrazení výstrahy je viditelné ve VDO datech při dálkovém stažení (není to zákonná událost VU).',
+    break430: 'Překročil jsi 4 h 30 min řízení. {advice} Zobrazení výstrahy je viditelné ve VDO datech při dálkovém stažení (není to zákonná událost typu porušení bezpečnosti).', // 4
+    break430Reached: 'Dosáhl jsi 4 h 30 min řízení. {advice} Zobrazení výstrahy je viditelné ve VDO datech při dálkovém stažení (není to zákonná událost typu porušení bezpečnosti).',
+    break430Exceeded: 'Překročil jsi 4 h 30 min řízení. {advice} Zobrazení výstrahy je viditelné ve VDO datech při dálkovém stažení (není to zákonná událost typu porušení bezpečnosti).',
+    breakAdviceFull: 'Doporučená přestávka je 45 minut.',
+    breakAdviceSecond: 'První část přestávky, nejméně 15 minut, už je uznaná. Zbývá 30 minut.',
+    breakAdviceNeutral: 'Udělej přestávku v řízení.',
+    durationHour: 'h',
+    durationMinute: 'min',
+    durationSecond: 's',
     work545: 'Výstraha 5:45 – souvislá pracovní doba se blíží šesti hodinám. Počítá se řízení a jiná práce, pohotovost ne. Podle směrnice 2002/15/ES smí být bez přestávky nejvýše 6 hodin. Potvrď OK a naplánuj přestávku alespoň 15 minut. Kratší odpočinek práci nepřeruší.',
     work600: {
       intro: 'Pracuješ 6 hodin bez přestávky. Potvrď hlášku tlačítkem OK.',
@@ -78,18 +87,31 @@ export const cs: Translations = {
     },
     supplementActivities: 'Nyní jsi povinen doplnit aktivity na svou kartu.', // 5
     lastWithdrawal: 'Poslední vytažení karty bylo', // 6
+    lastRemovalWait: 'Tachograf ukazuje, kdy byla karta naposledy vyjmuta: {time}. Chvíli počkej, otázka na ruční doplnění se objeví sama.',
+    lastRemovalPeriod: 'Tachograf ukazuje počátek období, které můžeš doplnit: {time}. Chvíli počkej, otázka na ruční doplnění se objeví sama.',
+    supplementFromWithdrawal: 'Co jsi dělal od vyjmutí karty do jejího vložení?',
+    supplementFromStart: 'Co jsi dělal od {time} do vložení karty?',
+    supplementChoiceHelp: 'Volbou ANO můžeš tyto činnosti doplnit. Volbou NE přeskočíš ruční zadání. Šipkami vyber odpověď a potvrď OK.',
+    manualEditorHint: 'Šipkami měníš blikající údaj. Tlačítkem OK přejdeš na další. Pokud jsi nejdřív odpočíval a potom pracoval, zadej každý úsek zvlášť.',
+    finalConfirmHint: 'Zkontroluj časy a symboly v přehledu. ANO zadání potvrdí, NE tě vrátí do editoru.',
+    endShiftHold: 'Po zastavení podrž tlačítko {button} přibližně dvě sekundy.',
+    withdrawalCountry: 'Výhoz ze slotu {slot}. Zkontroluj cílovou zemi. Šipkami ji můžeš změnit, OK ji potvrdí a výhoz bude pokračovat. Tlačítkem Zpět výhoz zrušíš.',
+    stoppedWork: 'Vozidlo stojí. Řidič 1 má nastavenou jinou práci – (9) zkřížená kladívka. Začínáš přestávku? Krátkými stisky tlačítka 1 vyber postel (8) – odpočinek.',
+    stoppedRest: 'Vozidlo stojí. Řidič 1 má nastavený odpočinek – (8) postel. Přestávka už je zvolená, tlačítko 1 nemačkej.',
+    stoppedAvailability: 'Vozidlo stojí. Řidič 1 má nastavenou pohotovost – (7). Začínáš přestávku? Krátkými stisky tlačítka 1 vyber postel (8) – odpočinek.',
+    stoppedOther: 'Vozidlo stojí. Řidič 1 má nastavenou jinou činnost. Začínáš přestávku? Krátkými stisky tlačítka 1 vyber postel (8) – odpočinek.',
     endCountryFound: 'Našel jsem záznam o ukončení směny v', // 7
-    endCountryDuplicateWarning: 'Nalezeno dřívější ukončení směny v {dateTime}. Tímto krokem bude tvůj záznam vykazovat chybu.',
-    nr165Warning: 'Hodláš podruhé za sebou zadat výchozí zemi. Toto by byl přestupek podle NR 165...', // 8
+    endCountryDuplicateWarning: 'Cílovou zemi už máš zadanou{when}. Chtěl jsi zadat výchozí zemi?',
+    nr165Warning: 'Výchozí zemi už máš zadanou{when}. Chtěl jsi zadat cílovou zemi?', // 8
     generateWorkWeekBlocked: 'Na kartě jsou uložená data. Proto se náhodná data nevygenerovala. Smaž data z karty tlačítkem "Reset" a zkus to znovu.',
     manualEntryData: 'Vložená data:',
-    vehicleCheckBeforeDrivingWarning: 'Před jízdou bylo nutné provést kontrolu vozidla a ta se vykazuje aktivitou (9). Teď řídíš, ale nepostupuješ správně podle Nařízení (EU) č. 165/2014',
-    vehicleCheckBeforeDrivingShort: 'Před jízdou bylo nutné provést kontrolu vozidla a ta se vykazuje aktivitou (9). Tvoje kontrola před jízdou byla kratší než 4 minuty. To může být pro některé kontrolní orgány sporné a můžou to brát jako přitěžující okolnost.',
+    vehicleCheckBeforeDrivingWarning: 'Před rozjezdem není zaznamenaná jiná práce (9) – kontrola vozidla. Porovnej záznam se scénářem.',
+    vehicleCheckBeforeDrivingShort: 'Před jízdou je zaznamenaná jiná práce (9) v délce {duration}. Porovnej ji se scénářem.',
     idleWarningConfirmInfo: 'Zařízení čeká na potvrzení tvé volby. Pokud do 10 minut neprovedeš žádnou akci, karta bude automaticky vysunuta a zadané údaje nebudou uloženy.',
-    readyToDrivePreDepartureCheck: 'Tachograf sice indikuje možnost zahájit jízdu, avšak před samotným výjezdem je řidič povinen provést předepsanou kontrolu vozidla. Tato činnost se zaznamenává jako jiná práce (9)',
-    crewModeInfo: 'Právě byly splněny podmínky pro režim osádky. Váš plovoucí den má 30 hodin během kterých bude vaše běžná doba denního odpočinku 9 hodin. Denní dobu odpočinku nelze trávit v jedoucím vozidle! Pamatuj, že pokud se řidič 1 rozjede bez karty vložené ve slotu 2, přeruší se režim osádky. Oba řidiči musí směnu skončit současně!',
-    crewModeNotMetInfo: 'Byla zaznamenána přitomnost druhé karty, avšak nebyly splněny podmínky režimu osádky. Plovoucí den každého z vás je 24 hodin. V tomto čase musíte stihnout dokončit vaše denní doby odpočinku.',
-    crewModeInterruptedWarning: 'Jelikož řidič č. 1 zahájil jízdu bez řidiče č. 2, došlo k přerušení režimu osádky a vaše zapsané aktivity překračují parametry pro délku směny jednoho řidiče. Toto je porušení bezpečnosti!',
+    readyToDrivePreDepartureCheck: 'Před výjezdem proveď kontrolu vozidla. Na displeji zkontroluj symbol (9) zkřížených kladívek – jiná práce. Pokud vidíš jinou činnost, krátkými stisky tlačítka 1 ji změň.',
+    crewModeInfo: 'Ve slotu 1 i 2 je karta a simulátor splnil podmínku, kterou pro režim osádky sleduje: karta řidiče 2 je ve slotu do hodiny od začátku jízdy. Proto vede plovoucí den 30 hodin a běžný denní odpočinek 9 hodin. Denní odpočinek nelze trávit v jedoucím vozidle. Rozjede-li se řidič 1 bez karty ve slotu 2, simulátor režim osádky přeruší. Oba řidiči mají směnu skončit současně. Samotné karty ještě neznamenají, že simulátor spočítal překročení délky směny.',
+    crewModeNotMetInfo: 'Karta ve slotu 2 je vložená, ale podmínka režimu osádky, kterou simulátor sleduje, splněná není: karta řidiče 2 nebyla ve slotu včas vůči začátku jízdy. Simulátor proto dál počítá plovoucí den 24 hodin. Ze samotného slotu 2 nevyplývá, že řidiči překročili délku směny.',
+    crewModeInterruptedWarning: 'Řidič 1 jede a ve slotu 2 karta chybí. Simulátor proto režim osádky už nevede. Tohle je stav karet a podmínka, kterou simulátor sleduje. Délku směny tahle hláška nepočítá a sama o sobě neznamená, že byla překročená.',
     duplicateDataWarning: 'Pozor, na kartě jsou již uložená data. Nelze zapisovat data do obsazené paměti. Vymaž data tlačítkem Reset',
     publishDataConsentInfo: 'Při prvním použití karty se zobrazí výzva k udělení souhlasu se zpracováním osobních údajů, případně zvláštních kategorií osobních údajů. Udělený souhlas lze kdykoli následně odvolat prostřednictvím menu zařízení.',
     excessSpeedWarning: 'Byla zaznamenána (39)(39) příliš vysoká rychlost. Došlo k překročení konstrukční rychlosti vozidla. Tato událost je automaticky zaznamenána do paměti tachografu!',

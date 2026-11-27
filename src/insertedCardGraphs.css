@@ -1,3 +1,5 @@
+/* Cardviewer nastavuje tmavé pozadí stránky. Simulátor ho vrací zpět, graf si nechá vlastní okno. */
+
 html {
   overflow-x: auto;
   overflow-y: scroll;
@@ -19,74 +21,36 @@ body {
   position: fixed;
   inset: 0;
   z-index: 12000;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 24px 12px;
+  overflow: auto;
+  padding: 24px 12px 48px;
   background: rgba(15, 23, 42, 0.55);
 }
 
-.card-graphs-window {
-  display: flex;
-  flex-direction: column;
-  width: min(1120px, 100%);
-  max-height: calc(100vh - 48px);
-  background: #0f172a;
-  border: 2px solid #cbd5e1;
-  border-radius: 12px;
-  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.35);
-}
-
 .card-graphs-window-close {
-  align-self: flex-end;
-  margin: 8px 8px 0;
-  width: 28px;
-  height: 28px;
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 12001;
+  width: 32px;
+  height: 32px;
   padding: 0;
-  border: 1px solid #94a3b8;
-  border-radius: 6px;
-  background: #0f172a;
-  color: #f8fafc;
-  font-size: 18px;
+  border: 1px solid #999;
+  border-radius: 50%;
+  background: #f0f0f0;
+  color: #333;
+  font-size: 20px;
   line-height: 1;
   cursor: pointer;
 }
 
-.card-graphs-window-body {
-  overflow: auto;
-  min-height: 0;
-  padding: 0 12px 12px;
+.card-graphs-window-close:hover {
+  background: #e0e0e0;
 }
 
-.inserted-card-graphs {
-  width: min(1080px, 100%);
-  margin: 0 auto;
+.card-graphs-stack {
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
-
-.inserted-card-graphs-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-  color: #e2e8f0;
-}
-
-.inserted-card-graphs-toolbar button {
-  background: #1e293b;
-  color: #e2e8f0;
-  border: 1px solid #334155;
-  border-radius: 6px;
-  padding: 6px 10px;
-  cursor: pointer;
-}
-
-.inserted-card-graphs-toolbar button.is-active {
-  border-color: #38bdf8;
-}
-
-.inserted-card-graphs .work-week-graph-overlay.is-embedded .work-week-graph-window {
-  min-height: 520px;
+  width: min(1080px, 100%);
+  margin: 0 auto;
 }

@@ -116,24 +116,15 @@ const ACTIVITY_STYLE: Record<ActivityType, { color: string; strokeWidth: number 
   neznámá: { color: '#888', strokeWidth: 5 },
 }
 
-const TICK_COLOR = '#64748b'
-const LABEL_COLOR = '#94a3b8'
-const GRAPH_AXIS_COLOR = '#94a3b8'
+const TICK_COLOR = '#999'
+const LABEL_COLOR = '#334155'
+const GRAPH_AXIS_COLOR = '#334155'
 /** Popisky kalendářního dne v levém sloupci grafu (SVG user units, nemění se s výškou řádku). */
 const GRAPH_DAY_NAME_FONT_SIZE = 10
 const GRAPH_DAY_DATE_FONT_SIZE = 9
 const GRAPH_DAY_LABEL_FONT_WEIGHT = 500
-const DAY_SEP_COLOR = '#1e293b'
-const HOUR_STROKE = '#334155'
-const MINOR_STROKE = '#475569'
-const ROW_BG_A = '#0f172a'
-const ROW_BG_B = '#121a2b'
-const ANCHOR_SYMBOL = '#e2e8f0'
-const COUNTRY_START_COLOR = '#38bdf8'
-const COUNTRY_END_COLOR = '#a78bfa'
-const COUNTRY_BADGE_BG = '#0b1220'
-const SHIFT_MARK_FILL = '#e2e8f0'
-const SHIFT_MARK_TEXT = '#0f172a'
+const ANCHOR_COLOR = '#000'
+const ANCHOR_STROKE = '#000'
 function getActivityColor(act: ParsedActivity): string {
   if (act.type === 'řízení') return '#c41e3a'
   if (act.type === 'práce') return '#c9a227'
@@ -767,26 +758,11 @@ function GraphBlock({
             <rect x={labelW} y={marginTop} width={chartW} height={visibleDays.length * rowH} />
           </clipPath>
         </defs>
-        <g id={`day-row-bg-${blockId}`}>
-          {visibleDays.map((_, i) => {
-            const y = marginTop + i * rowH
-            return (
-              <rect
-                key={`row-bg-${i}`}
-                x={0}
-                y={y}
-                width={width}
-                height={rowH}
-                fill={i % 2 === 0 ? ROW_BG_A : ROW_BG_B}
-              />
-            )
-          })}
-        </g>
         <g id={`day-separators-${blockId}`}>
           {visibleDays.slice(0, -1).map((_, i) => {
             const y = marginTop + (i + 1) * rowH
             return (
-              <line key={i} x1={0} y1={y} x2={width} y2={y} stroke={DAY_SEP_COLOR} strokeWidth={lx(0.5)} />
+              <line key={i} x1={0} y1={y} x2={width} y2={y} stroke="#e0e0e0" strokeWidth={lx(0.5)} opacity={0.7} />
             )
           })}
         </g>
@@ -794,7 +770,7 @@ function GraphBlock({
           {axisMinors.map((minute) => {
             const x = xMinute(minute)
             return (
-              <line key={`top-q-${minute}`} x1={x} y1={marginTop - quarterTickLen} x2={x} y2={marginTop} stroke={MINOR_STROKE} strokeWidth={lx(0.5)} opacity={0.7} />
+              <line key={`top-q-${minute}`} x1={x} y1={marginTop - quarterTickLen} x2={x} y2={marginTop} stroke="#bbb" strokeWidth={lx(0.5)} opacity={0.7} />
             )
           })}
         </g>
@@ -803,7 +779,7 @@ function GraphBlock({
             const x = xMinute(minute)
             return (
               <g key={`top-${minute}`}>
-                <line x1={x} y1={marginTop - hourTickLen} x2={x} y2={marginTop} stroke={HOUR_STROKE} strokeWidth={lx(1)} />
+                <line x1={x} y1={marginTop - hourTickLen} x2={x} y2={marginTop} stroke="#333" strokeWidth={lx(1)} />
                 {!mobileWeek && (
                   <text x={x} y={axisFontSize} textAnchor="middle" fill={GRAPH_AXIS_COLOR} fontSize={axisFontSize} fontFamily="sans-serif" fontWeight={600}>{formatMinuteTick(minute)}</text>
                 )}
@@ -821,8 +797,8 @@ function GraphBlock({
                 const rowTop = yBase + lx(3)
                 return (
                   <g key={`tick-${minute}`}>
-                    <line x1={x} y1={rowTop} x2={x} y2={rowTop + tickLen} stroke={TICK_COLOR} strokeWidth={lx(0.5)} opacity={0.35} />
-                    <line x1={x} y1={yBase + rowH - lx(3) - tickLen} x2={x} y2={yBase + rowH - lx(3)} stroke={TICK_COLOR} strokeWidth={lx(0.5)} opacity={0.35} />
+                    <line x1={x} y1={rowTop} x2={x} y2={rowTop + tickLen} stroke={TICK_COLOR} strokeWidth={lx(0.5)} opacity={0.4} />
+                    <line x1={x} y1={yBase + rowH - lx(3) - tickLen} x2={x} y2={yBase + rowH - lx(3)} stroke={TICK_COLOR} strokeWidth={lx(0.5)} opacity={0.4} />
                   </g>
                 )
               })}
@@ -926,10 +902,10 @@ function GraphBlock({
                 return (
                   <g key={`shift-${shift.index}`} className="work-week-graph-shift-mark">
                     {leftEnd - span.x1 > 0.5 && (
-                      <line x1={span.x1} y1={lineY} x2={leftEnd} y2={lineY} stroke={SHIFT_MARK_FILL} strokeWidth={1} strokeLinecap="butt" />
+                      <line x1={span.x1} y1={lineY} x2={leftEnd} y2={lineY} stroke="#111" strokeWidth={1} strokeLinecap="butt" />
                     )}
                     {span.x2 - rightStart > 0.5 && (
-                      <line x1={rightStart} y1={lineY} x2={span.x2} y2={lineY} stroke={SHIFT_MARK_FILL} strokeWidth={1} strokeLinecap="butt" />
+                      <line x1={rightStart} y1={lineY} x2={span.x2} y2={lineY} stroke="#111" strokeWidth={1} strokeLinecap="butt" />
                     )}
                     <rect
                       x={mid - badgeW / 2}
@@ -938,14 +914,14 @@ function GraphBlock({
                       height={badgeH}
                       rx={badgeH / 2}
                       ry={badgeH / 2}
-                      fill={SHIFT_MARK_FILL}
+                      fill="#111"
                     />
                     <text
                       x={mid}
                       y={lineY}
                       textAnchor="middle"
                       dominantBaseline="central"
-                      fill={SHIFT_MARK_TEXT}
+                      fill="#fff"
                       fontSize={lx(6)}
                       fontFamily="sans-serif"
                       fontWeight={700}
@@ -975,58 +951,15 @@ function GraphBlock({
                 if (x < labelW || x > chartRight) return null
                 const code = marker.countryCode ?? 'CZ'
                 const isStart = marker.activityId === 'START_COUNTRY'
-                const color = isStart ? COUNTRY_START_COLOR : COUNTRY_END_COLOR
-                const textFill = isStart ? '#e0f2fe' : '#ede9fe'
-                const rectH = lx(12)
-                const rectW = Math.max(lx(24), lx(8) + code.length * lx(7))
-                const stemTop = yBase + lx(2)
+                const label = isStart ? `${code} ►` : `◄ ${code}`
+                const dx = isStart ? lx(7) : -lx(7)
+                const textAnchor = isStart ? 'start' : 'end'
                 const anchorBottom = yBase + rowH / 2 + lx(7)
-                if (isStart) {
-                  const arrowX = x - lx(2) + rectW
-                  return (
-                    <g key={`anchor-${dayStart}-${i}`}>
-                      <line x1={x} y1={stemTop + rectH} x2={x} y2={anchorBottom} stroke={color} strokeWidth={lx(1.5)} strokeLinecap="round" />
-                      <rect x={x - lx(2)} y={stemTop} width={rectW} height={rectH} rx={lx(3)} fill={COUNTRY_BADGE_BG} stroke={color} strokeWidth={lx(1.3)} />
-                      <text
-                        x={x - lx(2) + rectW / 2 - lx(1)}
-                        y={stemTop + rectH / 2}
-                        textAnchor="middle"
-                        dominantBaseline="central"
-                        fill={textFill}
-                        fontSize={lx(8)}
-                        fontFamily="sans-serif"
-                        fontWeight={700}
-                      >
-                        {code}
-                      </text>
-                      <path
-                        d={`M${arrowX} ${stemTop + lx(2)} L${arrowX + lx(5)} ${stemTop + rectH / 2} L${arrowX} ${stemTop + rectH - lx(2)} Z`}
-                        fill={color}
-                      />
-                    </g>
-                  )
-                }
-                const rectX = x + lx(2) - rectW
                 return (
                   <g key={`anchor-${dayStart}-${i}`}>
-                    <line x1={x} y1={stemTop + rectH} x2={x} y2={anchorBottom} stroke={color} strokeWidth={lx(1.5)} strokeLinecap="round" />
-                    <rect x={rectX} y={stemTop} width={rectW} height={rectH} rx={lx(3)} fill={COUNTRY_BADGE_BG} stroke={color} strokeWidth={lx(1.3)} />
-                    <text
-                      x={rectX + rectW / 2 + lx(1)}
-                      y={stemTop + rectH / 2}
-                      textAnchor="middle"
-                      dominantBaseline="central"
-                      fill={textFill}
-                      fontSize={lx(8)}
-                      fontFamily="sans-serif"
-                      fontWeight={700}
-                    >
-                      {code}
-                    </text>
-                    <path
-                      d={`M${rectX} ${stemTop + lx(2)} L${rectX - lx(5)} ${stemTop + rectH / 2} L${rectX} ${stemTop + rectH - lx(2)} Z`}
-                      fill={color}
-                    />
+                    <text x={x} y={yBase + lx(8)} dx={dx} textAnchor={textAnchor} fill={ANCHOR_STROKE} fontSize={lx(8)} fontFamily="sans-serif" fontWeight={600}>{label}</text>
+                    <line x1={x} y1={yBase + lx(3)} x2={x} y2={anchorBottom} stroke={ANCHOR_STROKE} strokeWidth={lx(1.5)} strokeLinecap="round" />
+                    <circle cx={x} cy={yBase + lx(3)} r={lx(2.5)} fill={ANCHOR_COLOR} />
                   </g>
                 )
               })}
@@ -1038,8 +971,8 @@ function GraphBlock({
                 const anchorBottom = yBase + rowH / 2 + lx(7)
                 return (
                   <g key={`loadunload-${dayStart}-${ev.minuteStartUtc}-${i}`}>
-                    <text x={x} y={yBase + lx(10)} textAnchor="middle" fill={ANCHOR_SYMBOL} fontSize={lx(12)} fontFamily="SymbolTacho1">{symbolChar}</text>
-                    <line x1={x} y1={yBase + lx(14)} x2={x} y2={anchorBottom} stroke={ANCHOR_SYMBOL} strokeWidth={lx(1.5)} strokeLinecap="round" />
+                    <text x={x} y={yBase + lx(10)} textAnchor="middle" fill={ANCHOR_STROKE} fontSize={lx(12)} fontFamily="SymbolTacho1">{symbolChar}</text>
+                    <line x1={x} y1={yBase + lx(14)} x2={x} y2={anchorBottom} stroke={ANCHOR_STROKE} strokeWidth={lx(1.5)} strokeLinecap="round" />
                   </g>
                 )
               })}
@@ -1050,8 +983,8 @@ function GraphBlock({
                 const anchorBottom = yBase + rowH / 2 + lx(7)
                 return (
                   <g key={`ferrytrain-${dayStart}-${ev.minuteStartUtc}-${i}`}>
-                    <text x={x} y={yBase + lx(10)} textAnchor="middle" fill={ANCHOR_SYMBOL} fontSize={lx(12)} fontFamily="SymbolTacho1">{symbolChar}</text>
-                    <line x1={x} y1={yBase + lx(14)} x2={x} y2={anchorBottom} stroke={ANCHOR_SYMBOL} strokeWidth={lx(1.5)} strokeLinecap="round" />
+                    <text x={x} y={yBase + lx(10)} textAnchor="middle" fill={ANCHOR_STROKE} fontSize={lx(12)} fontFamily="SymbolTacho1">{symbolChar}</text>
+                    <line x1={x} y1={yBase + lx(14)} x2={x} y2={anchorBottom} stroke={ANCHOR_STROKE} strokeWidth={lx(1.5)} strokeLinecap="round" />
                   </g>
                 )
               })}
@@ -1096,7 +1029,7 @@ function GraphBlock({
         <g id={`quarter-ticks-bottom-${blockId}`} transform={`translate(0, ${height - marginBottom})`}>
           {axisMinors.map((minute) => {
             const x = xMinute(minute)
-            return <line key={`bot-q-${minute}`} x1={x} y1={0} x2={x} y2={quarterTickLen} stroke={MINOR_STROKE} strokeWidth={lx(0.5)} opacity={0.7} />
+            return <line key={`bot-q-${minute}`} x1={x} y1={0} x2={x} y2={quarterTickLen} stroke="#bbb" strokeWidth={lx(0.5)} opacity={0.7} />
           })}
         </g>
         <g id={`hour-ticks-bottom-${blockId}`} transform={`translate(0, ${height - marginBottom})`}>
@@ -1104,7 +1037,7 @@ function GraphBlock({
             const x = xMinute(minute)
             return (
               <g key={`bot-${minute}`}>
-                <line x1={x} y1={0} x2={x} y2={tickLen} stroke={HOUR_STROKE} strokeWidth={lx(1)} />
+                <line x1={x} y1={0} x2={x} y2={tickLen} stroke="#333" strokeWidth={lx(1)} />
                 {!mobileWeek && (
                   <text x={x} y={lx(12)} textAnchor="middle" fill={GRAPH_AXIS_COLOR} fontSize={axisFontSize} fontFamily="sans-serif" fontWeight={600}>{formatMinuteTick(minute)}</text>
                 )}

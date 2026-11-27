@@ -29,6 +29,7 @@ src/presentation/workPeriodOverview.ts
 src/TachoTypes.ts
 src/types/coverage.ts
 src/types/tacho.ts
+src/utils/cardToGraph.ts
 src/utils/dddMapper.ts
 src/utils/dddParser.ts
 src/utils/weekDistance.ts

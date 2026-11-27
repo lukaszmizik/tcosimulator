@@ -5,11 +5,26 @@ declare module 'tacho-viewer-graph' {
     days: unknown[]
     countryMarkers: unknown[]
     manualEntryBuffer?: unknown[]
-    outModeEvents?: Array<{ minuteStartUtc: number; type: 'activation' | 'deactivation' }>
+    lastWithdrawalUtc?: number | null
+    card2Data?: {
+      days: unknown[]
+      countryMarkers: unknown[]
+      manualEntryBuffer?: unknown[]
+      lastWithdrawalUtc?: number | null
+    }
+    loadUnloadEvents?: unknown[]
+    ferryTrainEvents?: unknown[]
+    outModeEvents?: Array<{ minuteStartUtc: number; type: 'activation' | 'deactivation'; gpsLocation?: string }>
+    recordedGpsLocations?: unknown[]
+    faultsAndEvents?: unknown[]
+    symbolMap?: Record<number, string> | null
+    onResetLoadUnload?: () => void
     embedded?: boolean
     onClose: () => void
     clockMode?: 'local' | 'utc'
     onClockModeChange?: (mode: 'local' | 'utc') => void
+    card?: object | null
+    initialFocusedDayUtc?: number | null
     initialWeekStartMs?: number | null
     onDisplayedWeekChange?: (weekStartMs: number) => void
     showWeeklyRestPanel?: boolean
@@ -19,13 +34,32 @@ declare module 'tacho-viewer-graph' {
   }): ReactNode
 }
 
+declare module 'tacho-viewer-card-graph' {
+  export function cardToGraph(card: object, clockMode?: 'local' | 'utc'): {
+    days: unknown[]
+    countryMarkers: unknown[]
+    manualEntryBuffer: unknown[]
+    lastWithdrawalUtc: number | null
+    loadUnloadEvents: unknown[]
+    ferryTrainEvents: unknown[]
+    outModeEvents: Array<{ minuteStartUtc: number; type: 'activation' | 'deactivation'; gpsLocation?: string }>
+    recordedGpsLocations: unknown[]
+    faultsAndEvents: unknown[]
+  }
+}
+
 declare module 'tacho-viewer-graph-days' {
   export type GraphActivity = {
     startMs: number
     endMs: number
+    type?: string
+    durationMinutes?: number
+    originalDurationMinutes?: number
     slot?: 1 | 2
     isManualEntry?: boolean
     isCrew?: boolean
+    registration?: string
+    gpsLocation?: string
   }
 
   export type GraphDay = { dateUtc: number; activities: GraphActivity[] }

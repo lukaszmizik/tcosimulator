@@ -13,6 +13,7 @@ export default defineConfig({
       'tacho-viewer-language': resolve(__dirname, './vendor/cardviewer/src/translations.ts'),
       'tacho-viewer-slot-graph': resolve(__dirname, './vendor/cardviewer/src/utils/simulatorSlotGraph.ts'),
       'tacho-viewer-graph-days': resolve(__dirname, './vendor/cardviewer/src/workWeekTxtParser.ts'),
+      'tacho-viewer-card-graph': resolve(__dirname, './vendor/cardviewer/src/utils/cardToGraph.ts'),
     },
   },
   base: './',

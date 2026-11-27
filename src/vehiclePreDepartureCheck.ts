@@ -3,13 +3,19 @@ import type { ManualEntrySegment, SecondActivitySnapshot } from './TachoTypes'
 
 export type VehicleCheckResult = 'none' | 'info' | 'warning'
 
+export type PreDepartureCheck = {
+  result: VehicleCheckResult
+  /** Součet zaznamenané jiné práce před rozjezdem. Nula znamená, že záznam chybí. */
+  workMs: number
+}
+
 export function evaluatePreDepartureWork(
   cardId: string,
   insertedAtUtc: number,
   departureUtc: number,
   manualEntries: ManualEntrySegment[],
   secondHistory: Iterable<SecondActivitySnapshot>,
-): VehicleCheckResult {
+): PreDepartureCheck {
   let shiftStartUtc = insertedAtUtc
   const intervals: { start: number; end: number }[] = []
 
@@ -52,6 +58,6 @@ export function evaluatePreDepartureWork(
     countedUntil = Math.max(countedUntil, end)
   }
 
-  if (workMs === 0) return 'warning'
-  return workMs < 4 * 60_000 ? 'info' : 'none'
+  if (workMs === 0) return { result: 'warning', workMs }
+  return { result: workMs < 4 * 60_000 ? 'info' : 'none', workMs }
 }

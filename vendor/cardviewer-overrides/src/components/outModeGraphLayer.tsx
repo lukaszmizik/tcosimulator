@@ -100,9 +100,9 @@ export function renderOutModeGraphLayer(params: OutModeGraphLayerParams): ReactN
           {barW >= labelMinW && (
             <text
               x={span.x1 + barW / 2}
-              y={top + bandH / 2}
+              y={centerY}
               textAnchor="middle"
-              dominantBaseline="middle"
+              dominantBaseline="central"
               fill={OUT_MODE_TEXT_COLOR}
               fontSize={labelFont}
               fontFamily="sans-serif"

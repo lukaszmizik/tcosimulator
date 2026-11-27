@@ -26,6 +26,16 @@ export type DrivingBreakDisplay =
       drivingAfterBreakMs: number
     }
 
+/** Doporučení přestávky z už spočítaného bloku. Jiná délka nebo fáze přestávky zůstane neurčená. */
+export type RecognizedBreakAdvice = 'full' | 'second' | 'neutral'
+
+export function recognizedBreakAdvice(display: DrivingBreakDisplay): RecognizedBreakAdvice {
+  if (display.phase !== 'driving') return 'neutral'
+  if (display.requiredBreakMs === FULL_BREAK_MS) return 'full'
+  if (display.requiredBreakMs === SECOND_PART_MS) return 'second'
+  return 'neutral'
+}
+
 /**
  * Intervaly jsou seřazené a nepřekrývají se. Poslední může končit v `nowMs`
  * a je pak právě probíhající činnost. Sousední odpočinky bez mezery jsou jeden

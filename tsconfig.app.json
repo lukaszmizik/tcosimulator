@@ -23,6 +23,7 @@
       "tacho-viewer-ddd-parser": ["src/types/tachoViewerDddParser.d.ts"],
       "tacho-viewer-ddd-mapper": ["src/types/tachoViewerDddMapper.d.ts"],
       "tacho-viewer-graph": ["src/types/tachoViewerGraph.d.ts"],
+      "tacho-viewer-card-graph": ["src/types/tachoViewerGraph.d.ts"],
       "tacho-viewer-language": ["src/types/tachoViewerGraph.d.ts"],
       "tacho-viewer-slot-graph": ["src/types/tachoViewerGraph.d.ts"]
     }

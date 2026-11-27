@@ -330,6 +330,33 @@ export function main(): void {
   assert.ok(otherWorkKm > 0)
   assert.ok(Math.abs(sumDayIncrements(simulatedDays) - drivingOnly) < 1e-9)
   assert.ok(sumDayIncrements(simulatedDays) < drivingOnly + otherWorkKm)
+  assert.ok(simulated.activityEntries.every((entry) => entry.driver2 === 'none' && entry.driver2CardId === NO_CARD))
+  assert.ok(simulated.secondEntries.every((entry) => entry.driver2 === 'none' && entry.driver2CardId === NO_CARD))
+
+  const withCards = buildSimulated4h10m({
+    startMs: simStart,
+    isMultiManning: false,
+    card1Inserted: true,
+    card2Inserted: true,
+    card1TemplateId: 'zmizik',
+    card2TemplateId: 'novak',
+    distanceFromStartKm: 0,
+  })
+  assert.equal(withCards.activityEntries.length, 250)
+  assert.ok(withCards.activityEntries.every((entry) => entry.driver2 === 'availability' && entry.driver2CardId === 'novak'))
+  assert.ok(withCards.activityEntries.some((entry) => entry.driver1 === 'otherWork'))
+  assert.ok(withCards.activityEntries.some((entry) => entry.driver1 === 'driving'))
+  const removedCard = buildSimulated4h10m({
+    startMs: simStart,
+    isMultiManning: true,
+    card1Inserted: true,
+    card2Inserted: false,
+    card1TemplateId: 'zmizik',
+    card2TemplateId: 'novak',
+    card2CardNumber: 'C2',
+    distanceFromStartKm: 0,
+  })
+  assert.ok(removedCard.activityEntries.every((entry) => entry.driver2 === 'none' && entry.driver2CardId === NO_CARD))
 
   // D. Skok přes půlnoc s jízdou i bez jízdy.
   const jumpFrom = Date.UTC(2026, 0, 15, 22)

@@ -2,12 +2,16 @@ import assert from 'node:assert/strict'
 import { appendWorkingMinutes, createDddCardRecord, type DddCardRecord } from '../src/dddCardSession.ts'
 import {
   activitiesForApplyTime,
+  dominantMinuteActivity,
   clockAfterApplyTime,
   minuteLeftForSecondClock,
   planApplyTimeJump,
   type ApplyTimeJumpPlan,
   type ApplyTimeSlot,
 } from '../src/applyTimeJump.ts'
+import { buildDriverCardPrintRows } from '../src/print/driverCardPrintRows.ts'
+import { prepareDriver1Print24hUtc, simulatedPrintCardActivities } from '../src/print/prepareDriver1Print24h.ts'
+import { simulatorToGraphData } from '../src/workWeekExportTxt.ts'
 import type { ActivityHistoryEntry } from '../src/TachoTypes.ts'
 import type { DddParsedActivity } from '../src/types/tachoViewerDddMapper.ts'
 
@@ -143,6 +147,19 @@ export function main() {
 
   const standing = activitiesForApplyTime(0, 'REST', 'WORK')
   assert.deepEqual(standing, { driver1: 'rest', driver2: 'otherWork' })
+  assert.deepEqual(activitiesForApplyTime(0, 'WORK', 'REST'), { driver1: 'otherWork', driver2: 'rest' })
+  assert.deepEqual(activitiesForApplyTime(80, 'REST', 'REST', false), { driver1: 'driving', driver2: 'none' })
+  assert.deepEqual(activitiesForApplyTime(0, 'WORK', 'REST', false), { driver1: 'otherWork', driver2: 'none' })
+  const ownCourse = dominantMinuteActivity(
+    { driving: 0, rest: 0, otherWork: 20, availability: 40, none: 0 },
+    'otherWork',
+  )
+  assert.deepEqual(ownCourse, { activity: 'availability', decided: true })
+  const absentMinute = dominantMinuteActivity(
+    { driving: 0, rest: 0, otherWork: 0, availability: 20, none: 40 },
+    'availability',
+  )
+  assert.deepEqual(absentMinute, { activity: 'none', decided: true })
   const planStand = planApplyTimeJump({
     simulatedUtcMs: SIM,
     deltaMs: PLUS_60,
@@ -213,6 +230,63 @@ export function main() {
   const zero = clockAfterApplyTime(SIM, 0, SIM + PLUS_60)
   assert.equal(iso(zero.nextSimulatedUtcMs), '2026-11-16T11:00:20.000Z')
   assert.equal(zero.nextTimeOffsetMs, 0)
+
+  const day = Date.parse('2026-11-16T00:00:00.000Z')
+  const slot2History = [0, 1, 2].map((index) => ({
+    minuteStartUtc: day + 10 * HOUR + index * MINUTE,
+    driver1: (index === 1 ? 'otherWork' : 'driving') as const,
+    driver2: 'availability' as const,
+    driver1CardId: 'zmizik',
+    driver2CardId: 'novak',
+    isCrew: true,
+  }))
+  const slot2Print = prepareDriver1Print24hUtc(
+    day, [], simulatedPrintCardActivities(slot2History, 'novak', day + 10 * HOUR + 3 * MINUTE, 2),
+  )
+  assert.equal(slot2Print.activities.length, 1)
+  assert.equal(slot2Print.activities[0]?.activityId, 'AVAILABILITY')
+  assert.equal(slot2Print.sums.availabilityMs, 3 * MINUTE)
+  const slot2Graph = simulatorToGraphData(slot2History, [], 2)
+  assert.equal(slot2Graph.activities.length, 1)
+  assert.equal(slot2Graph.activities[0]?.type, 'pohotovost')
+  assert.equal(slot2Graph.activities[0]?.durationMinutes, 3)
+
+  const gappedHistory = [0, 2].map((index) => ({
+    minuteStartUtc: day + 10 * HOUR + index * MINUTE,
+    driver1: 'driving' as const,
+    driver2: 'availability' as const,
+    driver1CardId: 'zmizik',
+    driver2CardId: 'novak',
+  }))
+  const gapped = prepareDriver1Print24hUtc(
+    day, [], simulatedPrintCardActivities(gappedHistory, 'novak', day + 10 * HOUR + 3 * MINUTE, 2),
+  )
+  assert.equal(gapped.activities.length, 2)
+  const unknownKept = prepareDriver1Print24hUtc(day, [], [
+    { kind: 'availability', startUtc: day + 10 * HOUR, endUtc: day + 10 * HOUR + MINUTE, slot: 2, simulated: true },
+    { kind: 'unknown', startUtc: day + 10 * HOUR + MINUTE, endUtc: day + 10 * HOUR + 2 * MINUTE, slot: 2, simulated: true },
+    { kind: 'availability', startUtc: day + 10 * HOUR + 2 * MINUTE, endUtc: day + 10 * HOUR + 3 * MINUTE, slot: 2, simulated: true },
+  ])
+  assert.deepEqual(unknownKept.activities.map((item) => item.activityId), ['AVAILABILITY', 'UNKNOWN', 'AVAILABILITY'])
+  const printedGap = buildDriverCardPrintRows({
+    selectedDayUtc: day,
+    printedAtUtc: day + 10 * HOUR + 3 * MINUTE,
+    localOffsetMs: 0,
+    isUtc: true,
+    profile: {
+      companyName: 'Test', companyAddress: 'Test', companyId: '1',
+      registration: '1T23456', registrationNation: 'CZ', vin: 'VIN', load: '',
+    },
+    card: null,
+    secondCard: null,
+    manual: [],
+    simulated: simulatedPrintCardActivities(gappedHistory, 'novak', day + 10 * HOUR + 3 * MINUTE, 2),
+    vehicleEvents: [],
+  }).map((row) => row[0])
+  const firstAvailability = printedGap.indexOf(7)
+  const between = printedGap.slice(firstAvailability + 1, printedGap.lastIndexOf(7))
+  assert.ok(firstAvailability >= 0 && printedGap.lastIndexOf(7) > firstAvailability)
+  assert.ok(between.includes(11))
 
   console.log(JSON.stringify({
     drivingDddSlot1: {

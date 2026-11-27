@@ -6,6 +6,7 @@
  */
 
 import { DRIVING_SYMBOL, activityFromChar, getActivityCode } from './CardLogic'
+import { SPEED_STOPPED_THRESHOLD_KMH } from './Constants'
 import { NO_CARD, type ActivityHistoryEntry, type ActivityId, type ActivityKind } from './TachoTypes'
 
 export function insertedCardId(
@@ -16,18 +17,55 @@ export function insertedCardId(
   return inserted && (cardNumber || templateId) ? (cardNumber ?? templateId)! : NO_CARD
 }
 
+/** Vložená karta má číslo nebo šablonu. Prázdná šachta a karta v průběhu načítání se nezapisují. */
+export function loadedCardPresent(
+  inserted: boolean,
+  card: { cardNumber?: string; templateId?: string } | null | undefined,
+): boolean {
+  return inserted && Boolean(card && (card.cardNumber || card.templateId))
+}
+
+/**
+ * Činnost obou řidičů v jednom okamžiku.
+ * Za jízdy je vložená karta S2 na pohotovosti. Při stání zůstává její zvolená činnost.
+ * Chybějící karta S2 se nezapisuje. Režim osádky se tu neposuzuje.
+ */
 export function activitiesForApplyTime(
   speed: number,
   leftActivityId: ActivityId,
   rightActivityId: ActivityId,
+  slot2Present = true,
 ): { driver1: ActivityKind; driver2: ActivityKind } {
-  const isDriving = speed > 0
-  const leftChar = isDriving ? DRIVING_SYMBOL : getActivityCode(leftActivityId)
-  const rightChar = isDriving ? getActivityCode('AVAILABILITY') : getActivityCode(rightActivityId)
-  return {
-    driver1: activityFromChar(leftChar),
-    driver2: activityFromChar(rightChar),
+  const moving = speed > SPEED_STOPPED_THRESHOLD_KMH
+  const driver1 = activityFromChar(moving ? DRIVING_SYMBOL : getActivityCode(leftActivityId))
+  const driver2 = slot2Present
+    ? activityFromChar(moving ? getActivityCode('AVAILABILITY') : getActivityCode(rightActivityId))
+    : 'none'
+  return { driver1, driver2 }
+}
+
+/**
+ * Vítěz jedné minuty podle vlastních sekund daného řidiče.
+ * Činnost se započte, jen když trvá déle než 31 s. `decided` je nepravda, když taková není.
+ */
+export function dominantMinuteActivity(
+  counts: Record<ActivityKind, number>,
+  last: ActivityKind,
+): { activity: ActivityKind; decided: boolean } {
+  let max = 0
+  let candidates: ActivityKind[] = []
+  for (const key of Object.keys(counts) as ActivityKind[]) {
+    const value = counts[key] ?? 0
+    if (value > max) {
+      max = value
+      candidates = [key]
+    } else if (value === max && value > 0) {
+      candidates.push(key)
+    }
   }
+  if (max <= 31) return { activity: 'none', decided: false }
+  const activity = candidates.length === 1 || !candidates.includes(last) ? candidates[0]! : last
+  return { activity, decided: true }
 }
 
 export function clockAfterApplyTime(

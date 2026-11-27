@@ -5,6 +5,7 @@
  */
 
 import { useEffect, type Dispatch, type MutableRefObject, type SetStateAction } from 'react'
+import { activitiesForApplyTime, loadedCardPresent } from './applyTimeJump'
 import { DRIVING_SYMBOL, getActivityCode } from './CardLogic'
 import {
   ACCEL_KMH_PER_SEC,
@@ -19,6 +20,8 @@ import { accumulateFerryDriving } from './ferryTrainMode'
 import {
   MANUAL_ACTIVITIES,
   type ActivityDurationsMs,
+  type ActivityKind,
+  type CardData,
   type EventLogEntry,
   type FaultOrEvent,
   type VirtualRoutePoint,
@@ -73,6 +76,8 @@ type UseDrivingIntervalParams = {
   /** Jediné automatické ukončení: souvislá jízda delší než minutu. */
   endFerryTrainRef: MutableRefObject<() => void>
   card1InsertedRef: MutableRefObject<boolean>
+  card2InsertedRef: MutableRefObject<boolean>
+  card2DataRef: MutableRefObject<CardData | null>
   leftActivityIdRef: MutableRefObject<Parameters<typeof getActivityCode>[0]>
   rightActivityIdRef: MutableRefObject<Parameters<typeof getActivityCode>[0]>
   drivingSinceLastBreakMsByDriverRef: MutableRefObject<Record<1 | 2, number>>
@@ -109,6 +114,8 @@ export function useDrivingInterval(params: UseDrivingIntervalParams) {
     ferryDrivingMsRef,
     endFerryTrainRef,
     card1InsertedRef,
+    card2InsertedRef,
+    card2DataRef,
     leftActivityIdRef,
     rightActivityIdRef,
     drivingSinceLastBreakMsByDriverRef,
@@ -209,8 +216,21 @@ export function useDrivingInterval(params: UseDrivingIntervalParams) {
         setEventLog(prev => [...prev, { id, type: 'DRIVING_WITHOUT_CARD', startTime: startUtc }])
       }
 
-      const leftChar = isDriving ? DRIVING_SYMBOL : getActivityCode(leftActivityIdRef.current)
-      const rightChar = isDriving ? getActivityCode('AVAILABILITY') : getActivityCode(rightActivityIdRef.current)
+      const slotActivities = activitiesForApplyTime(
+        curr,
+        leftActivityIdRef.current,
+        rightActivityIdRef.current,
+        loadedCardPresent(card2InsertedRef.current, card2DataRef.current),
+      )
+      const activityChar = (kind: ActivityKind): string => {
+        if (kind === 'driving') return DRIVING_SYMBOL
+        if (kind === 'rest') return getActivityCode('REST')
+        if (kind === 'otherWork') return getActivityCode('WORK')
+        if (kind === 'availability') return getActivityCode('AVAILABILITY')
+        return ''
+      }
+      const leftChar = activityChar(slotActivities.driver1)
+      const rightChar = activityChar(slotActivities.driver2)
       const leftDelta = activityDurationDelta(leftChar, SIM_DT_MS)
       const rightDelta = activityDurationDelta(rightChar, SIM_DT_MS)
 

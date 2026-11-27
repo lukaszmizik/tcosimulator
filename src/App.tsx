@@ -4,7 +4,7 @@ import { loadCountries, type CountryEntry } from './data/countriesLoader'
 import { buildSymbolMapFromFile } from './Symbols'
 import { buildMenusById, applyMenuTranslations, ENTRY_MENU_ID } from './MenuStructure'
 import { clampMenuIndex, enterMenuRoot, enterSubmenu, leaveSubmenu, stepMenuIndex, visibleMenuItems } from './menu/menuCursor'
-import { createInitialCardInsertionState, activityFromChar, getNextActivity, getActivityCode, utcMsToSegment, trainingValidityBeginUtc, isTrainingCardExpired, isCardLoadingPhase } from './CardLogic'
+import { createInitialCardInsertionState, getNextActivity, utcMsToSegment, trainingValidityBeginUtc, isTrainingCardExpired, isCardLoadingPhase } from './CardLogic'
 import { EDITOR_FIELD_ORDER } from './CardLogic'
 import { tachographCountryCode } from './tachographCountryCode'
 import { getVirtualLocationForDistance } from './VirtualRoute'
@@ -43,15 +43,13 @@ import {
   MULTI_MANNING_ONE_HOUR_MS,
 } from './Constants'
 import {
-  type ActivityKind,
   type TachoState,
   MAX_MANUAL_ACTIVITIES,
   ACTIVITY_SYMBOLS,
   TEST_CARDS,
-  NO_CARD,
 } from './TachoTypes'
-import { DRIVING_SYMBOL, segmentToMsUtc } from './CardLogic'
-import { activitiesForApplyTime, clockAfterApplyTime, insertedCardId, planApplyTimeJump } from './applyTimeJump'
+import { segmentToMsUtc } from './CardLogic'
+import { activitiesForApplyTime, clockAfterApplyTime, dominantMinuteActivity, insertedCardId, loadedCardPresent, planApplyTimeJump } from './applyTimeJump'
 import {
   browserClockOffsetStorage,
   commitClockOffsets,
@@ -574,26 +572,16 @@ export default function App() {
   const endFerryTrainRef = useRef(() => setFerryModeRef.current(false))
 
   /**
-   * Automatické aktivity podle jízdy (návod DTCO 4.1 str. 55 – Automatic setting):
-   * jízda → řidič 1 = řízení, řidič 2 = pohotovost;
-   * zastavení → řidič 1 = práce, řidič 2 = pohotovost.
-   * Přestávku/odpočinek musí řidič zvolit ručně.
+   * Automatické nastavení řidiče 1 (návod DTCO 4.1 str. 55).
+   * Rozjezd = řízení, zastavení = jiná práce. Řidič 2 se tu nemění.
    */
-  const setDrivingMode = useCallback((isMoving: boolean, syncSlot2: boolean = false) => {
+  const setDrivingMode = useCallback((isMoving: boolean) => {
     if (isMoving) {
       leftActivityIdRef.current = 'DRIVING'
       setLeftActivityId('DRIVING')
-      if (syncSlot2) {
-        rightActivityIdRef.current = 'AVAILABILITY'
-        setRightActivityId('AVAILABILITY')
-      }
     } else {
       leftActivityIdRef.current = 'WORK'
       setLeftActivityId('WORK')
-      if (syncSlot2) {
-        rightActivityIdRef.current = 'AVAILABILITY'
-        setRightActivityId('AVAILABILITY')
-      }
     }
   }, [])
 
@@ -601,6 +589,7 @@ export default function App() {
   /** V režimu osádky: odložené razítko cílové země (slot → { čas, countryCode }). Propíše se při skončení režimu. */
   const deferredEndCountryInCrewModeRef = useRef<Partial<Record<1 | 2, { withdrawalTime: number; countryCode: string; templateId?: CardData['templateId'] }>>>({})
   const prevSpeedRef = useRef(currentSpeed)
+  const prevSlot2ReadyRef = useRef(loadedCardPresent(card2Inserted, card2Data))
   const prevCard2InsertedRef = useRef(card2Inserted)
 
   useEffect(() => {
@@ -662,22 +651,26 @@ export default function App() {
     const wasMoving = prevSpeedRef.current > 0
     const isStopped = currentSpeed === 0
     prevSpeedRef.current = currentSpeed
+    const slot2Ready = loadedCardPresent(card2Inserted, card2Data)
+    const slot2BecameReady = slot2Ready && !prevSlot2ReadyRef.current
+    prevSlot2ReadyRef.current = slot2Ready
+    const keepSlot2Availability = () => {
+      if (!slot2Ready || rightActivityIdRef.current === 'AVAILABILITY') return
+      rightActivityIdRef.current = 'AVAILABILITY'
+      setRightActivityId('AVAILABILITY')
+    }
 
     if (currentSpeed > 0) {
       setOutStoppedAtUtc(null)
       setDrivingMode(true)
-      // Jízda: řidič 2 = pohotovost ()
-      if (!wasMoving) {
-        rightActivityIdRef.current = 'AVAILABILITY'
-        setRightActivityId('AVAILABILITY')
-      }
+      if (!wasMoving || slot2BecameReady) keepSlot2Availability()
       if (outModeActive) setHasDrivenSinceOutActivation(true)
     } else if (wasMoving && isStopped) {
-      // Zastavení: řidič 1 = práce (); v osádce řidič 2 = pohotovost (). Přestávku zvolí ručně.
-      setDrivingMode(false, isMultiManning)
-      if (outModeActive) setOutStoppedAtUtc(simulatedUtcTime)
+      setDrivingMode(false)
+      keepSlot2Availability()
+      if (outModeActive) setOutStoppedAtUtc(simulatedUtcTimeRef.current)
     }
-  }, [currentSpeed, isMultiManning, setDrivingMode, outModeActive, simulatedUtcTime])
+  }, [currentSpeed, card2Inserted, card2Data, setDrivingMode, outModeActive])
 
   /** Při startu jízdy okamžitě ukončit menu (main dashboard: při aktivitě jízdy menu zmizí) */
   useEffect(() => {
@@ -1063,24 +1056,8 @@ export default function App() {
   const flushActivitiesToCardBeforeEject = useCallback((slot: 1 | 2) => {
     const acc = minuteAccumulatorRef.current
     if (!acc || acc.secondsInMinute === 0) return
-    const pickWinner = (counts: Record<ActivityKind, number>, last: ActivityKind): ActivityKind => {
-      let max = 0
-      let candidates: ActivityKind[] = []
-      ;(Object.keys(counts) as ActivityKind[]).forEach((k) => {
-        const v = counts[k] ?? 0
-        if (v > max) {
-          max = v
-          candidates = [k]
-        } else if (v === max) candidates.push(k)
-      })
-      if (max === 0) return 'none'
-      /* Pravidlo jedné minuty: aktivita se započte jen když v minutě trvá více než 31 s (≥ 32 s). */
-      if (max <= 31) return 'none'
-      if (candidates.length === 1) return candidates[0]
-      return candidates.includes(last) ? last : candidates[0]
-    }
-    const driver1Winner = pickWinner(acc.counts.driver1, acc.lastActivity.driver1)
-    const driver2Winner = pickWinner(acc.counts.driver2, acc.lastActivity.driver2)
+    const driver1Winner = dominantMinuteActivity(acc.counts.driver1, acc.lastActivity.driver1).activity
+    const driver2Winner = dominantMinuteActivity(acc.counts.driver2, acc.lastActivity.driver2).activity
     const c1Inserted = card1InsertedRef.current
     const c2Inserted = card2InsertedRef.current
     const tid1 = card1DataRef.current?.templateId
@@ -1296,23 +1273,26 @@ export default function App() {
       const minuteStartUtc = Math.floor(simulatedUtcTimeRef.current / 60000) * 60000
       setRecordedGpsLocations((r) => [...r, { minuteStartUtc, gpsLocation: newLocation.name, recordType: 'border_crossing' }])
       const speedNow = currentSpeedRef.current
-      const isDrivingNow = speedNow > 0
-      const leftCharNow = isDrivingNow ? DRIVING_SYMBOL : getActivityCode(leftActivityIdRef.current)
-      const rightCharNow = isDrivingNow ? getActivityCode('AVAILABILITY') : getActivityCode(rightActivityIdRef.current)
-      const driver1Activity = activityFromChar(leftCharNow)
-      const driver2Activity = activityFromChar(rightCharNow)
       const c1Inserted = card1InsertedRef.current
       const c2Inserted = card2InsertedRef.current
-      const tid1 = card1DataRef.current?.templateId
-      const tid2 = card2DataRef.current?.templateId
+      const card1Now = card1DataRef.current
+      const card2Now = card2DataRef.current
+      const { driver1: driver1Activity, driver2: driver2Activity } = activitiesForApplyTime(
+        speedNow,
+        leftActivityIdRef.current,
+        rightActivityIdRef.current,
+        loadedCardPresent(c2Inserted, card2Now),
+      )
+      const tid1 = card1Now?.templateId
+      const tid2 = card2Now?.templateId
 
       const entry: ActivityHistoryEntry = {
         minuteStartUtc,
         driver1: driver1Activity,
         driver2: driver2Activity,
         gpsLocation: newLocation.name,
-        driver1CardId: c1Inserted && tid1 ? tid1 : NO_CARD,
-        driver2CardId: c2Inserted && tid2 ? tid2 : NO_CARD,
+        driver1CardId: insertedCardId(c1Inserted, card1Now?.cardNumber, tid1),
+        driver2CardId: insertedCardId(c2Inserted, card2Now?.cardNumber, tid2),
       }
       setActivityHistory((prevHistory) => [...prevHistory, entry])
       if (c1Inserted && tid1) {
@@ -1387,11 +1367,15 @@ export default function App() {
     if (deltaMs <= 0) return
     const toUtc = fromUtc + deltaMs
     const speedNow = currentSpeedRef.current
-    const isDrivingNow = speedNow > 0
-    const leftCharNow = isDrivingNow ? DRIVING_SYMBOL : getActivityCode(leftActivityIdRef.current)
-    const rightCharNow = isDrivingNow ? getActivityCode('AVAILABILITY') : getActivityCode(rightActivityIdRef.current)
-    const driverForJump = leftCharNow === DRIVING_SYMBOL ? 1 : rightCharNow === DRIVING_SYMBOL ? 2 : null
-    const restDriver = leftCharNow === getActivityCode('REST') ? 1 : rightCharNow === getActivityCode('REST') ? 2 : null
+    const { driver1: driver1Now, driver2: driver2Now } = activitiesForApplyTime(
+      speedNow,
+      leftActivityIdRef.current,
+      rightActivityIdRef.current,
+      loadedCardPresent(card2InsertedRef.current, card2DataRef.current),
+    )
+    const isDrivingNow = driver1Now === 'driving'
+    const driverForJump = driver1Now === 'driving' ? 1 : driver2Now === 'driving' ? 2 : null
+    const restDriver = driver1Now === 'rest' ? 1 : driver2Now === 'rest' ? 2 : null
     const deltaMinutes = Math.ceil(deltaMs / 60000)
     trackOverspeed(ignitionOnRef.current ? speedNow : 0, fromUtc, deltaMs)
     if (isDrivingNow && driverForJump) {
@@ -1444,6 +1428,8 @@ export default function App() {
     ferryDrivingMsRef,
     endFerryTrainRef,
     card1InsertedRef,
+    card2InsertedRef,
+    card2DataRef,
     leftActivityIdRef,
     rightActivityIdRef,
     drivingSinceLastBreakMsByDriverRef,
@@ -2394,19 +2380,19 @@ export default function App() {
 
     if (deltaMinutes > 0) {
       const speedNow = currentSpeedRef.current
-      const isDrivingNow = speedNow > 0
-      const { driver1: driver1Activity, driver2: driver2Activity } = activitiesForApplyTime(
-        speedNow,
-        leftActivityIdRef.current,
-        rightActivityIdRef.current,
-      )
-      const leftCharNow = isDrivingNow ? DRIVING_SYMBOL : getActivityCode(leftActivityIdRef.current)
-      const rightCharNow = isDrivingNow ? getActivityCode('AVAILABILITY') : getActivityCode(rightActivityIdRef.current)
-
       const c1Inserted = card1InsertedRef.current
       const c2Inserted = card2InsertedRef.current
       const card1 = card1DataRef.current
       const card2 = card2DataRef.current
+      const { driver1: driver1Activity, driver2: driver2Activity } = activitiesForApplyTime(
+        speedNow,
+        leftActivityIdRef.current,
+        rightActivityIdRef.current,
+        loadedCardPresent(c2Inserted, card2),
+      )
+      const isDrivingNow = driver1Activity === 'driving'
+      const driverForJump = driver1Activity === 'driving' ? 1 : driver2Activity === 'driving' ? 2 : null
+      const restDriver = driver1Activity === 'rest' ? 1 : driver2Activity === 'rest' ? 2 : null
       const plan = planApplyTimeJump({
         simulatedUtcMs: simulatedUtcTime,
         deltaMs,
@@ -2446,8 +2432,6 @@ export default function App() {
         }
       }
 
-      const driverForJump = leftCharNow === DRIVING_SYMBOL ? 1 : rightCharNow === DRIVING_SYMBOL ? 2 : null
-      const restDriver = leftCharNow === getActivityCode('REST') ? 1 : rightCharNow === getActivityCode('REST') ? 2 : null
       trackOverspeed(ignitionOnRef.current ? speedNow : 0, simulatedUtcTime, deltaMs)
       // Ujetá vzdálenost za přeskočený čas (pokud byla rychlost > 0)
       if (isDrivingNow && driverForJump) {
@@ -2562,8 +2546,12 @@ export default function App() {
     const isMultiManning = isMultiManningRef.current
     const c1Inserted = card1InsertedRef.current
     const c2Inserted = card2InsertedRef.current
-    const tid1 = card1DataRef.current?.templateId
-    const tid2 = card2DataRef.current?.templateId
+    const card1Now = card1DataRef.current
+    const card2Now = card2DataRef.current
+    const tid1 = card1Now?.templateId
+    const tid2 = card2Now?.templateId
+    const number1 = card1Now?.cardNumber
+    const number2 = card2Now?.cardNumber
     const {
       secondEntries,
       activityEntries,
@@ -2578,6 +2566,8 @@ export default function App() {
       card2Inserted: c2Inserted,
       card1TemplateId: tid1,
       card2TemplateId: tid2,
+      card1CardNumber: number1,
+      card2CardNumber: number2,
       distanceFromStartKm: Math.max(0, odometerKmRef.current - ODOMETER_KM),
     })
 
@@ -2597,10 +2587,21 @@ export default function App() {
         [tid2]: [...(prev[tid2] ?? []), ...activityEntries],
       }))
     }
+    if ((c1Inserted && number1) || (c2Inserted && number2)) {
+      setDddCards((prev) => {
+        let next = prev
+        if (c1Inserted && number1) next = appendWorkingMinutes(next, number1, activityEntries)
+        if (c2Inserted && number2) next = appendWorkingMinutes(next, number2, activityEntries)
+        return next
+      })
+    }
     setSecondHistory((prev) => appendSecondSamples(prev, secondEntries))
     minuteAccumulatorRef.current = null
 
-    const availabilityMs = isMultiManningRef.current ? drivingMs : 0
+    const availabilityMs = activityEntries.reduce(
+      (sum, entry) => sum + (entry.driver2 === 'availability' ? 60000 : 0),
+      0,
+    )
     activityDurationsMsRef.current = {
       ...activityDurationsMsRef.current,
       driving: activityDurationsMsRef.current.driving + drivingMs,
@@ -2629,6 +2630,10 @@ export default function App() {
     setCurrentSpeed(0)
     setIgnitionOn(true)
     setLeftActivityId('WORK')
+    if (loadedCardPresent(c2Inserted, card2Now)) {
+      rightActivityIdRef.current = 'AVAILABILITY'
+      setRightActivityId('AVAILABILITY')
+    }
     targetSpeedRef.current = 0
     currentSpeedRef.current = 0
 
@@ -2647,6 +2652,31 @@ export default function App() {
       ? [...(cardActivityHistoryByTemplateIdRef.current[tid1] ?? []), ...activityEntries]
       : [...(activityHistoryRef.current ?? []), ...activityEntries]
     const manualBuf = card1Manual
+    const slot2History = loadedCardPresent(c2Inserted, card2Now)
+      ? (tid2 ? [...(cardActivityHistoryByTemplateIdRef.current[tid2] ?? []), ...activityEntries] : activityEntries)
+      : null
+    const slot2Manual = driver2ManualEntryBuffer
+    const card2Graph = (() => {
+      if (!slot2History) return undefined
+      try {
+        const built = simulatorToGraphData(slot2History, slot2Manual, 2, {
+          lastWithdrawalMs: loadCard2LastWithdrawal(),
+          insertionTimeMs: startMs + SIMULATE_4H10M_MS,
+        })
+        const slotDays = activitiesByDay(built.activities)
+        const daysToShow = built.activities.length > 0
+          ? expandToWeeksContainingData(slotDays, Math.min(...built.activities.map((item) => item.startMs)))
+          : expandToWeeksContainingData(slotDays, startMs + SIMULATE_4H10M_MS)
+        return {
+          days: daysToShow,
+          countryMarkers: built.countryMarkers,
+          manualEntryBuffer: slot2Manual,
+          lastWithdrawalUtc: loadCard2LastWithdrawal(),
+        }
+      } catch {
+        return undefined
+      }
+    })()
     try {
       const { activities, countryMarkers } = simulatorToGraphData(combinedHistory, manualBuf, 1, {
         lastWithdrawalMs: loadCard1LastWithdrawal(),
@@ -2656,7 +2686,7 @@ export default function App() {
       const daysToShow = activities.length > 0
         ? expandToWeeksContainingData(days, Math.min(...activities.map((a) => a.startMs)))
         : expandToWeeksContainingData(days, startMs + SIMULATE_4H10M_MS)
-      setWorkWeekGraphData({ days: daysToShow, countryMarkers, manualEntryBuffer: manualBuf, lastWithdrawalUtc: loadCard1LastWithdrawal(), card2Data: undefined })
+      setWorkWeekGraphData({ days: daysToShow, countryMarkers, manualEntryBuffer: manualBuf, lastWithdrawalUtc: loadCard1LastWithdrawal(), card2Data: card2Graph })
     } catch {
       try {
         const txt = workWeekToTxtString(combinedHistory, manualBuf, 1)
@@ -2665,12 +2695,12 @@ export default function App() {
         const daysToShow = parsed.activities.length > 0
           ? expandToWeeksContainingData(days, Math.min(...parsed.activities.map((a) => a.startMs)))
           : expandToWeeksContainingData(days, startMs + SIMULATE_4H10M_MS)
-        setWorkWeekGraphData({ days: daysToShow, countryMarkers: parsed.countryMarkers, manualEntryBuffer: manualBuf, lastWithdrawalUtc: loadCard1LastWithdrawal(), card2Data: undefined })
+        setWorkWeekGraphData({ days: daysToShow, countryMarkers: parsed.countryMarkers, manualEntryBuffer: manualBuf, lastWithdrawalUtc: loadCard1LastWithdrawal(), card2Data: card2Graph })
       } catch {
-        setWorkWeekGraphData({ days: expandToWeeksContainingData([], startMs + SIMULATE_4H10M_MS), countryMarkers: [], manualEntryBuffer: manualBuf, lastWithdrawalUtc: null, card2Data: undefined })
+        setWorkWeekGraphData({ days: expandToWeeksContainingData([], startMs + SIMULATE_4H10M_MS), countryMarkers: [], manualEntryBuffer: manualBuf, lastWithdrawalUtc: null, card2Data: card2Graph })
       }
     }
-  }, [card1Manual])
+  }, [card1Manual, driver2ManualEntryBuffer])
 
   const prepareTrainingCard = (id: 'zmizik' | 'novak', profile: TrainingProfile) => {
     if (card1Data?.templateId === id || card2Data?.templateId === id) return

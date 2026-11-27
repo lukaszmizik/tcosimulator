@@ -9,10 +9,10 @@
  */
 
 import { useEffect, type Dispatch, type MutableRefObject, type SetStateAction } from 'react'
-import { activitiesForApplyTime, insertedCardId, planApplyTimeJump } from './applyTimeJump'
+import { activitiesForApplyTime, dominantMinuteActivity, insertedCardId, loadedCardPresent, planApplyTimeJump } from './applyTimeJump'
 import { appendSecondSamples, type SecondSampleRead } from './secondHistoryBuffer'
 import { nextSimulationClockAction, type ClockAnchor } from './simulationClock'
-import { DRIVING_SYMBOL, activityFromChar, getActivityCode } from './CardLogic'
+import { getActivityCode } from './CardLogic'
 import { CARD1_TEMPLATE_ID, saveCard1ActivityHistory } from './data/card1_write_data'
 import { CARD2_TEMPLATE_ID, saveCard2ActivityHistory } from './data/card2_write_data'
 import {
@@ -100,28 +100,12 @@ export function useSimulationSecondClock(params: UseSimulationSecondClockParams)
     })
 
     const finalizeMinute = (m: MinuteAccumulator) => {
-      const pickWinner = (counts: Record<ActivityKind, number>, last: ActivityKind): ActivityKind => {
-        let max = 0
-        let candidates: ActivityKind[] = []
-        ;(Object.keys(counts) as ActivityKind[]).forEach((k) => {
-          const v = counts[k] ?? 0
-          if (v > max) {
-            max = v
-            candidates = [k]
-          } else if (v === max) {
-            candidates.push(k)
-          }
-        })
-        if (max === 0) return 'none'
-        /* Pravidlo jedné minuty: aktivita se započte jen když v minutě trvá více než 31 s (≥ 32 s). */
-        if (max <= 31) return 'none'
-        if (candidates.length === 1) return candidates[0]
-        return candidates.includes(last) ? last : candidates[0]
-      }
-      let driver1Winner = pickWinner(m.counts.driver1, m.lastActivity.driver1)
-      let driver2Winner = pickWinner(m.counts.driver2, m.lastActivity.driver2)
-      if (driver1Winner === 'none') driver1Winner = m.lastActivity.driver1 === 'none' ? 'rest' : m.lastActivity.driver1
-      if (driver2Winner === 'none') driver2Winner = m.lastActivity.driver2
+      const slot1 = dominantMinuteActivity(m.counts.driver1, m.lastActivity.driver1)
+      const slot2 = dominantMinuteActivity(m.counts.driver2, m.lastActivity.driver2)
+      let driver1Winner = slot1.activity
+      let driver2Winner = slot2.activity
+      if (!slot1.decided) driver1Winner = m.lastActivity.driver1 === 'none' ? 'rest' : m.lastActivity.driver1
+      if (!slot2.decided) driver2Winner = m.lastActivity.driver2
 
       const c1Inserted = card1InsertedRef.current
       const c2Inserted = card2InsertedRef.current
@@ -183,11 +167,12 @@ export function useSimulationSecondClock(params: UseSimulationSecondClockParams)
 
       const timestamp = next
       const speed = currentSpeedRef.current
-      const isDriving = speed > 0
-      const leftChar = isDriving ? DRIVING_SYMBOL : getActivityCode(leftActivityIdRef.current)
-      const rightChar = isDriving ? getActivityCode('AVAILABILITY') : getActivityCode(rightActivityIdRef.current)
-      const driver1Activity = activityFromChar(leftChar)
-      const driver2Activity = activityFromChar(rightChar)
+      const { driver1: driver1Activity, driver2: driver2Activity } = activitiesForApplyTime(
+        speed,
+        leftActivityIdRef.current,
+        rightActivityIdRef.current,
+        loadedCardPresent(card2InsertedRef.current, card2DataRef.current),
+      )
 
       const c1InsertedNow = card1InsertedRef.current
       const c2InsertedNow = card2InsertedRef.current
@@ -235,6 +220,7 @@ export function useSimulationSecondClock(params: UseSimulationSecondClockParams)
         speed,
         leftActivityIdRef.current,
         rightActivityIdRef.current,
+        loadedCardPresent(card2InsertedRef.current, card2DataRef.current),
       )
       const c1 = card1DataRef.current
       const c2 = card2DataRef.current

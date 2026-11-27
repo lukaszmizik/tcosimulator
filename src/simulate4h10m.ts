@@ -3,6 +3,7 @@
  * Pořadí volání Math.random odpovídá původnímu handleru.
  */
 
+import { activitiesForApplyTime, dominantMinuteActivity, insertedCardId } from './applyTimeJump'
 import { getVirtualLocationForDistance } from './VirtualRoute'
 import {
   NO_CARD,
@@ -14,11 +15,14 @@ import {
 
 export type BuildSimulated4h10mInput = {
   startMs: number
+  /** Posouzení osádky. Činnost S2 se z něj neodvozuje. */
   isMultiManning: boolean
   card1Inserted: boolean
   card2Inserted: boolean
   card1TemplateId: string | undefined
   card2TemplateId: string | undefined
+  card1CardNumber?: string
+  card2CardNumber?: string
   distanceFromStartKm: number
 }
 
@@ -34,16 +38,18 @@ export type BuildSimulated4h10mResult = {
 export function buildSimulated4h10m(input: BuildSimulated4h10mInput): BuildSimulated4h10mResult {
   const {
     startMs,
-    isMultiManning,
     card1Inserted,
     card2Inserted,
     card1TemplateId,
     card2TemplateId,
+    card1CardNumber,
+    card2CardNumber,
     distanceFromStartKm,
   } = input
   const startMinute = Math.floor(startMs / 60000) * 60000
-  const card1Id = card1Inserted && card1TemplateId ? card1TemplateId : NO_CARD
-  const card2Id = card2Inserted && card2TemplateId ? card2TemplateId : NO_CARD
+  const card1Id = insertedCardId(card1Inserted, card1CardNumber, card1TemplateId)
+  const card2Id = insertedCardId(card2Inserted, card2CardNumber, card2TemplateId)
+  const slot2Present = card2Id !== NO_CARD
   const totalSeconds = 250 * 60
 
   const rand = (min: number, max: number) => min + Math.random() * (max - min)
@@ -175,24 +181,26 @@ export function buildSimulated4h10m(input: BuildSimulated4h10mInput): BuildSimul
       targetActivity = base.activity
     }
 
-    const driver2Activity = isMultiManning && targetActivity === 'driving' ? 'availability' : 'none'
+    simSpeed = stepSpeed(simSpeed, targetActivity === 'otherWork' ? 0 : targetSpeed)
+    const driver2Activity = activitiesForApplyTime(simSpeed, 'WORK', 'AVAILABILITY', slot2Present).driver2
     if (targetActivity === 'otherWork') {
-      simSpeed = stepSpeed(simSpeed, 0)
-      secondEntries.push({ timestampUtc, driver1: 'otherWork', driver2: 'none', speed: simSpeed, driver1CardId: card1Id, driver2CardId: card2Id })
+      secondEntries.push({ timestampUtc, driver1: 'otherWork', driver2: driver2Activity, speed: simSpeed, driver1CardId: card1Id, driver2CardId: card2Id })
     } else {
-      simSpeed = stepSpeed(simSpeed, targetSpeed)
       secondEntries.push({ timestampUtc, driver1: 'driving', driver2: driver2Activity, speed: simSpeed, driver1CardId: card1Id, driver2CardId: card2Id })
       totalDrivingDistance += (simSpeed / 3600) * 1
     }
   }
 
-  const countByMinute = new Map<number, { driving: number; otherWork: number }>()
+  const emptyDriver2 = (): Record<ActivityKind, number> => ({ driving: 0, rest: 0, otherWork: 0, availability: 0, none: 0 })
+  const countByMinute = new Map<number, { driving: number; otherWork: number; driver2: Record<ActivityKind, number>; lastDriver2: ActivityKind }>()
   const distanceByMinute = new Map<number, number>()
   for (const e of secondEntries) {
     const minIdx = Math.floor((e.timestampUtc - startMs) / 60000)
-    const c = countByMinute.get(minIdx) ?? { driving: 0, otherWork: 0 }
+    const c = countByMinute.get(minIdx) ?? { driving: 0, otherWork: 0, driver2: emptyDriver2(), lastDriver2: 'none' as ActivityKind }
     if (e.driver1 === 'driving') c.driving++
     else c.otherWork++
+    c.driver2[e.driver2] = (c.driver2[e.driver2] ?? 0) + 1
+    c.lastDriver2 = e.driver2
     countByMinute.set(minIdx, c)
     const dist = (e.speed / 3600) * 1
     distanceByMinute.set(minIdx, (distanceByMinute.get(minIdx) ?? 0) + dist)
@@ -206,10 +214,10 @@ export function buildSimulated4h10m(input: BuildSimulated4h10mInput): BuildSimul
   let cumulativeKm = distanceFromStartKm
   for (let m = 0; m < 250; m++) {
     const minuteStartUtc = startMinute + m * 60000
-    const c = countByMinute.get(m) ?? { driving: 0, otherWork: 0 }
+    const c = countByMinute.get(m) ?? { driving: 0, otherWork: 0, driver2: emptyDriver2(), lastDriver2: 'none' as ActivityKind }
     /* Pravidlo jedné minuty: řízení se započte jen když v minutě odřídím více než 31 s (≥ 32 s). */
     const driver1: ActivityKind = c.driving > 31 ? 'driving' : 'otherWork'
-    const driver2: ActivityKind = isMultiManning && driver1 === 'driving' ? 'availability' : 'none'
+    const driver2 = dominantMinuteActivity(c.driver2, c.lastDriver2).activity
     const distThisMin = distanceByMinute.get(m) ?? 0
     cumulativeKm += distThisMin
     const gpsLocation = getVirtualLocationForDistance(cumulativeKm).name
@@ -218,8 +226,8 @@ export function buildSimulated4h10m(input: BuildSimulated4h10mInput): BuildSimul
       driver1,
       driver2,
       gpsLocation,
-      driver1CardId: card1Inserted && card1TemplateId ? card1TemplateId : NO_CARD,
-      driver2CardId: card2Inserted && card2TemplateId ? card2TemplateId : NO_CARD,
+      driver1CardId: card1Id,
+      driver2CardId: card2Id,
     })
     if (driver1 === 'driving') {
       drivingMs += 60000

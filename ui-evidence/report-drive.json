@@ -1,0 +1,226 @@
+{
+  "drive": {
+    "speeds": [
+      {
+        "ms": 26,
+        "label": "Rychlost 0 km/h"
+      },
+      {
+        "ms": 437,
+        "label": "Rychlost 5 km/h"
+      },
+      {
+        "ms": 844,
+        "label": "Rychlost 10 km/h"
+      },
+      {
+        "ms": 1249,
+        "label": "Rychlost 14 km/h"
+      },
+      {
+        "ms": 1657,
+        "label": "Rychlost 19 km/h"
+      },
+      {
+        "ms": 2061,
+        "label": "Rychlost 24 km/h"
+      },
+      {
+        "ms": 2467,
+        "label": "Rychlost 29 km/h"
+      },
+      {
+        "ms": 2869,
+        "label": "Rychlost 35 km/h"
+      },
+      {
+        "ms": 3291,
+        "label": "Rychlost 40 km/h"
+      },
+      {
+        "ms": 3696,
+        "label": "Rychlost 44 km/h"
+      },
+      {
+        "ms": 4102,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 4506,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 4913,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 5317,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 5724,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 6130,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 6534,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 6937,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 7342,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 7746,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 8162,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 8568,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 8971,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 9389,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 9792,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 10195,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 10598,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 11014,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 11417,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 11818,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 12225,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 12644,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 13047,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 13457,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 13880,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 14298,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 14761,
+        "label": "Rychlost 43 km/h"
+      },
+      {
+        "ms": 15162,
+        "label": "Rychlost 38 km/h"
+      },
+      {
+        "ms": 15591,
+        "label": "Rychlost 32 km/h"
+      },
+      {
+        "ms": 16007,
+        "label": "Rychlost 28 km/h"
+      },
+      {
+        "ms": 16412,
+        "label": "Rychlost 23 km/h"
+      },
+      {
+        "ms": 16819,
+        "label": "Rychlost 18 km/h"
+      },
+      {
+        "ms": 17269,
+        "label": "Rychlost 13 km/h"
+      },
+      {
+        "ms": 17704,
+        "label": "Rychlost 7 km/h"
+      },
+      {
+        "ms": 18113,
+        "label": "Rychlost 2 km/h"
+      },
+      {
+        "ms": 18515,
+        "label": "Rychlost 0 km/h"
+      }
+    ],
+    "stopped": "Rychlost 0 km/h",
+    "history": 20,
+    "vehicle": {
+      "text": "ic vozidlo 24hic den-tisk ↩ ▲ ▼ OK",
+      "steps": [
+        "výtisk ic vozidlo ↩ ▲ ▼ OK",
+        "ic vozidlo 24hic den-tisk ↩ ▲ ▼ OK"
+      ]
+    },
+    "diagram": {
+      "text": "}vc v-diagram 25 . 11 . 2026 ↩ ▲ ▼ OK",
+      "steps": [
+        "ic vozidlo 24hic den-tisk ↩ ▲ ▼ OK",
+        "ic vozidlo lsic událost ↩ ▲ ▼ OK",
+        "ic vozidlo xxc vys.rychlost ↩ ▲ ▼ OK",
+        "ic vozidlo Vbc tech. data ↩ ▲ ▼ OK",
+        "ic vozidlo W_bc Karty ↩ ▲ ▼ OK",
+        "ic vozidlo }vc v-diagram ↩ ▲ ▼ OK",
+        "}vc v-diagram 25 . 11 . 2026 ↩ ▲ ▼ OK"
+      ]
+    },
+    "wizard": {
+      "text": "výtisk spuštěn ... ↩ ▲ ▼ OK",
+      "steps": [
+        "výtisk spuštěn ... ↩ ▲ ▼ OK",
+        "výtisk spuštěn ... ↩ ▲ ▼ OK",
+        "výtisk spuštěn ... ↩ ▲ ▼ OK",
+        "výtisk spuštěn ... ↩ ▲ ▼ OK"
+      ],
+      "open": true
+    },
+    "path": [
+      "M25.00 293.7624h0.01 L25.00 293.7797 L42.97 293.7969 L62.94 293.8141 L82.91 293.8313 L102.88 293.8486 L104.87 293.8658 L104.87 293.8830 L104.87 293.9002 L104.87 293.9174 L104.87 293.9347 L104.87 293.9519 L104.87 293.9691 L104.87 293.9863 L104.87 294.0036 L104.87 294.0208 L92.89 294.0380 L72.92 294.0552 L52.96 294.0724 L32.99 294.0897 L25.00 294.1069 L25.00 294.1241 L25.00 294.1413 L25.00 294.1586 L25.00 294.1758 L25.00 294.1930"
+    ],
+    "shotFile": "C:\\Users\\lukas\\OneDrive\\Plocha\\simulator2\\ui-evidence\\v-diagram.png",
+    "lcd": "00:14 v 0 km/h Z 220234,0km X ↩ ▲ ▼ OK"
+  }
+}

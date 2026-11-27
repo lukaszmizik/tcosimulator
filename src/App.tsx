@@ -6,6 +6,7 @@ import { buildMenusById, applyMenuTranslations, ENTRY_MENU_ID } from './MenuStru
 import { clampMenuIndex, enterMenuRoot, enterSubmenu, leaveSubmenu, stepMenuIndex, visibleMenuItems } from './menu/menuCursor'
 import { createInitialCardInsertionState, activityFromChar, getNextActivity, getActivityCode, utcMsToSegment, trainingValidityBeginUtc, isTrainingCardExpired, isCardLoadingPhase } from './CardLogic'
 import { EDITOR_FIELD_ORDER } from './CardLogic'
+import { tachographCountryCode } from './tachographCountryCode'
 import { getVirtualLocationForDistance } from './VirtualRoute'
 import { FaceplateFrame } from './FaceplateFrame'
 import { LcdDebugGrid } from './LcdDebugGrid'
@@ -945,9 +946,8 @@ export default function App() {
   /** Návod: vložená karta neplatná po změně dne → po zastavení zápis a výhoz bez žádosti. */
   const autoEjectExpiredInsertedCard = useCallback((slot: 1 | 2, cardData: CardData) => {
     if (cardWithdrawalStateRef.current || cardInsertionStateRef.current) return
-    const routeToTachographCode: Record<string, string> = { CZ: 'CZ', AT: 'A', DE: 'D', CH: 'CH', FR: 'F', ES: 'E' }
     const gpsCountry = virtualLocationRef.current?.country ?? 'CZ'
-    const countryCode = routeToTachographCode[gpsCountry] ?? gpsCountry
+    const countryCode = tachographCountryCode(gpsCountry)
     const countryIndex = Math.max(0, countriesRef.current.findIndex((c) => c.code === countryCode))
     setExpiredInsertedCardWarningSlot(slot)
     performCardEjectWithCountry({
@@ -2117,9 +2117,8 @@ export default function App() {
         const insertion = cardInsertionStateRef.current
         const loadingThisSlot = insertion?.slot === 1 && isCardLoadingPhase(insertion.phase)
         if (cardData && !insertion && !cardWithdrawalStateRef.current && !moving) {
-          const routeToTachographCode: Record<string, string> = { CZ: 'CZ', AT: 'A', DE: 'D', CH: 'CH', FR: 'F', ES: 'E' }
           const gpsCountry = virtualLocationRef.current?.country ?? 'CZ'
-          const countryCode = routeToTachographCode[gpsCountry] ?? gpsCountry
+          const countryCode = tachographCountryCode(gpsCountry)
           const countryIndex = Math.max(0, countriesRef.current.findIndex((c) => c.code === countryCode))
           setCardWithdrawalState({
             slot: 1,
@@ -2166,9 +2165,8 @@ export default function App() {
         const insertion = cardInsertionStateRef.current
         const loadingThisSlot = insertion?.slot === 2 && isCardLoadingPhase(insertion.phase)
         if (cardData && !insertion && !cardWithdrawalStateRef.current && !moving) {
-          const routeToTachographCode: Record<string, string> = { CZ: 'CZ', AT: 'A', DE: 'D', CH: 'CH', FR: 'F', ES: 'E' }
           const gpsCountry = virtualLocationRef.current?.country ?? 'CZ'
-          const countryCode = routeToTachographCode[gpsCountry] ?? gpsCountry
+          const countryCode = tachographCountryCode(gpsCountry)
           const countryIndex = Math.max(0, countriesRef.current.findIndex((c) => c.code === countryCode))
           setCardWithdrawalState({
             slot: 2,

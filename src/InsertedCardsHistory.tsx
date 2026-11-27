@@ -11,6 +11,7 @@ import { useLanguage } from './translations'
 import { LanguageProvider as ViewerLanguageProvider } from 'tacho-viewer-language'
 import { WorkWeekGraphView } from 'tacho-viewer-graph'
 import { cardToGraph } from 'tacho-viewer-card-graph'
+import { withTachographCountryCodes } from './tachographCountryCode'
 import '../vendor/cardviewer/src/index.css'
 import './insertedCardGraphs.css'
 
@@ -36,7 +37,11 @@ function CardFileGraph({
   headingNote?: string
 }) {
   const source = record.original
-  const graph = useMemo(() => cardToGraph(source, clockMode), [source, clockMode])
+  const graph = useMemo(
+    () => withTachographCountryCodes(cardToGraph(source, clockMode)),
+    [source, clockMode],
+  )
+  const card = useMemo(() => withTachographCountryCodes(source), [source])
   return (
     <div data-card-slot={slot} data-card-number={record.cardNumber}>
       <WorkWeekGraphView
@@ -50,7 +55,7 @@ function CardFileGraph({
         recordedGpsLocations={graph.recordedGpsLocations}
         faultsAndEvents={graph.faultsAndEvents}
         symbolMap={symbolMap}
-        card={record.original}
+        card={card}
         embedded={embedded}
         onClose={onClose}
         clockMode={clockMode}

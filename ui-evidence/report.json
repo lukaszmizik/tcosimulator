@@ -1,0 +1,431 @@
+{
+  "cards": {
+    "inserted": {
+      "loaded": true,
+      "inserted": "Vložit kartu do slotu 1"
+    },
+    "clockAtInsert": "22:58:27",
+    "wizardScreens": [
+      {
+        "ms": 3,
+        "text": "1S Nebel 23:58 v 22:58 UTC ↩ ▲ ▼ OK"
+      },
+      {
+        "ms": 3063,
+        "text": "Nebel ↩ ▲ ▼ OK"
+      },
+      {
+        "ms": 3546,
+        "text": "Nebel ` ↩ ▲ ▼ OK"
+      },
+      {
+        "ms": 3950,
+        "text": "Nebel ` ` ↩ ▲ ▼ OK"
+      },
+      {
+        "ms": 4377,
+        "text": "Nebel ` ` a ↩ ▲ ▼ OK"
+      },
+      {
+        "ms": 4792,
+        "text": "Nebel ` ` a a ↩ ▲ ▼ OK"
+      },
+      {
+        "ms": 5430,
+        "text": "Nebel ` ` a a ¦ ↩ ▲ ▼ OK"
+      },
+      {
+        "ms": 5643,
+        "text": "Nebel ` ` a a ¦ ¦ ↩ ▲ ▼ OK"
+      },
+      {
+        "ms": 6071,
+        "text": "Posled. vyjmutí 30.09.2026 00:00 ↩ ▲ ▼ OK"
+      },
+      {
+        "ms": 10223,
+        "text": "1 { vstup doplnit? ano ↩ ▲ ▼ OK"
+      }
+    ],
+    "lastRemoval": {
+      "appearedMs": 6071,
+      "leftMs": 10223,
+      "heldMs": 4152,
+      "text": "Posled. vyjmutí 30.09.2026 00:00 ↩ ▲ ▼ OK",
+      "next": "1 { vstup doplnit? ano ↩ ▲ ▼ OK",
+      "okPressed": false
+    },
+    "beforeDecision": "1 { vstup doplnit? ano ↩ ▲ ▼ OK",
+    "decisionAfterDown": "1 { vstup doplnit? ne ↩ ▲ ▼ OK",
+    "afterQuestions": "zadání uloženo ↩ ▲ ▼ OK",
+    "beforeMenu": "23:58 v S 0 km/h Y _ 220234,0km Y ↩ ▲ ▼ OK",
+    "afterWizard": "výtisk _c řidič 1 ↩ ▲ ▼ OK",
+    "slotButton": "Slot 1 · Nebel",
+    "vehicleMenu": {
+      "text": "ic vozidlo 24hic den-tisk ↩ ▲ ▼ OK",
+      "steps": [
+        "výtisk _c řidič 1 ↩ ▲ ▼ OK",
+        "výtisk ic vozidlo ↩ ▲ ▼ OK",
+        "ic vozidlo 24hic den-tisk ↩ ▲ ▼ OK"
+      ]
+    },
+    "cardsMenu": {
+      "text": "výtisk v UTC času? ano ↩ ▲ ▼ OK",
+      "steps": [
+        "ic vozidlo 24hic den-tisk ↩ ▲ ▼ OK",
+        "ic vozidlo lsic událost ↩ ▲ ▼ OK",
+        "ic vozidlo xxc vys.rychlost ↩ ▲ ▼ OK",
+        "ic vozidlo Vbc tech. data ↩ ▲ ▼ OK",
+        "ic vozidlo W_bc Karty ↩ ▲ ▼ OK",
+        "výtisk v UTC času? ano ↩ ▲ ▼ OK"
+      ]
+    },
+    "printWizard": {
+      "text": "výtisk spuštěn ... ↩ ▲ ▼ OK",
+      "steps": [
+        "výtisk spuštěn ... ↩ ▲ ▼ OK",
+        "výtisk spuštěn ... ↩ ▲ ▼ OK",
+        "výtisk spuštěn ... ↩ ▲ ▼ OK",
+        "výtisk spuštěn ... ↩ ▲ ▼ OK"
+      ],
+      "open": true
+    },
+    "printText": "c 25.11.2026 22:58 (UTC)-----------c------------ GEN2 v2W_bc-----------S------------S Nebel AloisS_ CZ /CZ1234567890AB12 12.03.2027 - GEN2------------------------S_ CZ /CZ1234567890AB12 GEN225.11.2026 22:58------------------------Uv .....................U .....................b .....................",
+    "printShot": "C:\\Users\\lukas\\OneDrive\\Plocha\\simulator2\\ui-evidence\\inserted-cards-print.png",
+    "printTextAfterOtherReset": "c 25.11.2026 22:58 (UTC)-----------c------------ GEN2 v2W_bc-----------S------------S Nebel AloisS_ CZ /CZ1234567890AB12 12.03.2027 - GEN2------------------------S_ CZ /CZ1234567890AB12 GEN225.11.2026 22:58------------------------Uv .....................U .....................b .....................",
+    "printStillOpen": true,
+    "storageInsertions": null
+  },
+  "drive": {
+    "speeds": [
+      {
+        "ms": 13,
+        "label": "Rychlost 0 km/h"
+      },
+      {
+        "ms": 434,
+        "label": "Rychlost 5 km/h"
+      },
+      {
+        "ms": 839,
+        "label": "Rychlost 10 km/h"
+      },
+      {
+        "ms": 1247,
+        "label": "Rychlost 14 km/h"
+      },
+      {
+        "ms": 1655,
+        "label": "Rychlost 19 km/h"
+      },
+      {
+        "ms": 2064,
+        "label": "Rychlost 24 km/h"
+      },
+      {
+        "ms": 2471,
+        "label": "Rychlost 29 km/h"
+      },
+      {
+        "ms": 2880,
+        "label": "Rychlost 34 km/h"
+      },
+      {
+        "ms": 3283,
+        "label": "Rychlost 38 km/h"
+      },
+      {
+        "ms": 3688,
+        "label": "Rychlost 43 km/h"
+      },
+      {
+        "ms": 4093,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 4498,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 4903,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 5338,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 5744,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 6151,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 6558,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 6963,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 7371,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 7776,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 8183,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 8588,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 8994,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 9402,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 9805,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 10221,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 10637,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 11041,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 11445,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 11850,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 12256,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 12663,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 13067,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 13472,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 13877,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 14294,
+        "label": "Rychlost 48 km/h"
+      },
+      {
+        "ms": 14723,
+        "label": "Rychlost 42 km/h"
+      },
+      {
+        "ms": 15156,
+        "label": "Rychlost 37 km/h"
+      },
+      {
+        "ms": 15566,
+        "label": "Rychlost 32 km/h"
+      },
+      {
+        "ms": 15972,
+        "label": "Rychlost 28 km/h"
+      },
+      {
+        "ms": 16379,
+        "label": "Rychlost 23 km/h"
+      },
+      {
+        "ms": 16825,
+        "label": "Rychlost 18 km/h"
+      },
+      {
+        "ms": 17232,
+        "label": "Rychlost 12 km/h"
+      },
+      {
+        "ms": 17636,
+        "label": "Rychlost 7 km/h"
+      },
+      {
+        "ms": 18042,
+        "label": "Rychlost 2 km/h"
+      },
+      {
+        "ms": 18444,
+        "label": "Rychlost 0 km/h"
+      }
+    ],
+    "stopped": "Rychlost 0 km/h",
+    "history": 20,
+    "vehicle": {
+      "text": "ic vozidlo 24hic den-tisk ↩ ▲ ▼ OK",
+      "steps": [
+        "výtisk ic vozidlo ↩ ▲ ▼ OK",
+        "ic vozidlo 24hic den-tisk ↩ ▲ ▼ OK"
+      ]
+    },
+    "diagram": {
+      "text": "}vc v-diagram 25 . 11 . 2026 ↩ ▲ ▼ OK",
+      "steps": [
+        "ic vozidlo 24hic den-tisk ↩ ▲ ▼ OK",
+        "ic vozidlo lsic událost ↩ ▲ ▼ OK",
+        "ic vozidlo xxc vys.rychlost ↩ ▲ ▼ OK",
+        "ic vozidlo Vbc tech. data ↩ ▲ ▼ OK",
+        "ic vozidlo W_bc Karty ↩ ▲ ▼ OK",
+        "ic vozidlo }vc v-diagram ↩ ▲ ▼ OK",
+        "}vc v-diagram 25 . 11 . 2026 ↩ ▲ ▼ OK"
+      ]
+    },
+    "wizard": {
+      "text": "výtisk spuštěn ... ↩ ▲ ▼ OK",
+      "steps": [
+        "výtisk spuštěn ... ↩ ▲ ▼ OK",
+        "výtisk spuštěn ... ↩ ▲ ▼ OK",
+        "výtisk spuštěn ... ↩ ▲ ▼ OK",
+        "výtisk spuštěn ... ↩ ▲ ▼ OK"
+      ],
+      "open": true
+    },
+    "path": [
+      "M25.00 278.0179h0.01 L25.00 278.0351 L40.97 278.0523 L60.94 278.0695 L80.91 278.0867 L100.88 278.1040 L104.87 278.1212 L104.87 278.1384 L104.87 278.1556 L104.87 278.1729 L104.87 278.1901 L104.87 278.2073 L104.87 278.2245 L104.87 278.2417 L104.87 278.2590 L104.87 278.2762 L92.89 278.2934 L72.92 278.3106 L52.96 278.3279 L32.99 278.3451 L25.00 278.3623 L25.00 278.3795 L25.00 278.3967 L25.00 278.4140 L25.00 278.4312 L25.00 278.4484"
+    ],
+    "shotFile": "C:\\Users\\lukas\\OneDrive\\Plocha\\simulator2\\ui-evidence\\v-diagram.png",
+    "lcd": "23:59 v 0 km/h Z 220234,0km X ↩ ▲ ▼ OK"
+  },
+  "twoHours": {
+    "startClock": "22:59:31",
+    "inserted": {
+      "loaded": true,
+      "inserted": "Vložit kartu do slotu 1"
+    },
+    "wizardScreens": [
+      {
+        "ms": 18,
+        "text": "1S Nebel 23:59 v 22:59 UTC ↩ ▲ ▼ OK"
+      },
+      {
+        "ms": 3090,
+        "text": "Nebel ↩ ▲ ▼ OK"
+      },
+      {
+        "ms": 3698,
+        "text": "Nebel ` ↩ ▲ ▼ OK"
+      },
+      {
+        "ms": 4104,
+        "text": "Nebel ` ` ↩ ▲ ▼ OK"
+      },
+      {
+        "ms": 4511,
+        "text": "Nebel ` ` a ↩ ▲ ▼ OK"
+      },
+      {
+        "ms": 4917,
+        "text": "Nebel ` ` a a ↩ ▲ ▼ OK"
+      },
+      {
+        "ms": 5319,
+        "text": "Nebel ` ` a a ¦ ↩ ▲ ▼ OK"
+      },
+      {
+        "ms": 5723,
+        "text": "Nebel ` ` a a ¦ ¦ ↩ ▲ ▼ OK"
+      },
+      {
+        "ms": 6145,
+        "text": "Posled. vyjmutí 30.09.2026 00:00 ↩ ▲ ▼ OK"
+      },
+      {
+        "ms": 10064,
+        "text": "1 { vstup doplnit? ano ↩ ▲ ▼ OK"
+      }
+    ],
+    "lastRemoval": {
+      "appearedMs": 6145,
+      "leftMs": 10064,
+      "heldMs": 3919,
+      "text": "Posled. vyjmutí 30.09.2026 00:00 ↩ ▲ ▼ OK",
+      "next": "1 { vstup doplnit? ano ↩ ▲ ▼ OK",
+      "okPressed": false
+    },
+    "beforeDecision": "1 { vstup doplnit? ano ↩ ▲ ▼ OK",
+    "decisionAfterDown": "1 { vstup doplnit? ne ↩ ▲ ▼ OK",
+    "afterQuestions": "zadání uloženo ↩ ▲ ▼ OK",
+    "beforeMenu": "23:59 v S 0 km/h Y _ 220234,0km Y ↩ ▲ ▼ OK",
+    "afterWizard": "výtisk _c řidič 1 ↩ ▲ ▼ OK",
+    "moving": "Rychlost 5 km/h",
+    "afterJumpClock": "01:00:00",
+    "samplesAfterJump": "30",
+    "samplesBeforeJump": "30",
+    "clockBeforeApply": "01:00:02",
+    "graphDays": [
+      "Otevřít den 23.11.2026",
+      "Otevřít den 24.11.2026",
+      "Otevřít den 25.11.2026",
+      "Otevřít den 26.11.2026",
+      "Otevřít den 27.11.2026",
+      "Otevřít den 28.11.2026",
+      "Otevřít den 29.11.2026"
+    ],
+    "graphText": "0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 Středa 25.11.2026 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 Součet aktivit v probíhající směně: S ---- Z ---- X ---- Y ---- Délka aktuální směny: ---- Manuální záznamy Záznamy tachografu — 25.11.2026 23:59–26.11.2026 00:00 | odpočinek (0:01)",
+    "graphShot": "C:\\Users\\lukas\\OneDrive\\Plocha\\simulator2\\ui-evidence\\daily-graph.png",
+    "driverMenu": "výtisk _c řidič 1 ↩ ▲ ▼ OK",
+    "dayPrintMenu": "_c řidič 1 24h_c den-tisk ↩ ▲ ▼ OK",
+    "dayWizard": {
+      "text": "výtisk spuštěn ... ↩ ▲ ▼ OK",
+      "steps": [
+        "24h_c den-tisk 26 . 11 . 2026 ↩ ▲ ▼ OK",
+        "výtisk v UTC času? ano ↩ ▲ ▼ OK",
+        "výtisk spuštěn ... ↩ ▲ ▼ OK",
+        "výtisk spuštěn ... ↩ ▲ ▼ OK"
+      ],
+      "open": true
+    },
+    "dayPrint": "c 26.11.2026 01:00 (UTC)-----------c------------ GEN2 v224h_c-----------_------------_ Nebel Alois_ CZ /CZ1234567890AB12 12.03.2027-----------i------------i WBADT43452G123456 CZ /1TL0280-----------W------------W Continental Automotive Technologies GmbH DTCO1381B-A3F92CGEN2-----------V------------V Servis tachografů Praha s.r.o.V_ CZE99887766554433V 15.03.2024-----------_------------ 26.11.2026-----------]------------i CZ /1TL0280S 00:00 01h00-----------\\------------\\ 01:00 00h00-----------]------------i CZ /1TL0280Z 01:00-----------y------------S 01h00Z 00h00 X 00h00Y 00h00 \\ 00h00SS 00h00----------ls_-----------------------------------Uv .....................U .....................S .....................",
+    "dayShot": "C:\\Users\\lukas\\OneDrive\\Plocha\\simulator2\\ui-evidence\\daily-print.png",
+    "jumpDiagram": {
+      "vehicle": "}_c aktivity 26 . 11 . 2026 ↩ ▲ ▼ OK",
+      "diagram": "výtisk spuštěn ... ↩ ▲ ▼ OK",
+      "wizard": {
+        "text": "_c řidič 1 }_c aktivity ↩ ▲ ▼ OK",
+        "steps": [
+          "výtisk spuštěn ... ↩ ▲ ▼ OK",
+          "výtisk spuštěn ... ↩ ▲ ▼ OK",
+          "výtisk spuštěn ... ↩ ▲ ▼ OK",
+          "_c řidič 1 }_c aktivity ↩ ▲ ▼ OK"
+        ],
+        "open": true
+      },
+      "path": []
+    },
+    "jumpDiagramShot": "C:\\Users\\lukas\\OneDrive\\Plocha\\simulator2\\ui-evidence\\v-diagram-after-jump.png"
+  }
+}

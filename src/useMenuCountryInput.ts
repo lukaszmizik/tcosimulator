@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState, type Dispatch, type MutableRe
 import { segmentToMsUtc, utcMsToSegment } from './CardLogic'
 import type { CountryEntry } from './data/countriesLoader'
 import type { ManualEntrySegment, MenuCountryInputState, RecordedGpsLocation, VirtualRoutePoint } from './TachoTypes'
+import { tachographCountryCode } from './tachographCountryCode'
 import * as WorkShift from './WorkShift'
 
 const CONFIRM_DURATION_MS = 3000
@@ -78,14 +79,12 @@ export function useMenuCountryInput(params: UseMenuCountryInputParams) {
     action: 'INPUT_START_COUNTRY' | 'INPUT_END_COUNTRY',
     menuPath: string[],
   ) => {
-    const routeToTachographCode: Record<string, string> = { CZ: 'CZ', AT: 'A', DE: 'D', CH: 'CH', FR: 'F', ES: 'E' }
     const gpsCountry = virtualLocationRef.current?.country ?? null
-    const defaultCode =
-      (gpsCountry && routeToTachographCode[gpsCountry])
-        ? routeToTachographCode[gpsCountry]
-        : (action === 'INPUT_START_COUNTRY' && detectedBorderCountryCodeRef.current
-          ? (routeToTachographCode[detectedBorderCountryCodeRef.current] ?? 'CZ')
-          : 'CZ')
+    const defaultCode = gpsCountry
+      ? tachographCountryCode(gpsCountry)
+      : (action === 'INPUT_START_COUNTRY' && detectedBorderCountryCodeRef.current
+        ? tachographCountryCode(detectedBorderCountryCodeRef.current)
+        : 'CZ')
     const defaultIndex = Math.max(0, countries.findIndex((c) => c.code === defaultCode))
     const next = {
       type: action === 'INPUT_START_COUNTRY' ? 'start' as const : 'end' as const,

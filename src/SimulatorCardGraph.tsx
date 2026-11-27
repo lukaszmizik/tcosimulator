@@ -20,6 +20,7 @@ import { useLanguage } from './translations'
 import { LanguageProvider as ViewerLanguageProvider } from 'tacho-viewer-language'
 import { WorkWeekGraphView } from 'tacho-viewer-graph'
 import { activitiesByDay, type GraphActivity, type GraphDay } from 'tacho-viewer-graph-days'
+import { tachographCountryLabel, withTachographCountryCodes } from './tachographCountryCode'
 import '../vendor/cardviewer/src/index.css'
 
 export type CardGraphSlot = {
@@ -93,12 +94,16 @@ function daysForClock(slot: CardGraphSlot, clockMode: ClockMode): GraphDay[] | D
 }
 
 function presentSlot(slot: CardGraphSlot, clockMode: ClockMode) {
-  return {
+  return withTachographCountryCodes({
     days: daysForClock(slot, clockMode),
     countryMarkers: stampMarkers(slot.countryMarkers),
     manualEntryBuffer: stampManual(slot.manualEntryBuffer),
     lastWithdrawalUtc: slot.lastWithdrawalUtc,
-  }
+  })
+}
+
+function countryText(value: string | undefined): string | undefined {
+  return value == null ? value : tachographCountryLabel(value)
 }
 
 export function SimulatorCardGraph({
@@ -155,10 +160,13 @@ export function SimulatorCardGraph({
         manualEntryBuffer={view.primary.manualEntryBuffer}
         lastWithdrawalUtc={view.primary.lastWithdrawalUtc}
         card2Data={view.secondary}
-        loadUnloadEvents={loadUnloadEvents}
-        ferryTrainEvents={ferryTrainEvents}
-        outModeEvents={outModeEvents}
-        recordedGpsLocations={recordedGpsLocations}
+        loadUnloadEvents={loadUnloadEvents.map((event) => ({ ...event, gpsLocation: countryText(event.gpsLocation) }))}
+        ferryTrainEvents={ferryTrainEvents.map((event) => ({ ...event, gpsLocation: countryText(event.gpsLocation) }))}
+        outModeEvents={outModeEvents.map((event) => ({ ...event, gpsLocation: countryText(event.gpsLocation) }))}
+        recordedGpsLocations={recordedGpsLocations.map((event) => ({
+          ...event,
+          gpsLocation: countryText(event.gpsLocation) ?? event.gpsLocation,
+        }))}
         faultsAndEvents={faultsAndEvents}
         symbolMap={symbolMap}
         onResetLoadUnload={onResetLoadUnload}

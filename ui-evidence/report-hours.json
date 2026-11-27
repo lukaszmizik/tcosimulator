@@ -1,0 +1,133 @@
+{
+  "twoHours": {
+    "startClock": "23:12:37",
+    "inserted": {
+      "loaded": true,
+      "inserted": "Vložit kartu do slotu 1"
+    },
+    "wizardScreens": [
+      {
+        "ms": 15,
+        "text": "1S Nebel 00:12 v 23:12 UTC ↩ ▲ ▼ OK"
+      },
+      {
+        "ms": 3149,
+        "text": "Nebel ↩ ▲ ▼ OK"
+      },
+      {
+        "ms": 3589,
+        "text": "Nebel ` ↩ ▲ ▼ OK"
+      },
+      {
+        "ms": 4006,
+        "text": "Nebel ` ` ↩ ▲ ▼ OK"
+      },
+      {
+        "ms": 4426,
+        "text": "Nebel ` ` a ↩ ▲ ▼ OK"
+      },
+      {
+        "ms": 4864,
+        "text": "Nebel ` ` a a ↩ ▲ ▼ OK"
+      },
+      {
+        "ms": 5271,
+        "text": "Nebel ` ` a a ¦ ↩ ▲ ▼ OK"
+      },
+      {
+        "ms": 5768,
+        "text": "Nebel ` ` a a ¦ ¦ ↩ ▲ ▼ OK"
+      },
+      {
+        "ms": 6186,
+        "text": "Posled. vyjmutí 30.09.2026 00:00 ↩ ▲ ▼ OK"
+      },
+      {
+        "ms": 10148,
+        "text": "1 { vstup doplnit? ano ↩ ▲ ▼ OK"
+      }
+    ],
+    "lastRemoval": {
+      "appearedMs": 6186,
+      "leftMs": 10148,
+      "heldMs": 3962,
+      "text": "Posled. vyjmutí 30.09.2026 00:00 ↩ ▲ ▼ OK",
+      "next": "1 { vstup doplnit? ano ↩ ▲ ▼ OK",
+      "okPressed": false
+    },
+    "beforeDecision": "1 { vstup doplnit? ano ↩ ▲ ▼ OK",
+    "decisionAfterDown": "1 { vstup doplnit? ne ↩ ▲ ▼ OK",
+    "afterQuestions": "zadání uloženo ↩ ▲ ▼ OK",
+    "beforeMenu": "00:13 v S 0 km/h Y _ 220234,0km Y ↩ ▲ ▼ OK",
+    "afterWizard": "výtisk _c řidič 1 ↩ ▲ ▼ OK",
+    "parkedJump": {
+      "parked": "23:13:05",
+      "hops": 9,
+      "after": "08:13:05"
+    },
+    "speedSet": {
+      "ignition": "already-on",
+      "outcome": "set:40"
+    },
+    "moving": "Rychlost 4 km/h",
+    "drivingBeforeJump": true,
+    "afterJumpClock": "10:13:05",
+    "samplesAfterJump": "31",
+    "samplesBeforeJump": "31",
+    "clockBeforeApply": "10:13:06",
+    "graphDays": [
+      "Otevřít den 23.11.2026",
+      "Otevřít den 24.11.2026",
+      "Otevřít den 25.11.2026",
+      "Otevřít den 26.11.2026",
+      "Otevřít den 27.11.2026",
+      "Otevřít den 28.11.2026",
+      "Otevřít den 29.11.2026"
+    ],
+    "graphText": {
+      "open": true,
+      "empty": "",
+      "text": "0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 Čtvrtek 26.11.2026 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 Součet aktivit v probíhající směně: S ---- Z ---- X ---- Y ---- Délka aktuální směny: ---- Manuální záznamy Záznamy tachografu — 26.11.2026 00:12–09:13 | odpočinek (9:01) 26.11.2026 09:13–11:13 | řízení (2:00)"
+    },
+    "graphShot": "C:\\Users\\lukas\\OneDrive\\Plocha\\simulator2\\ui-evidence\\daily-graph.png",
+    "graphClosed": [
+      {
+        "graph": true,
+        "print": false,
+        "clicked": "work-week-graph-close"
+      }
+    ],
+    "driverMenu": "výtisk _c řidič 1 ↩ ▲ ▼ OK",
+    "dayPrintMenu": "_c řidič 1 24h_c den-tisk ↩ ▲ ▼ OK",
+    "dayWizard": {
+      "text": "výtisk spuštěn ... ↩ ▲ ▼ OK",
+      "steps": [
+        "24h_c den-tisk 26 . 11 . 2026 ↩ ▲ ▼ OK",
+        "výtisk v UTC času? ano ↩ ▲ ▼ OK",
+        "výtisk spuštěn ... ↩ ▲ ▼ OK",
+        "výtisk spuštěn ... ↩ ▲ ▼ OK"
+      ],
+      "open": true
+    },
+    "dayPrint": "c 26.11.2026 10:13 (UTC)-----------c------------ GEN2 v224h_c-----------_------------_ Nebel Alois_ CZ /CZ1234567890AB12 12.03.2027-----------i------------i WBADT43452G123456 CZ /1TL0280-----------W------------W Continental Automotive Technologies GmbH DTCO1381B-A3F92CGEN2-----------V------------V Servis tachografů Praha s.r.o.V_ CZE99887766554433V 15.03.2024-----------_------------ 26.11.2026-----------]------------i CZ /1TL0280Y 00:00 08h13S 08:13 02h00-----------\\------------\\ 10:13 00h00-----------]------------i CZ /1TL0280Z 10:13-----------y------------S 02h00Z 00h00 X 00h00Y 08h13 \\ 00h00SS 00h00----------ls_-----------------------------------Uv .....................U .....................S .....................",
+    "dayShot": "C:\\Users\\lukas\\OneDrive\\Plocha\\simulator2\\ui-evidence\\daily-print.png",
+    "jumpDiagram": {
+      "vehicle": "ic vozidlo 24hic den-tisk ↩ ▲ ▼ OK",
+      "diagram": "}vc v-diagram 26 . 11 . 2026 ↩ ▲ ▼ OK",
+      "wizard": {
+        "text": "výtisk spuštěn ... ↩ ▲ ▼ OK",
+        "steps": [
+          "výtisk spuštěn ... ↩ ▲ ▼ OK",
+          "výtisk spuštěn ... ↩ ▲ ▼ OK",
+          "výtisk spuštěn ... ↩ ▲ ▼ OK",
+          "výtisk spuštěn ... ↩ ▲ ▼ OK"
+        ],
+        "open": true
+      },
+      "path": [
+        "M44.97 230.5377h0.01 L25.00 230.5550 L25.00 230.5722 L25.00 230.5894 L25.00 230.6066 L25.00 230.6238 L25.00 230.6411 L25.00 230.6583 L25.00 230.6755 L25.00 230.6927 L25.00 230.7100 L25.00 230.7272 L25.00 230.7444 L25.00 230.7616 L25.00 230.7788 L25.00 230.7961"
+      ]
+    },
+    "jumpDiagramShot": "C:\\Users\\lukas\\OneDrive\\Plocha\\simulator2\\ui-evidence\\v-diagram-after-jump.png"
+  }
+}
